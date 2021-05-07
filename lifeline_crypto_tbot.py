@@ -9,15 +9,15 @@ from telegram.ext import Updater
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +44,8 @@ def error(update: Update, context: CallbackContext) -> None:
         context ([type]): bot context
     """
     logger.warning('Update "%s" caused error "%s"', update, context.error)
-    context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Stonks! Sorry, encountered an error."
-    )
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text="Stonks! Sorry, encountered an error.")
 
 
 def main():
