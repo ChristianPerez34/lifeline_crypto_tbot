@@ -11,9 +11,6 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-import logging
-
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 # Enable logging
 logging.basicConfig(
