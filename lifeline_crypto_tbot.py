@@ -1,8 +1,8 @@
 import logging
 import os
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from dotenv import load_dotenv
+from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
 
 # Enable logging
 logging.basicConfig(
