@@ -3,13 +3,8 @@ import os
 
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import (
-    CallbackContext,
-    CommandHandler,
-    Updater,
-    MessageHandler,
-    Filters,
-)
+from telegram.ext import (CallbackContext, CommandHandler, Filters,
+                          MessageHandler, Updater)
 
 # Enable logging
 logging.basicConfig(
