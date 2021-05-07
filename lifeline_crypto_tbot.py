@@ -1,24 +1,23 @@
 import logging
 import os
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from dotenv import load_dotenv
+from telegram.ext import CommandHandler
+from telegram.ext import Filters
+from telegram.ext import MessageHandler
+from telegram.ext import Updater
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
-import logging
-
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
