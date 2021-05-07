@@ -3,25 +3,23 @@ import os
 
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import (
-    CallbackContext,
-    CommandHandler,
-    Updater,
-    MessageHandler,
-    Filters,
-)
+from telegram.ext import CallbackContext
+from telegram.ext import CommandHandler
+from telegram.ext import Filters
+from telegram.ext import MessageHandler
+from telegram.ext import Updater
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +64,8 @@ def error(update: Update, context: CallbackContext) -> None:
         context ([type]): bot context
     """
     logger.warning('Update "%s" caused error "%s"', update, context.error)
-    context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Stonks! Sorry, encountered an error."
-    )
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text="Stonks! Sorry, encountered an error.")
 
 
 def main():
@@ -79,7 +76,8 @@ def main():
 
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", start))
-    dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, greet))
+    dp.add_handler(
+        MessageHandler(Filters.status_update.new_chat_members, greet))
 
     # log all errors
     dp.add_error_handler(error)
