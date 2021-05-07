@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "lifeline_crypto_tbot"
+version = "0.1.0"
+description = "Telegram crypto bot"
+authors = ["Christian Pérez Villanueva <christianp@e-3consulting.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+python-telegram-bot = "^13.5"
+python-dotenv = "^0.17.1"
+
+[tool.poetry.dev-dependencies]
+black = "^21.5b0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
