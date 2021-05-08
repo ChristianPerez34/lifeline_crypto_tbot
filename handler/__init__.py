@@ -2,6 +2,7 @@ import logging
 import os
 from coinmarketcapapi import CoinMarketCapAPI
 from pycoingecko import CoinGeckoAPI
+from lru import LRU
 
 # Enable logging
 logging.basicConfig(
@@ -18,3 +19,4 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 cmc = CoinMarketCapAPI(os.getenv("COIN_MARKET_CAP_API"))
 cg = CoinGeckoAPI()
+crypto_cache = LRU(5)
