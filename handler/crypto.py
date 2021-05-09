@@ -1,6 +1,7 @@
-from . import logger, cmc, crypto_cache, cg
 from telegram.ext.callbackcontext import CallbackContext
 from telegram.update import Update
+
+from . import cg, cmc, crypto_cache, logger
 
 
 def coingecko_coin_lookup(ids: str) -> dict:

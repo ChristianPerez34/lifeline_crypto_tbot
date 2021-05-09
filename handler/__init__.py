@@ -1,8 +1,9 @@
 import logging
 import os
+
 from coinmarketcapapi import CoinMarketCapAPI
-from pycoingecko import CoinGeckoAPI
 from lru import LRU
+from pycoingecko import CoinGeckoAPI
 
 # Enable logging
 logging.basicConfig(

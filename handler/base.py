@@ -1,6 +1,7 @@
-from . import logger
 from telegram.ext.callbackcontext import CallbackContext
 from telegram.update import Update
+
+from . import logger
 
 
 def start(update: Update, context: CallbackContext) -> None:

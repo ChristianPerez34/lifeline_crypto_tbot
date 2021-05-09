@@ -1,12 +1,10 @@
 import os
 
 from dotenv import load_dotenv
-from handler.base import start, greet, error
+from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
+
+from handler.base import error, greet, start
 from handler.crypto import coin
-from telegram.ext import CommandHandler
-from telegram.ext import Filters
-from telegram.ext import MessageHandler
-from telegram.ext import Updater
 
 
 def main():
