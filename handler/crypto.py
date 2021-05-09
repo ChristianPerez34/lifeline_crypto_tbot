@@ -66,7 +66,7 @@ def coin(update: Update, context: CallbackContext) -> None:
         text = (
             f"{coin_stats['slug']} ({symbol})\n\n"
             f"Price\n{price}\n\n"
-            f"24h Change\n{change_24h}\n\n"
+            f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
             f"Market Cap\n{market_cap}"
         )
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)

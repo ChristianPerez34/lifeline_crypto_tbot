@@ -10,10 +10,10 @@ def start(update: Update, context: CallbackContext) -> None:
         context (CallbackContext): Bot context
     """
     logger.info("Start/Help command executed")
-    text = """
-    /help to display available commands
-    /coin [COIN] to display coin statistics
-    """
+    text = (
+        "/help to display available commands\n"
+        "/coin [COIN] to display coin statistics"
+    )
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
