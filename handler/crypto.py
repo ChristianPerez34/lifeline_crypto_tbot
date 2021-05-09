@@ -16,6 +16,7 @@ def coingecko_coin_lookup(ids: str) -> dict:
     Returns:
         dict: Data from CoinGecko API
     """
+    logger.info(f"Looking up price for {ids} in CoinGecko API")
     return cg.get_price(
         ids=ids,
         vs_currencies="usd",
@@ -34,6 +35,7 @@ def get_coin_stats(symbol: str) -> dict:
         dict: Cryptocurrency coin statistics
     """
     # Search Coingecko API first
+    logger.info(f"Getting coin stats for {symbol}")
     if symbol in crypto_cache.keys():
         data = coingecko_coin_lookup(crypto_cache[symbol])
     else:

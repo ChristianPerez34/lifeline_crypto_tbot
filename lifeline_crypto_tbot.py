@@ -14,7 +14,8 @@ from handler.crypto import coin
 
 def main():
     load_dotenv()
-    updater = Updater(os.getenv("TELEGRAM_BOT_API"), use_context=True)
+    token = os.getenv("TELEGRAM_BOT_API")
+    updater = Updater(token, use_context=True)
 
     dp = updater.dispatcher
 
@@ -28,7 +29,11 @@ def main():
     dp.add_error_handler(error)
 
     # Start the Bot
-    updater.start_polling()
+    # updater.start_polling()
+    updater.start_webhook(listen="0.0.0.0",
+                          port=os.getenv("PORT", 5000),
+                          url_path=token)
+    updater.bot.setWebhook(f"{os.getenv('HEROKU_APP_URL')}/{token}")
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
