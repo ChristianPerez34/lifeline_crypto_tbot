@@ -29,8 +29,13 @@ def main():
 
     # Start the Bot
     # updater.start_polling()
-    updater.start_webhook(listen="0.0.0.0", port=os.getenv("PORT", 80), url_path=token)
-    updater.bot.setWebhook(f"{os.getenv('HEROKU_APP_URL')}/{token}")
+    updater.start_webhook(
+        listen="0.0.0.0",
+        port=os.getenv("PORT", "8443"),
+        url_path=token,
+        webhook_url=f"{os.getenv('HEROKU_APP_URL')}/{token}",
+    )
+    # updater.bot.setWebhook(f"{os.getenv('HEROKU_APP_URL')}/{token}")
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
