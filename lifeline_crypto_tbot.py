@@ -1,12 +1,15 @@
 import os
 
 from dotenv import load_dotenv
-from handler.base import start, greet, error
-from handler.crypto import coin
 from telegram.ext import CommandHandler
 from telegram.ext import Filters
 from telegram.ext import MessageHandler
 from telegram.ext import Updater
+
+from handler.base import error
+from handler.base import greet
+from handler.base import start
+from handler.crypto import coin
 
 
 def main():
@@ -18,7 +21,8 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", start))
     dp.add_handler(CommandHandler("coin", coin))
-    dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, greet))
+    dp.add_handler(
+        MessageHandler(Filters.status_update.new_chat_members, greet))
 
     # log all errors
     dp.add_error_handler(error)
