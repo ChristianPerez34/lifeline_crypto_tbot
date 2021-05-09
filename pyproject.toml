@@ -5,7 +5,7 @@ description = "Telegram crypto bot"
 authors = ["Christian Pérez Villanueva <christianp@e-3consulting.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.6"
+python = ">=3.7"
 python-telegram-bot = "^13.5"
 python-dotenv = "^0.17.1"
 python-coinmarketcap = "^0.2"
