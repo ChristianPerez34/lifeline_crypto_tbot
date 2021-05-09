@@ -8,6 +8,10 @@ authors = ["Christian Pérez Villanueva <christianp@e-3consulting.com>"]
 python = "^3.9"
 python-telegram-bot = "^13.5"
 python-dotenv = "^0.17.1"
+python-coinmarketcap = "^0.2"
+requests = "^2.25.1"
+pycoingecko = "^2.0.0"
+lru-dict = "^1.1.7"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b0"
