@@ -38,7 +38,8 @@ def get_coin_stats(symbol: str) -> dict:
         data = coingecko_coin_lookup(crypto_cache[symbol])
     else:
         coin = [
-            coin for coin in cg.get_coins_list() if coin["symbol"].upper() == symbol
+            coin for coin in cg.get_coins_list()
+            if coin["symbol"].upper() == symbol
         ][0]
         crypto_cache[symbol] = coin["id"]
         data = coingecko_coin_lookup(crypto_cache[symbol])
@@ -67,10 +68,8 @@ def coin(update: Update, context: CallbackContext) -> None:
         price = "${:,}".format(float(coin_stats["price"]))
         change_24h = "${:,}".format(float(coin_stats["usd_change_24h"]))
         market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-        text = (
-            f"{coin_stats['slug']} ({symbol})\n\n"
-            f"Price\n{price}\n\n"
-            f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-            f"Market Cap\n{market_cap}"
-        )
+        text = (f"{coin_stats['slug']} ({symbol})\n\n"
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"Market Cap\n{market_cap}")
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
