@@ -2,7 +2,10 @@ import emoji
 from telegram.ext.callbackcontext import CallbackContext
 from telegram.update import Update
 
-from . import cg, crypto_cache, logger, eth
+from . import cg
+from . import crypto_cache
+from . import eth
+from . import logger
 
 
 def coingecko_coin_lookup(ids: str) -> dict:
@@ -38,7 +41,8 @@ def get_coin_stats(symbol: str) -> dict:
         data = coingecko_coin_lookup(crypto_cache[symbol])
     else:
         coin = [
-            coin for coin in cg.get_coins_list() if coin["symbol"].upper() == symbol
+            coin for coin in cg.get_coins_list()
+            if coin["symbol"].upper() == symbol
         ][0]
         crypto_cache[symbol] = coin["id"]
         data = coingecko_coin_lookup(crypto_cache[symbol])
@@ -67,22 +71,18 @@ def coin(update: Update, context: CallbackContext) -> None:
         price = "${:,}".format(float(coin_stats["price"]))
         change_24h = "${:,}".format(float(coin_stats["usd_change_24h"]))
         market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-        text = (
-            f"{coin_stats['slug']} ({symbol})\n\n"
-            f"Price\n{price}\n\n"
-            f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-            f"Market Cap\n{market_cap}"
-        )
+        text = (f"{coin_stats['slug']} ({symbol})\n\n"
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"Market Cap\n{market_cap}")
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
 def gas(update: Update, context: CallbackContext) -> None:
     logger.info("ETH gas price command executed")
     gas_price = eth.get_gas_oracle()
-    text = (
-        "ETH Gas Prices ⛽️\n"
-        f"Slow: {gas_price['SafeGasPrice']}\n"
-        f"Average: {gas_price['ProposeGasPrice']}\n"
-        f"Fast: {gas_price['FastGasPrice']}\n"
-    )
+    text = ("ETH Gas Prices ⛽️\n"
+            f"Slow: {gas_price['SafeGasPrice']}\n"
+            f"Average: {gas_price['ProposeGasPrice']}\n"
+            f"Fast: {gas_price['FastGasPrice']}\n")
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
