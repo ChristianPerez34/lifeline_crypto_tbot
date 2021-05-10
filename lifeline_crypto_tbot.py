@@ -29,7 +29,8 @@ def main():
     dp.add_handler(CommandHandler("help", start))
     dp.add_handler(CommandHandler("coin", coin))
     dp.add_handler(CommandHandler("gas", gas))
-    dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, greet))
+    dp.add_handler(
+        MessageHandler(Filters.status_update.new_chat_members, greet))
 
     # log all errors
     dp.add_error_handler(error)
