@@ -1,4 +1,3 @@
-import emoji
 from telegram.ext.callbackcontext import CallbackContext
 from telegram.update import Update
 
