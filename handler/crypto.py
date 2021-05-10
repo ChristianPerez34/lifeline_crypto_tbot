@@ -2,7 +2,7 @@ import emoji
 from telegram.ext.callbackcontext import CallbackContext
 from telegram.update import Update
 
-from . import cg, crypto_cache, logger, eth
+from . import cg, crypto_cache, eth, logger
 
 
 def coingecko_coin_lookup(ids: str) -> dict:

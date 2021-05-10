@@ -1,8 +1,8 @@
 import logging
 import os
-from etherscan import Etherscan
 
 from coinmarketcapapi import CoinMarketCapAPI
+from etherscan import Etherscan
 from lru import LRU
 from pycoingecko import CoinGeckoAPI
 
