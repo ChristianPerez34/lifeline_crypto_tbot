@@ -2,8 +2,8 @@ from telegram.ext.callbackcontext import CallbackContext
 from telegram.update import Update
 
 from . import cg
-from . import cmc
 from . import crypto_cache
+from . import eth
 from . import logger
 
 
@@ -74,4 +74,14 @@ def coin(update: Update, context: CallbackContext) -> None:
                 f"Price\n{price}\n\n"
                 f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
                 f"Market Cap\n{market_cap}")
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+
+def gas(update: Update, context: CallbackContext) -> None:
+    logger.info("ETH gas price command executed")
+    gas_price = eth.get_gas_oracle()
+    text = ("ETH Gas Prices ⛽️\n"
+            f"Slow: {gas_price['SafeGasPrice']}\n"
+            f"Average: {gas_price['ProposeGasPrice']}\n"
+            f"Fast: {gas_price['FastGasPrice']}\n")
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
