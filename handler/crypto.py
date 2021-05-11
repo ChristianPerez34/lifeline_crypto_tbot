@@ -149,6 +149,12 @@ def gas(update: Update, context: CallbackContext) -> None:
 
 
 def coin_address(update: Update, context: CallbackContext) -> None:
+    """Gets coin stats for given crypto address. Address must be of an existing ethereum coin listed in CoinGecko
+
+    Args:
+        update (Update): Incoming chat update for coin address stats
+        context (CallbackContext): Boot context
+    """
     logger.info("Searching for coin by contract address")
     text = "Failed to get provided coin data"
     address = context.args[0]
@@ -160,4 +166,19 @@ def coin_address(update: Update, context: CallbackContext) -> None:
                 f"Price\n{price}\n\n"
                 f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
                 f"Market Cap\n{market_cap}")
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+
+def trending(update: Update, context: CallbackContext) -> None:
+    """Retrieves trending coins from CoinGecko
+
+    Args:
+        update (Update): Incoming chat update for trending coins
+        context (CallbackContext): Bot context
+    """
+    logger.info("Retrieving trending addresses from CoinGecko")
+    text = "Failed to get provided coin data"
+    trending_coins = "\n".join(
+        [coin["item"]["symbol"] for coin in cg.get_search_trending()["coins"]])
+    text = f"Trending 🔥\n\n{trending_coins}"
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
