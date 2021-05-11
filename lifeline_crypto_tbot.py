@@ -11,7 +11,8 @@ from handler.base import greet
 from handler.base import start
 from handler.crypto import coin
 from handler.crypto import coin_address
-from handler.crypto import gas, trending
+from handler.crypto import gas
+from handler.crypto import trending
 
 DEV = "dev"
 PROD = "prod"
@@ -32,7 +33,8 @@ def main():
     dp.add_handler(CommandHandler("gas", gas))
     dp.add_handler(CommandHandler("coin_address", coin_address))
     dp.add_handler(CommandHandler("trending", trending))
-    dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, greet))
+    dp.add_handler(
+        MessageHandler(Filters.status_update.new_chat_members, greet))
 
     # log all errors
     dp.add_error_handler(error)
