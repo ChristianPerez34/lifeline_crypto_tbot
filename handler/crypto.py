@@ -2,6 +2,7 @@ from telegram.ext.callbackcontext import CallbackContext
 from telegram.update import Update
 
 from . import cg
+from . import cmc
 from . import crypto_cache
 from . import eth
 from . import logger
@@ -28,6 +29,20 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
         ))
 
 
+def coinmarketcap_coin_lookup(symbol: str) -> dict:
+    """Coin lookup in CoinMarketCap API
+
+    Args:
+        symbol (str): Symbol of coin to lookup
+
+    Returns:
+        dict: Results of coin lookup
+    """
+    logger.info(f"Looking up price for {symbol} in CoinMarketCap API")
+    response = cmc.cryptocurrency_quotes_latest(symbol=symbol, convert="usd")
+    return response.data
+
+
 def get_coin_stats(symbol: str) -> dict:
     """Retrieves coinstats from connected services crypto services
 
@@ -39,24 +54,38 @@ def get_coin_stats(symbol: str) -> dict:
     """
     # Search Coingecko API first
     logger.info(f"Getting coin stats for {symbol}")
-    if symbol in crypto_cache.keys():
-        data = coingecko_coin_lookup(crypto_cache[symbol])
-    else:
-        coin = [
-            coin for coin in cg.get_coins_list()
-            if coin["symbol"].upper() == symbol
-        ][0]
-        crypto_cache[symbol] = coin["id"]
-        data = coingecko_coin_lookup(crypto_cache[symbol])
-    # TODO: If coingecko API lookup fails, must try with other services such as CoinMarketCap
-    slug = crypto_cache[symbol]
-    quote = data[slug]
-    return {
-        "slug": slug,
-        "price": quote["usd"],
-        "usd_change_24h": quote["usd_24h_change"],
-        "market_cap": quote["usd_market_cap"],
-    }
+    try:
+        if symbol in crypto_cache.keys():
+            data = coingecko_coin_lookup(crypto_cache[symbol])
+        else:
+            coin = [
+                coin for coin in cg.get_coins_list()
+                if coin["symbol"].upper() == symbol
+            ][0]
+            coin_id = coin["id"]
+            crypto_cache[symbol] = coin_id
+            data = coingecko_coin_lookup(coin_id)[coin_id]
+        slug = crypto_cache[symbol]
+        coin_stats = {
+            "slug": slug,
+            "price": data["usd"],
+            "usd_change_24h": data["usd_24h_change"],
+            "market_cap": data["usd_market_cap"],
+        }
+    except IndexError:
+        logger.info(
+            f"{symbol} not found in Coingecko. Initiated lookup on CoinMarketCap."
+        )
+        data = coinmarketcap_coin_lookup(symbol)[symbol]
+        # crypto_cache[symbol] = data["slug"]
+        quote = data["quote"]["USD"]
+        coin_stats = {
+            "slug": data["name"],
+            "price": quote["price"],
+            "usd_change_24h": quote["percent_change_24h"],
+            "market_cap": quote["market_cap"],
+        }
+    return coin_stats
 
 
 def get_coin_stats_by_address(address: str) -> dict:
