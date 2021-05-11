@@ -4,7 +4,7 @@ from telegram.update import Update
 from . import cg
 from . import crypto_cache
 from . import eth
-from . import logger
+from . import logger, cmc
 
 
 def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
@@ -19,13 +19,32 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
     """
     logger.info(f"Looking up price for {ids} in CoinGecko API")
 
-    return (cg.get_coin_info_from_contract_address_by_id(
-        id="ethereum", contract_address=ids) if is_address else cg.get_price(
+    return (
+        cg.get_coin_info_from_contract_address_by_id(
+            id="ethereum", contract_address=ids
+        )
+        if is_address
+        else cg.get_price(
             ids=ids,
             vs_currencies="usd",
             include_market_cap=True,
             include_24hr_change=True,
-        ))
+        )
+    )
+
+
+def coinmarketcap_coin_lookup(symbol: str) -> dict:
+    """Coin lookup in CoinMarketCap API
+
+    Args:
+        symbol (str): Symbol of coin to lookup
+
+    Returns:
+        dict: Results of coin lookup
+    """
+    logger.info(f"Looking up price for {symbol} in CoinMarketCap API")
+    response = cmc.cryptocurrency_quotes_latest(symbol=symbol, convert="usd")
+    return response.data
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -39,24 +58,37 @@ def get_coin_stats(symbol: str) -> dict:
     """
     # Search Coingecko API first
     logger.info(f"Getting coin stats for {symbol}")
-    if symbol in crypto_cache.keys():
-        data = coingecko_coin_lookup(crypto_cache[symbol])
-    else:
-        coin = [
-            coin for coin in cg.get_coins_list()
-            if coin["symbol"].upper() == symbol
-        ][0]
-        crypto_cache[symbol] = coin["id"]
-        data = coingecko_coin_lookup(crypto_cache[symbol])
-    # TODO: If coingecko API lookup fails, must try with other services such as CoinMarketCap
-    slug = crypto_cache[symbol]
-    quote = data[slug]
-    return {
-        "slug": slug,
-        "price": quote["usd"],
-        "usd_change_24h": quote["usd_24h_change"],
-        "market_cap": quote["usd_market_cap"],
-    }
+    try:
+        if symbol in crypto_cache.keys():
+            data = coingecko_coin_lookup(crypto_cache[symbol])
+        else:
+            coin = [
+                coin for coin in cg.get_coins_list() if coin["symbol"].upper() == symbol
+            ][0]
+            coin_id = coin["id"]
+            crypto_cache[symbol] = coin_id
+            data = coingecko_coin_lookup(coin_id)[coin_id]
+        slug = crypto_cache[symbol]
+        coin_stats = {
+            "slug": slug,
+            "price": data["usd"],
+            "usd_change_24h": data["usd_24h_change"],
+            "market_cap": data["usd_market_cap"],
+        }
+    except IndexError:
+        logger.info(
+            f"{symbol} not found in Coingecko. Initiated lookup on CoinMarketCap."
+        )
+        data = coinmarketcap_coin_lookup(symbol)[symbol]
+        # crypto_cache[symbol] = data["slug"]
+        quote = data["quote"]["USD"]
+        coin_stats = {
+            "slug": data["name"],
+            "price": quote["price"],
+            "usd_change_24h": quote["percent_change_24h"],
+            "market_cap": quote["market_cap"],
+        }
+    return coin_stats
 
 
 def get_coin_stats_by_address(address: str) -> dict:
@@ -96,10 +128,12 @@ def coin(update: Update, context: CallbackContext) -> None:
     if coin_stats:
         price = "${:,}".format(float(coin_stats["price"]))
         market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-        text = (f"{coin_stats['slug']} ({symbol})\n\n"
-                f"Price\n{price}\n\n"
-                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                f"Market Cap\n{market_cap}")
+        text = (
+            f"{coin_stats['slug']} ({symbol})\n\n"
+            f"Price\n{price}\n\n"
+            f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+            f"Market Cap\n{market_cap}"
+        )
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
@@ -112,10 +146,12 @@ def gas(update: Update, context: CallbackContext) -> None:
     """
     logger.info("ETH gas price command executed")
     gas_price = eth.get_gas_oracle()
-    text = ("ETH Gas Prices ⛽️\n"
-            f"Slow: {gas_price['SafeGasPrice']}\n"
-            f"Average: {gas_price['ProposeGasPrice']}\n"
-            f"Fast: {gas_price['FastGasPrice']}\n")
+    text = (
+        "ETH Gas Prices ⛽️\n"
+        f"Slow: {gas_price['SafeGasPrice']}\n"
+        f"Average: {gas_price['ProposeGasPrice']}\n"
+        f"Fast: {gas_price['FastGasPrice']}\n"
+    )
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
@@ -127,8 +163,10 @@ def coin_address(update: Update, context: CallbackContext) -> None:
     if coin_stats:
         price = "${:,}".format(float(coin_stats["price"]))
         market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-        text = (f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
-                f"Price\n{price}\n\n"
-                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                f"Market Cap\n{market_cap}")
+        text = (
+            f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
+            f"Price\n{price}\n\n"
+            f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+            f"Market Cap\n{market_cap}"
+        )
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
