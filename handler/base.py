@@ -11,10 +11,13 @@ def start(update: Update, context: CallbackContext) -> None:
         context (CallbackContext): Bot context
     """
     logger.info("Start/Help command executed")
-    text = ("/help to display available commands\n"
-            "/coin [COIN] to display coin statistics\n"
-            "/coin_address [ADDRESS] to display coin statistics\n"
-            "/gas to display ETH gas prices")
+    text = (
+        "/help to display available commands\n"
+        "/coin [COIN] to display coin statistics\n"
+        "/coin_address [ADDRESS] to display coin statistics\n"
+        "/gas to display ETH gas prices\n"
+        "/trending to display trending coins"
+    )
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
@@ -30,7 +33,7 @@ def greet(update: Update, context: CallbackContext) -> None:
         chat_id = update.message.chat.id
         try:
             new_user = "@" + new_user_obj["username"]
-        except Exception as e:
+        except Exception:
             new_user = new_user_obj["first_name"]
         text = f"Welcome fellow degen, {new_user}."
         context.bot.sendMessage(chat_id=chat_id, text=text)
@@ -44,5 +47,6 @@ def error(update: Update, context: CallbackContext) -> None:
         context ([type]): bot context
     """
     logger.warning('Update "%s" caused error "%s"', update, context.error)
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Stonks! Sorry, encountered an error.")
+    context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Stonks! Sorry, encountered an error."
+    )
