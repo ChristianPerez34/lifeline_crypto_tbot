@@ -7,22 +7,25 @@ from . import eth
 from . import logger
 
 
-def coingecko_coin_lookup(ids: str) -> dict:
+def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
     """Coin lookup in CoinGecko API
 
     Args:
         ids (str): id of coin to lookup
+        is_address (bool): Indicates if given ids is a crypto address
 
     Returns:
         dict: Data from CoinGecko API
     """
     logger.info(f"Looking up price for {ids} in CoinGecko API")
-    return cg.get_price(
-        ids=ids,
-        vs_currencies="usd",
-        include_market_cap=True,
-        include_24hr_change=True,
-    )
+
+    return (cg.get_coin_info_from_contract_address_by_id(
+        id="ethereum", contract_address=ids) if is_address else cg.get_price(
+            ids=ids,
+            vs_currencies="usd",
+            include_market_cap=True,
+            include_24hr_change=True,
+        ))
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -56,6 +59,30 @@ def get_coin_stats(symbol: str) -> dict:
     }
 
 
+def get_coin_stats_by_address(address: str) -> dict:
+    """Retrieves coin stats from connected crypto services
+
+    Args:
+        address (str): Address of coin to lookup
+
+    Returns:
+        dict: Coin statistics
+    """
+    # Search Coingecko API first
+    logger.info(f"Getting coin stats for {address}")
+    data = coingecko_coin_lookup(ids=address, is_address=True)
+    # TODO: If coingecko API lookup fails, must try with other services such as CoinMarketCap
+    market_data = data["market_data"]
+    slug = data["name"]
+    return {
+        "slug": slug,
+        "symbol": data["symbol"].upper(),
+        "price": market_data["current_price"]["usd"],
+        "usd_change_24h": market_data["price_change_percentage_24h"],
+        "market_cap": market_data["market_cap"]["usd"],
+    }
+
+
 def coin(update: Update, context: CallbackContext) -> None:
     """Displays crypto coin statistics for specified coin
     Args:
@@ -68,7 +95,6 @@ def coin(update: Update, context: CallbackContext) -> None:
     coin_stats = get_coin_stats(symbol=symbol)
     if coin_stats:
         price = "${:,}".format(float(coin_stats["price"]))
-        change_24h = "${:,}".format(float(coin_stats["usd_change_24h"]))
         market_cap = "${:,}".format(float(coin_stats["market_cap"]))
         text = (f"{coin_stats['slug']} ({symbol})\n\n"
                 f"Price\n{price}\n\n"
@@ -78,10 +104,31 @@ def coin(update: Update, context: CallbackContext) -> None:
 
 
 def gas(update: Update, context: CallbackContext) -> None:
+    """Gets ETH gas fees
+
+    Args:
+        update (Update): Incoming chat update for ETH gas fees
+        context (CallbackContext): Bot context
+    """
     logger.info("ETH gas price command executed")
     gas_price = eth.get_gas_oracle()
     text = ("ETH Gas Prices ⛽️\n"
             f"Slow: {gas_price['SafeGasPrice']}\n"
             f"Average: {gas_price['ProposeGasPrice']}\n"
             f"Fast: {gas_price['FastGasPrice']}\n")
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+
+def coin_address(update: Update, context: CallbackContext) -> None:
+    logger.info("Searching for coin by contract address")
+    text = "Failed to get provided coin data"
+    address = context.args[0]
+    coin_stats = get_coin_stats_by_address(address=address)
+    if coin_stats:
+        price = "${:,}".format(float(coin_stats["price"]))
+        market_cap = "${:,}".format(float(coin_stats["market_cap"]))
+        text = (f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"Market Cap\n{market_cap}")
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)

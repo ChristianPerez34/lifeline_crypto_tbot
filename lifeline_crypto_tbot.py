@@ -10,6 +10,7 @@ from handler.base import error
 from handler.base import greet
 from handler.base import start
 from handler.crypto import coin
+from handler.crypto import coin_address
 from handler.crypto import gas
 
 DEV = "dev"
@@ -29,6 +30,7 @@ def main():
     dp.add_handler(CommandHandler("help", start))
     dp.add_handler(CommandHandler("coin", coin))
     dp.add_handler(CommandHandler("gas", gas))
+    dp.add_handler(CommandHandler("coin_address", coin_address))
     dp.add_handler(
         MessageHandler(Filters.status_update.new_chat_members, greet))
 

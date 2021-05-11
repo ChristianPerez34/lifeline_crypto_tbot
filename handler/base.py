@@ -13,6 +13,7 @@ def start(update: Update, context: CallbackContext) -> None:
     logger.info("Start/Help command executed")
     text = ("/help to display available commands\n"
             "/coin [COIN] to display coin statistics\n"
+            "/coin_address [ADDRESS] to display coin statistics\n"
             "/gas to display ETH gas prices")
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
