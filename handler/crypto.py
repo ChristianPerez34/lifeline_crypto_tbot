@@ -1,3 +1,5 @@
+import pandas as pd
+import requests
 from telegram.ext.callbackcontext import CallbackContext
 from telegram.update import Update
 
@@ -20,18 +22,13 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
     """
     logger.info(f"Looking up price for {ids} in CoinGecko API")
 
-    return (
-        cg.get_coin_info_from_contract_address_by_id(
-            id="ethereum", contract_address=ids
-        )
-        if is_address
-        else cg.get_price(
+    return (cg.get_coin_info_from_contract_address_by_id(
+        id="ethereum", contract_address=ids) if is_address else cg.get_price(
             ids=ids,
             vs_currencies="usd",
             include_market_cap=True,
             include_24hr_change=True,
-        )
-    )
+        ))
 
 
 def coinmarketcap_coin_lookup(symbol: str) -> dict:
@@ -65,7 +62,8 @@ def get_coin_stats(symbol: str) -> dict:
             data = coingecko_coin_lookup(coin_id)[coin_id]
         else:
             coin = [
-                coin for coin in cg.get_coins_list() if coin["symbol"].upper() == symbol
+                coin for coin in cg.get_coins_list()
+                if coin["symbol"].upper() == symbol
             ][0]
             coin_id = coin["id"]
             crypto_cache[symbol] = coin_id
@@ -90,8 +88,6 @@ def get_coin_stats(symbol: str) -> dict:
             "usd_change_24h": quote["percent_change_24h"],
             "market_cap": quote["market_cap"],
         }
-    except Exception as e:
-        a = 1
     return coin_stats
 
 
@@ -107,7 +103,6 @@ def get_coin_stats_by_address(address: str) -> dict:
     # Search Coingecko API first
     logger.info(f"Getting coin stats for {address}")
     data = coingecko_coin_lookup(ids=address, is_address=True)
-    # TODO: If coingecko API lookup fails, must try with other services such as CoinMarketCap
     market_data = data["market_data"]
     slug = data["name"]
     return {
@@ -132,12 +127,10 @@ def coin(update: Update, context: CallbackContext) -> None:
     if coin_stats:
         price = "${:,}".format(float(coin_stats["price"]))
         market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-        text = (
-            f"{coin_stats['slug']} ({symbol})\n\n"
-            f"Price\n{price}\n\n"
-            f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-            f"Market Cap\n{market_cap}"
-        )
+        text = (f"{coin_stats['slug']} ({symbol})\n\n"
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"Market Cap\n{market_cap}")
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
@@ -150,12 +143,10 @@ def gas(update: Update, context: CallbackContext) -> None:
     """
     logger.info("ETH gas price command executed")
     gas_price = eth.get_gas_oracle()
-    text = (
-        "ETH Gas Prices ⛽️\n"
-        f"Slow: {gas_price['SafeGasPrice']}\n"
-        f"Average: {gas_price['ProposeGasPrice']}\n"
-        f"Fast: {gas_price['FastGasPrice']}\n"
-    )
+    text = ("ETH Gas Prices ⛽️\n"
+            f"Slow: {gas_price['SafeGasPrice']}\n"
+            f"Average: {gas_price['ProposeGasPrice']}\n"
+            f"Fast: {gas_price['FastGasPrice']}\n")
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
@@ -173,12 +164,10 @@ def coin_address(update: Update, context: CallbackContext) -> None:
     if coin_stats:
         price = "${:,}".format(float(coin_stats["price"]))
         market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-        text = (
-            f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
-            f"Price\n{price}\n\n"
-            f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-            f"Market Cap\n{market_cap}"
-        )
+        text = (f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"Market Cap\n{market_cap}")
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
@@ -192,8 +181,7 @@ def trending(update: Update, context: CallbackContext) -> None:
     logger.info("Retrieving trending addresses from CoinGecko")
     text = "Failed to get provided coin data"
     trending_coins = "\n".join(
-        [coin["item"]["symbol"] for coin in cg.get_search_trending()["coins"]]
-    )
+        [coin["item"]["symbol"] for coin in cg.get_search_trending()["coins"]])
     text = f"Trending 🔥\n\n{trending_coins}"
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
@@ -253,3 +241,37 @@ def priceAlertCallback(context):
         context.job.schedule_removal()
 
         context.bot.send_message(chat_id=chat_id, text=response)
+
+
+def latest_listings(update: Update, context: CallbackContext) -> None:
+    """Gets latest crypto listings
+
+    Args:
+        update (Update): Incoming chat update for latest listings
+        context (CallbackContext): Bot context
+    """
+    logger.info("Retrieving latest crypto listings from CoinGecko")
+    count = 5
+    text = "Latest Listings 🤑\n"
+    headers = {
+        "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    }
+    response = requests.get(
+        "https://www.coingecko.com/en/coins/recently_added",
+        headers=headers,
+        timeout=5)
+    df = pd.read_html(response.text, flavor="bs4")[0]
+    for row in df.itertuples():
+        if count == 0:
+            break
+
+        words = row.Coin.split()
+        words = sorted(set(words), key=words.index)
+        words[-1] = f"({words[-1]})"
+
+        coin = " ".join(words)
+        text += f"\n{coin}"
+        count -= 1
+
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text)
