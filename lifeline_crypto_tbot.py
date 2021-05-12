@@ -35,7 +35,8 @@ def main():
     dp.add_handler(CommandHandler("coin_address", coin_address))
     dp.add_handler(CommandHandler("trending", trending))
     dp.add_handler(CommandHandler("latest_listings", latest_listings))
-    dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, greet))
+    dp.add_handler(MessageHandler(
+        Filters.status_update.new_chat_members, greet))
     dp.add_handler(CommandHandler("alert", priceAlert))  # Accessed via /alert
     # log all errors
     dp.add_error_handler(error)
