@@ -1,11 +1,20 @@
 import os
 
 from dotenv import load_dotenv
-from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
+from telegram.ext import CommandHandler
+from telegram.ext import Filters
+from telegram.ext import MessageHandler
+from telegram.ext import Updater
 
-from handler.base import error, greet, start
-from handler.crypto import (coin, coin_address, gas, latest_listings,
-                            priceAlert, trending)
+from handler.base import error
+from handler.base import greet
+from handler.base import start
+from handler.crypto import coin
+from handler.crypto import coin_address
+from handler.crypto import gas
+from handler.crypto import latest_listings
+from handler.crypto import priceAlert
+from handler.crypto import trending
 
 DEV = "dev"
 PROD = "prod"
