@@ -1,13 +1,9 @@
-import requests
 import pandas as pd
+import requests
 from telegram.ext.callbackcontext import CallbackContext
 from telegram.update import Update
 
-from . import cg
-from . import cmc
-from . import crypto_cache
-from . import eth
-from . import logger
+from . import cg, cmc, crypto_cache, eth, logger
 
 
 def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
