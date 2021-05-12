@@ -111,7 +111,7 @@ def priceAlertCallback(context):
             send = True
 
     if send:
-        response = f'👋 {crypto} has surpassed ${price} and has just reached <b>${spot_price}</b>!'
+        response = f'👋 {crypto} has surpassed ${price} and has just reached ${spot_price}!'
 
         context.job.schedule_removal()
 
