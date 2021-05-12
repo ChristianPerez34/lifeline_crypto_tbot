@@ -10,6 +10,7 @@ from handler.base import error
 from handler.base import greet
 from handler.base import start
 from handler.crypto import coin
+from handler.crypto import priceAlert
 from handler.crypto import coin_address
 from handler.crypto import gas
 from handler.crypto import trending
@@ -35,7 +36,7 @@ def main():
     dp.add_handler(CommandHandler("trending", trending))
     dp.add_handler(
         MessageHandler(Filters.status_update.new_chat_members, greet))
-
+    dp.add_handler(CommandHandler("alert", priceAlert)) # Accessed via /alert
     # log all errors
     dp.add_error_handler(error)
 
