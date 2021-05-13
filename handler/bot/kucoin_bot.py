@@ -34,13 +34,15 @@ async def kucoin_bot():
                     side = "SHORT" if data["side"] == "sell" else "LONG"
 
                     if side == order["side"]:
-                        text = (f"Futures Contract ⏳\n\n"
-                                f"Coin: {bold(symbol)}\n"
-                                f"LONG/SHORT: {bold(side)}\n"
-                                f"Entry: {bold(entry)}\n"
-                                f"Leverage: {bold('10-20x')}\n"
-                                f"Take Profit: {bold('At Your Discretion')}\n"
-                                f"Stop Loss: {bold('At Your Discretion')}\n")
+                        text = (
+                            f"Futures Contract ⏳\n\n"
+                            f"Coin: {bold(symbol)}\n"
+                            f"LONG/SHORT: {bold(side)}\n"
+                            f"Entry: {bold(entry)}\n"
+                            f"Leverage: {bold('10')}-{bold('20x')}\n"
+                            f"Take Profit: {bold('At Your Discretion')}\n"
+                            f"Stop Loss: {bold('At Your Discretion')}\n"
+                        )
                     else:
                         active_orders.pop(symbol, None)
                 await send_message(
@@ -56,7 +58,8 @@ async def kucoin_bot():
                 entry = data["matchPrice"]
                 if symbol in active_orders:
                     active_orders[symbol][
-                        "entry"] = f"{active_orders[symbol]['entry']}-{entry}"
+                        "entry"
+                    ] = f"{active_orders[symbol]['entry']}-{entry}"
                 else:
                     active_orders[symbol] = {
                         "entry": entry,
@@ -67,10 +70,7 @@ async def kucoin_bot():
     # is private
     client = Client(KUCOIN_API_KEY, KUCOIN_API_SECRET, KUCOIN_API_PASSPHRASE)
 
-    ksm = await KucoinSocketManager.create(None,
-                                           client,
-                                           deal_msg,
-                                           private=True)
+    ksm = await KucoinSocketManager.create(None, client, deal_msg, private=True)
     await ksm.subscribe("/contractMarket/tradeOrders")
 
     while True:
