@@ -1,52 +1,73 @@
-from telegram.ext.callbackcontext import CallbackContext
-from telegram.update import Update
+# from lifeline_crypto_tbot import dp
+# from aiogram.bot import bot
+from aiogram.types import Message
+from aiogram.types import ParseMode
+from aiogram.types import Update
+from aiogram.utils.emoji import emojize
+from aiogram.utils.markdown import bold
+from aiogram.utils.markdown import italic
+from aiogram.utils.markdown import text
 
 from . import logger
+from app import bot
 
 
-def start(update: Update, context: CallbackContext) -> None:
-    """Starts the bot
+# from telegram.ext.callbackcontext import CallbackContext
+# from telegram.update import Update
+async def send_welcome(message: Message):
+    """Send help text on how to use bot commands
+
     Args:
-        update (Update): Incoming chat update for start command
-        context (CallbackContext): Bot context
+        message (Message): Message to reply to
     """
+    logger.info(message.chat.id)
     logger.info("Start/Help command executed")
-    text = (
-        "/help to display available commands\n"
-        "/coin [COIN] to display coin statistics\n"
-        "/coin_address [ADDRESS] to display coin statistics\n"
-        "/gas to display ETH gas prices\n"
-        "/trending to display trending coins\n"
-        "/alert [COIN] [<,>] [PRICE] to set an alert for when the coin reaches set price\n"
-        "/latest_listings to display latest crypto listings")
-    context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    reply = text(
+        "Hi! :smile:\n",
+        "I'm Lifeline (Crypto)!\n\n",
+        f"{bold('/help')} to display available commands\n\n",
+        f"{bold('/coin')} {italic('COIN')} to display coin statistics\n\n",
+        f"{bold('/coin')}\_{bold('address')} {italic('ADDRESS')} to display coin statistics for crypto address\n\n",
+        f"{bold('/gas')} to display ETH gas prices\n\n",
+        f"{bold('/trending')} to display trending coins\n\n",
+        f"{bold('/alert')} {italic('COIN')} "
+        "\[< or >] ",
+        f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
+        f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings",
+    )
+    await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
 
 
-def greet(update: Update, context: CallbackContext) -> None:
-    """Greets new users
+async def send_greeting(message: Message):
+    """Greets new chat members
 
     Args:
-        update (Update): Incoming chat update for new members
-        context (CallbackContext): Bot context
+        message (Message): Message to reply to
     """
-    logger.info("Greeting new chat member")
-    for new_user_obj in update.message.new_chat_members:
-        chat_id = update.message.chat.id
+    new_user = ""
+    for new_user_obj in message.new_chat_members:
         try:
             new_user = "@" + new_user_obj["username"]
         except Exception:
             new_user = new_user_obj["first_name"]
-        text = f"Welcome fellow degen, {new_user}."
-        context.bot.sendMessage(chat_id=chat_id, text=text)
+    if new_user:
+        await message.reply(text=f"Welcome fellow degen, {new_user}.")
 
 
-def error(update: Update, context: CallbackContext) -> None:
-    """Captures any bot error
+async def send_error(update: Update, exception: Exception):
+    """Exception handler
 
     Args:
-        update ([type]): Incoming chat update for errors
-        context ([type]): bot context
+        update (Update): Incoming chat update
+        exception (Exception): Raised exception
     """
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Stonks! Sorry, encountered an error.")
+
+    logger.exception(exception)
+    logger.debug(update)
+
+    await update.message.reply(text="Stonks! Sorry, encountered an error.")
+
+
+async def send_message(channel_id: int, text: str):
+
+    await bot.send_message(channel_id, text)

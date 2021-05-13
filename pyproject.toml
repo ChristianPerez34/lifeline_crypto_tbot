@@ -6,7 +6,6 @@ authors = ["Christian Pérez Villanueva <christianp@e-3consulting.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.7.1"
-python-telegram-bot = "^13.5"
 python-dotenv = "^0.17.1"
 python-coinmarketcap = "^0.2"
 requests = "^2.25.1"
@@ -17,6 +16,9 @@ etherscan-python = "^2.1.0"
 pandas = "^1.2.4"
 bs4 = "^0.0.1"
 html5lib = "^1.1"
+aiogram = "^2.13"
+emoji = "^1.2.0"
+python-kucoin = "^2.1.2"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b0"
