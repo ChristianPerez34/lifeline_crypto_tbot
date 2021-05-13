@@ -1,5 +1,7 @@
+import asyncio
 from aiogram.types import Message, ParseMode
 from aiogram.utils.markdown import bold, italic
+from aiogram import Dispatcher
 import pandas as pd
 import requests
 
@@ -128,8 +130,7 @@ async def send_coin(message: Message) -> None:
     logger.info("Crypto command executed")
     reply = "Failed to get provided coin data"
     args = message.get_args().split()
-    args_len = len(args)
-    if args_len != 1:
+    if len(args) != 1:
         reply = f"⚠️ Please provide a crypto code: \n{bold('/coin')} {italic('COIN')}"
     else:
         symbol = args[0].upper()
@@ -143,7 +144,7 @@ async def send_coin(message: Message) -> None:
                 f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
                 f"Market Cap\n{market_cap}"
             )
-    await message.reply(reply, parse_mode=ParseMode.MARKDOWN)
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
 async def send_gas(message: Message) -> None:
@@ -160,64 +161,72 @@ async def send_gas(message: Message) -> None:
         f"Average: {gas_price['ProposeGasPrice']}\n"
         f"Fast: {gas_price['FastGasPrice']}\n"
     )
-    await message.reply(reply)
+    await message.reply(text=reply)
 
 
-# def gas(update: Update, context: CallbackContext) -> None:
-#     """Gets ETH gas fees
+async def send_coin_address(message: Message) -> None:
+    """Replies to command with coin stats for given crypto contract address
 
-#     Args:
-#         update (Update): Incoming chat update for ETH gas fees
-#         context (CallbackContext): Bot context
-#     """
-# logger.info("ETH gas price command executed")
-# gas_price = eth.get_gas_oracle()
-# text = (
-#     "ETH Gas Prices ⛽️\n"
-#     f"Slow: {gas_price['SafeGasPrice']}\n"
-#     f"Average: {gas_price['ProposeGasPrice']}\n"
-#     f"Fast: {gas_price['FastGasPrice']}\n"
-# )
-# context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-
-# def coin_address(update: Update, context: CallbackContext) -> None:
-#     """Gets coin stats for given crypto address. Address must be of an existing ethereum coin listed in CoinGecko
-
-#     Args:
-#         update (Update): Incoming chat update for coin address stats
-#         context (CallbackContext): Boot context
-#     """
-#     logger.info("Searching for coin by contract address")
-#     text = "Failed to get provided coin data"
-#     address = context.args[0]
-#     coin_stats = get_coin_stats_by_address(address=address)
-#     if coin_stats:
-#         price = "${:,}".format(float(coin_stats["price"]))
-#         market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-#         text = (
-#             f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
-#             f"Price\n{price}\n\n"
-#             f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-#             f"Market Cap\n{market_cap}"
-#         )
-#     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    Args:
+        message (Message): Message to reply to
+    """
+    logger.info("Searching for coin by contract address")
+    args = message.get_args().split()
+    if len(args) != 1:
+        reply = f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"
+    else:
+        address = args[0]
+        coin_stats = get_coin_stats_by_address(address=address)
+        if coin_stats:
+            price = "${:,}".format(float(coin_stats["price"]))
+            market_cap = "${:,}".format(float(coin_stats["market_cap"]))
+            reply = (
+                f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"Market Cap\n{market_cap}"
+            )
+    await message.reply(text=reply)
 
 
-# def trending(update: Update, context: CallbackContext) -> None:
-#     """Retrieves trending coins from CoinGecko
+async def send_trending(message: Message) -> None:
+    """Replies to command with trending crypto coins
 
-#     Args:
-#         update (Update): Incoming chat update for trending coins
-#         context (CallbackContext): Bot context
-#     """
-#     logger.info("Retrieving trending addresses from CoinGecko")
-#     text = "Failed to get provided coin data"
-#     trending_coins = "\n".join(
-#         [coin["item"]["symbol"] for coin in cg.get_search_trending()["coins"]]
-#     )
-#     text = f"Trending 🔥\n\n{trending_coins}"
-#     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    Args:
+        message (Message): Message to reply to
+    """
+    logger.info("Retrieving trending addresses from CoinGecko")
+    trending_coins = "\n".join(
+        [coin["item"]["symbol"] for coin in cg.get_search_trending()["coins"]]
+    )
+    reply = f"Trending 🔥\n\n{trending_coins}"
+    await message.reply(text=reply)
+
+
+async def send_price_alert(message: Message) -> None:
+    logger.info("Setting a new price alert")
+    args = message.get_args().split()
+    if len(args) > 2:
+        crypto = args[0].upper()
+        sign = args[1]
+        price = args[2]
+
+        coin_stats = get_coin_stats(symbol=crypto)
+
+        task = asyncio.create_task(
+            priceAlertCallback(message=message, context=[crypto, sign, price], delay=15)
+        )
+        # loop = asyncio.get_event_loop()
+        # loop.run_until_complete(
+
+        # )
+        # loop.close()
+
+        response = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
+        response += f"the current price of {crypto} is ${float(coin_stats['price'])}"
+    else:
+        response = "⚠️ Please provide a crypto code and a price value: /alert [COIN] [<,>] [PRICE]"
+    await message.reply(text=response)
 
 
 # def priceAlert(update: Update, context: CallbackContext) -> None:
@@ -243,38 +252,37 @@ async def send_gas(message: Message) -> None:
 #     context.bot.send_message(chat_id=update.effective_chat.id, text=response)
 
 
-# def priceAlertCallback(context):
-#     crypto = context.job.context[0]
-#     sign = context.job.context[1]
-#     price = context.job.context[2]
-#     chat_id = context.job.context[3]
+async def priceAlertCallback(message: Message, context: list, delay: int):
+    crypto = context.job.context[0]
+    sign = context.job.context[1]
+    price = context.job.context[2]
 
-#     send = False
-#     dip = False
-#     coin_stats = get_coin_stats(symbol=crypto)
+    send = False
+    dip = False
 
-#     spot_price = coin_stats["price"]
+    while not send:
+        coin_stats = get_coin_stats(symbol=crypto)
 
-#     if sign == "<":
-#         if float(price) >= float(spot_price):
-#             send = True
-#             dip = True
-#     else:
-#         if float(price) <= float(spot_price):
-#             send = True
+        spot_price = coin_stats["price"]
 
-#     if send:
-#         if dip:
-#             response = f":( {crypto} has dipped below ${price} and is currently at ${spot_price}."
+        if sign == "<":
+            if float(price) >= float(spot_price):
+                send = True
+                dip = True
+        else:
+            if float(price) <= float(spot_price):
+                send = True
 
-#         else:
-#             response = (
-#                 f"👋 {crypto} has surpassed ${price} and has just reached ${spot_price}!"
-#             )
+        if send:
+            if dip:
+                response = f":( {crypto} has dipped below ${price} and is currently at ${spot_price}."
 
-#         context.job.schedule_removal()
+            else:
+                response = f"👋 {crypto} has surpassed ${price} and has just reached ${spot_price}!"
+            await message.reply(response)
 
-#         context.bot.send_message(chat_id=chat_id, text=response)
+        await asyncio.sleep(delay)
+        # context.bot.send_message(chat_id=chat_id, text=response)
 
 
 # def latest_listings(update: Update, context: CallbackContext) -> None:

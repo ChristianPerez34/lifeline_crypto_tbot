@@ -1,6 +1,14 @@
-from handler.crypto import send_coin, send_gas
-from handler.base import send_greeting, send_welcome, send_error
 import os
+from handler.crypto import (
+    send_coin,
+    send_coin_address,
+    send_gas,
+    send_price_alert,
+    send_trending,
+)
+
+from handler.base import send_greeting, send_welcome, send_error
+
 
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, executor, types
@@ -73,6 +81,9 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(send_welcome, commands=["start", "help"])
     dp.register_message_handler(send_coin, commands=["coin"])
     dp.register_message_handler(send_gas, commands=["gas"])
+    dp.register_message_handler(send_coin_address, commands=["coin_address"])
+    dp.register_message_handler(send_trending, commands=["trending"])
+    dp.register_message_handler(send_price_alert, commands=["alert"])
     dp.register_message_handler(send_greeting)
     dp.register_errors_handler(send_error),
 

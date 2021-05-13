@@ -1,5 +1,6 @@
 # from lifeline_crypto_tbot import dp
 from aiogram.utils.emoji import emojize
+from aiogram.utils.callback_data import CallbackData
 from aiogram.types import ParseMode, Message, Update
 from aiogram.utils.markdown import bold, code, italic, text
 
@@ -21,13 +22,14 @@ async def send_welcome(message: Message):
         "I'm Lifeline (Crypto)!\n\n",
         f"{bold('/help')} to display available commands\n\n",
         f"{bold('/coin')} {italic('COIN')} to display coin statistics\n\n",
+        f"{bold('/coin')}\_{bold('address')} {italic('ADDRESS')} to display coin statistics for crypto address\n\n",
         f"{bold('/gas')} to display ETH gas prices\n\n",
         f"{bold('/trending')} to display trending coins\n\n",
         f"{bold('/alert')} {italic('COIN')} " "\[< or >] ",
-        f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n"
-        f"{bold('/latest')}**\_**{bold('listings')} to display latest crypto listings",
+        f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
+        f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings",
     )
-    await message.reply(emojize(reply), parse_mode=ParseMode.MARKDOWN)
+    await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
 
 
 async def send_greeting(message: Message):
@@ -41,7 +43,7 @@ async def send_greeting(message: Message):
             new_user = "@" + new_user_obj["username"]
         except Exception:
             new_user = new_user_obj["first_name"]
-    await message.reply(f"Welcome fellow degen, {new_user}.")
+    await message.reply(text=f"Welcome fellow degen, {new_user}.")
 
 
 async def send_error(update: Update, exception: Exception):
@@ -55,4 +57,4 @@ async def send_error(update: Update, exception: Exception):
     logger.exception(exception)
     logger.debug(update)
 
-    update.message.reply("Stonks! Sorry, encountered an error.")
+    await update.message.reply(text="Stonks! Sorry, encountered an error.")
