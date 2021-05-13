@@ -69,4 +69,4 @@ async def send_error(update: Update, exception: Exception):
 
 async def send_message(channel_id: int, text: str):
     logger.info(f"Sending message to chat id: {channel_id}")
-    await bot.send_message(channel_id, text)
+    await bot.send_message(channel_id, text, parse_mode=ParseMode.MARKDOWN)

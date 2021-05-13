@@ -1,7 +1,7 @@
 import asyncio
 
 from aiogram.types import ParseMode
-from aiogram.utils.markdown import bold
+from aiogram.utils.markdown import bold, text
 from kucoin.asyncio import KucoinSocketManager
 from kucoin.client import Client
 
@@ -25,7 +25,9 @@ async def kucoin_bot():
 
             if data["type"] == "filled":
                 symbol = data["symbol"][:-1]
-                text = f"Futures Contract ⌛️\n\nCoin: {bold(symbol)}\nClosed Position"
+                message = (
+                    f"Futures Contract ⌛️\n\nCoin: {bold(symbol)}\nClosed Position"
+                )
 
                 if symbol in active_orders:
                     order = active_orders[symbol]
@@ -34,22 +36,20 @@ async def kucoin_bot():
                     side = "SHORT" if data["side"] == "sell" else "LONG"
 
                     if side == order["side"]:
-                        text = (
-                            f"Futures Contract ⏳\n\n"
-                            f"Coin: {bold(symbol)}\n"
-                            f"LONG/SHORT: {bold(side)}\n"
-                            f"Entry: {bold(entry)}\n"
-                            f"Leverage: {bold('10')}-{bold('20x')}\n"
-                            f"Take Profit: {bold('At Your Discretion')}\n"
-                            f"Stop Loss: {bold('At Your Discretion')}\n"
+                        message = text(
+                            (
+                                f"Futures Contract ⏳\n\n"
+                                f"Coin: {bold(symbol)}\n"
+                                f"LONG/SHORT: {bold(side)}\n"
+                                f"Entry: {entry}\n"
+                                f"Leverage: {bold('10')}-{bold('20x')}\n"
+                                f"Take Profit: {bold('At Your Discretion')}\n"
+                                f"Stop Loss: {bold('At Your Discretion')}\n"
+                            )
                         )
                     else:
                         active_orders.pop(symbol, None)
-                await send_message(
-                    channel_id=TELEGRAM_CHAT_ID,
-                    text=text,
-                    parse_mode=ParseMode.MARKDOWN,
-                )
+                await send_message(channel_id=TELEGRAM_CHAT_ID, text=message)
             elif data["type"] == "match":
                 symbol = data["symbol"][:-1]
 
