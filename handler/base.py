@@ -11,11 +11,9 @@ from aiogram.utils.markdown import text
 from . import logger
 from app import bot
 
+
 # from telegram.ext.callbackcontext import CallbackContext
 # from telegram.update import Update
-
-
-
 async def send_welcome(message: Message):
     """Send help text on how to use bot commands
 
@@ -32,7 +30,8 @@ async def send_welcome(message: Message):
         f"{bold('/coin')}\_{bold('address')} {italic('ADDRESS')} to display coin statistics for crypto address\n\n",
         f"{bold('/gas')} to display ETH gas prices\n\n",
         f"{bold('/trending')} to display trending coins\n\n",
-        f"{bold('/alert')} {italic('COIN')} " "\[< or >] ",
+        f"{bold('/alert')} {italic('COIN')} "
+        "\[< or >] ",
         f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
         f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings",
     )

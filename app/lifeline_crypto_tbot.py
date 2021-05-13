@@ -22,6 +22,7 @@ from handler.crypto import send_latest_listings
 from handler.crypto import send_price_alert
 from handler.crypto import send_trending
 
+
 # from handler.base import error
 # from handler.base import greet
 # from handler.base import start
@@ -31,7 +32,6 @@ from handler.crypto import send_trending
 # from handler.crypto import latest_listings
 # from handler.crypto import priceAlert
 # from handler.crypto import trending
-
 
 # def main():
 # updater = Updater(token, use_context=True)
@@ -66,8 +66,6 @@ from handler.crypto import send_trending
 # Run the bot until you press Ctrl-C or the process receives SIGINT,
 # SIGTERM or SIGABRT. This should be used most of the time, since
 # start_polling() is non-blocking and will stop the bot gracefully.
-
-
 async def on_startup(dp: Dispatcher):
     await bot.set_webhook(WEBHOOK_URL)
     setup_handlers(dp)
@@ -83,7 +81,8 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(send_coin_address, commands=["coin_address"])
     dp.register_message_handler(send_trending, commands=["trending"])
     dp.register_message_handler(send_price_alert, commands=["alert"])
-    dp.register_message_handler(send_latest_listings, commands=["latest_listings"])
+    dp.register_message_handler(send_latest_listings,
+                                commands=["latest_listings"])
     dp.register_message_handler(send_greeting)
     dp.register_errors_handler(send_error),
 
