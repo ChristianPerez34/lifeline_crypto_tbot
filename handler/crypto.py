@@ -221,7 +221,8 @@ async def send_price_alert(message: Message) -> None:
         coin_stats = get_coin_stats(symbol=crypto)
 
         task = asyncio.create_task(
-            priceAlertCallback(message=message, context=[crypto, sign, price], delay=15)
+            priceAlertCallback(message=message, context=[
+                               crypto, sign, price], delay=15)
         )
         response = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
         response += f"the current price of {crypto} is ${float(coin_stats['price'])}"
