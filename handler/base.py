@@ -1,16 +1,19 @@
 # from lifeline_crypto_tbot import dp
 # from aiogram.bot import bot
+from aiogram.types import Message
+from aiogram.types import ParseMode
+from aiogram.types import Update
 from aiogram.utils.emoji import emojize
-from aiogram.types import ParseMode, Message, Update
-from aiogram.utils.markdown import bold, italic, text
+from aiogram.utils.markdown import bold
+from aiogram.utils.markdown import italic
+from aiogram.utils.markdown import text
+
+from . import logger
 from app import bot
+
 
 # from telegram.ext.callbackcontext import CallbackContext
 # from telegram.update import Update
-
-from . import logger
-
-
 async def send_welcome(message: Message):
     """Send help text on how to use bot commands
 
@@ -27,7 +30,8 @@ async def send_welcome(message: Message):
         f"{bold('/coin')}\_{bold('address')} {italic('ADDRESS')} to display coin statistics for crypto address\n\n",
         f"{bold('/gas')} to display ETH gas prices\n\n",
         f"{bold('/trending')} to display trending coins\n\n",
-        f"{bold('/alert')} {italic('COIN')} " "\[< or >] ",
+        f"{bold('/alert')} {italic('COIN')} "
+        "\[< or >] ",
         f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
         f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings",
     )

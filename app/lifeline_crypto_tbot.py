@@ -1,19 +1,27 @@
 import asyncio
-from app import DEV, ENV, WEBAPP_HOST, WEBAPP_PORT, WEBHOOK_PATH, WEBHOOK_URL, dp, bot
+
 from aiogram import Dispatcher
-
-from handler.crypto import (
-    send_coin,
-    send_coin_address,
-    send_gas,
-    send_latest_listings,
-    send_price_alert,
-    send_trending,
-)
-from handler.bot.kucoin_bot import kucoin_bot
-
-from handler.base import send_greeting, send_welcome, send_error
 from aiogram import executor
+
+from app import bot
+from app import DEV
+from app import dp
+from app import ENV
+from app import WEBAPP_HOST
+from app import WEBAPP_PORT
+from app import WEBHOOK_PATH
+from app import WEBHOOK_URL
+from handler.base import send_error
+from handler.base import send_greeting
+from handler.base import send_welcome
+from handler.bot.kucoin_bot import kucoin_bot
+from handler.crypto import send_coin
+from handler.crypto import send_coin_address
+from handler.crypto import send_gas
+from handler.crypto import send_latest_listings
+from handler.crypto import send_price_alert
+from handler.crypto import send_trending
+
 
 # from handler.base import error
 # from handler.base import greet
@@ -24,7 +32,6 @@ from aiogram import executor
 # from handler.crypto import latest_listings
 # from handler.crypto import priceAlert
 # from handler.crypto import trending
-
 
 # def main():
 # updater = Updater(token, use_context=True)
@@ -59,8 +66,6 @@ from aiogram import executor
 # Run the bot until you press Ctrl-C or the process receives SIGINT,
 # SIGTERM or SIGABRT. This should be used most of the time, since
 # start_polling() is non-blocking and will stop the bot gracefully.
-
-
 async def on_startup(dp: Dispatcher):
     await bot.set_webhook(WEBHOOK_URL)
     setup_handlers(dp)
@@ -76,7 +81,8 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(send_coin_address, commands=["coin_address"])
     dp.register_message_handler(send_trending, commands=["trending"])
     dp.register_message_handler(send_price_alert, commands=["alert"])
-    dp.register_message_handler(send_latest_listings, commands=["latest_listings"])
+    dp.register_message_handler(send_latest_listings,
+                                commands=["latest_listings"])
     dp.register_message_handler(send_greeting)
     dp.register_errors_handler(send_error),
 
