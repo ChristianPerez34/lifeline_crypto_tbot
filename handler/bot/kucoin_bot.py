@@ -1,16 +1,14 @@
 import asyncio
-from handler.base import send_message
-from handler.bot import (
-    KUCOIN_API_KEY,
-    KUCOIN_API_PASSPHRASE,
-    KUCOIN_API_SECRET,
-    TELEGRAM_CHAT_ID,
-)
-from kucoin.client import Client
-from kucoin.asyncio import KucoinSocketManager
-from handler import logger
+
 from aiogram.types import ParseMode
 from aiogram.utils.markdown import bold
+from kucoin.asyncio import KucoinSocketManager
+from kucoin.client import Client
+
+from handler import logger
+from handler.base import send_message
+from handler.bot import (KUCOIN_API_KEY, KUCOIN_API_PASSPHRASE,
+                         KUCOIN_API_SECRET, TELEGRAM_CHAT_ID)
 
 
 async def kucoin_bot():

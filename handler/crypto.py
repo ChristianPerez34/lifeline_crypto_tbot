@@ -1,17 +1,13 @@
 import asyncio
-from aiogram.types import Message, ParseMode
-from aiogram.utils.markdown import bold, italic
-from aiogram import Dispatcher
+
+import aiohttp
 import pandas as pd
 import requests
-import aiohttp
+from aiogram import Dispatcher
+from aiogram.types import Message, ParseMode
+from aiogram.utils.markdown import bold, italic
 
-
-from . import cg
-from . import cmc
-from . import crypto_cache
-from . import eth
-from . import logger
+from . import cg, cmc, crypto_cache, eth, logger
 
 
 def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
