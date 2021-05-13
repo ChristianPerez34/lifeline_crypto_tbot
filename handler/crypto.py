@@ -230,7 +230,7 @@ async def send_price_alert(message: Message) -> None:
     await message.reply(text=response)
 
 
-async def priceAlertCallback(message: Message, context: list, delay: int) -> None:
+async def priceAlertCallback(context: list, delay: int) -> None:
     """Repetitive task that continues monitoring market for alerted coin mark price until alert is displayed
 
     Args:
@@ -264,7 +264,7 @@ async def priceAlertCallback(message: Message, context: list, delay: int) -> Non
 
             else:
                 response = f"👋 {crypto} has surpassed {'${:,}'.format(price)} and has just reached {'${:,}'.format(spot_price)}!"
-            await message.reply(response)
+            await send_message(channel_id=TELEGRAM_CHAT_ID, text=response)
 
         await asyncio.sleep(delay)
 
