@@ -3,10 +3,9 @@ import asyncio
 from aiogram import Dispatcher
 from aiogram import executor
 from aiogram.dispatcher.webhook import get_new_configured_app
-from aiogram.utils import context
 from aiohttp import web
 
-from app import PORT, bot
+from app import PORT, WEBAPP_HOST, bot
 from app import DEV
 from app import dp
 from app import ENV
@@ -68,6 +67,7 @@ from handler.crypto import send_trending
 # SIGTERM or SIGABRT. This should be used most of the time, since
 # start_polling() is non-blocking and will stop the bot gracefully.
 async def on_startup(dp: Dispatcher):
+    await bot.delete_webhook()
     await bot.set_webhook(WEBHOOK_URL)
     setup_handlers(dp)
     asyncio.create_task(kucoin_bot())
@@ -91,7 +91,11 @@ if __name__ == "__main__":
     if ENV == DEV:
         executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
     else:
-        app = get_new_configured_app(dispatcher=dp, path=WEBHOOK_PATH)
-        app.on_startup.append(on_startup)
-        dp.loop.set_task_factory(context.task_factory)
-        web.run_app(app, host="0.0.0.0", port=PORT)
+        executor.start_webhook(
+            dispatcher=dp,
+            webhook_path=WEBHOOK_PATH,
+            on_startup=on_startup,
+            skip_updates=True,
+            host=WEBAPP_HOST,
+            port=PORT,
+        )
