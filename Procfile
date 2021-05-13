@@ -1,1 +1,1 @@
-web: python3 lifeline_crypto_tbot.py
+web: python3 app/lifeline_crypto_tbot.py
