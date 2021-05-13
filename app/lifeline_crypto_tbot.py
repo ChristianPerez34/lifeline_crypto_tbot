@@ -2,13 +2,14 @@ import asyncio
 
 from aiogram import Dispatcher
 from aiogram import executor
+from aiogram.dispatcher.webhook import get_new_configured_app
+from aiogram.utils import context
+from aiohttp import web
 
-from app import bot
+from app import PORT, bot
 from app import DEV
 from app import dp
 from app import ENV
-from app import WEBAPP_HOST
-from app import WEBAPP_PORT
 from app import WEBHOOK_PATH
 from app import WEBHOOK_URL
 from handler.base import send_error
@@ -81,8 +82,7 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(send_coin_address, commands=["coin_address"])
     dp.register_message_handler(send_trending, commands=["trending"])
     dp.register_message_handler(send_price_alert, commands=["alert"])
-    dp.register_message_handler(send_latest_listings,
-                                commands=["latest_listings"])
+    dp.register_message_handler(send_latest_listings, commands=["latest_listings"])
     dp.register_message_handler(send_greeting)
     dp.register_errors_handler(send_error),
 
@@ -91,11 +91,7 @@ if __name__ == "__main__":
     if ENV == DEV:
         executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
     else:
-        executor.start_webhook(
-            dispatcher=dp,
-            webhook_path=WEBHOOK_PATH,
-            on_startup=on_startup,
-            skip_updates=True,
-            host=WEBAPP_HOST,
-            port=WEBAPP_PORT,
-        )
+        app = get_new_configured_app(dispatcher=dp, path=WEBHOOK_PATH)
+        app.on_startup.append(on_startup)
+        dp.loop.set_task_factory(context.task_factory)
+        web.run_app(app, host="0.0.0.0", port=PORT)
