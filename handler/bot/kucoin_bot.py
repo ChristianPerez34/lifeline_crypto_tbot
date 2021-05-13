@@ -7,8 +7,10 @@ from kucoin.client import Client
 
 from handler import logger
 from handler.base import send_message
-from handler.bot import (KUCOIN_API_KEY, KUCOIN_API_PASSPHRASE,
-                         KUCOIN_API_SECRET, TELEGRAM_CHAT_ID)
+from handler.bot import KUCOIN_API_KEY
+from handler.bot import KUCOIN_API_PASSPHRASE
+from handler.bot import KUCOIN_API_SECRET
+from handler.bot import TELEGRAM_CHAT_ID
 
 
 async def kucoin_bot():
