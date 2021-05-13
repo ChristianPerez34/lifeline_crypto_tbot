@@ -4,6 +4,7 @@ from aiogram.utils.markdown import bold, italic
 from aiogram import Dispatcher
 import pandas as pd
 import requests
+import aiohttp
 
 
 from . import cg
@@ -204,8 +205,14 @@ async def send_trending(message: Message) -> None:
 
 
 async def send_price_alert(message: Message) -> None:
+    """Replies to message with alert when coin passes expected mark price
+
+    Args:
+        message (Message): Message to reply to
+    """
     logger.info("Setting a new price alert")
     args = message.get_args().split()
+
     if len(args) > 2:
         crypto = args[0].upper()
         sign = args[1]
@@ -216,46 +223,25 @@ async def send_price_alert(message: Message) -> None:
         task = asyncio.create_task(
             priceAlertCallback(message=message, context=[crypto, sign, price], delay=15)
         )
-        # loop = asyncio.get_event_loop()
-        # loop.run_until_complete(
-
-        # )
-        # loop.close()
-
         response = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
         response += f"the current price of {crypto} is ${float(coin_stats['price'])}"
     else:
         response = "⚠️ Please provide a crypto code and a price value: /alert [COIN] [<,>] [PRICE]"
     await message.reply(text=response)
+    await task
 
 
-# def priceAlert(update: Update, context: CallbackContext) -> None:
-#     if len(context.args) > 2:
-#         crypto = context.args[0].upper()
-#         sign = context.args[1]
-#         price = context.args[2]
+async def priceAlertCallback(message: Message, context: list, delay: int) -> None:
+    """Repetitive task that continues monitoring market for alerted coin mark price until alert is displayed
 
-#         coin_stats = get_coin_stats(symbol=crypto)
-
-#         context.job_queue.run_repeating(
-#             priceAlertCallback,
-#             interval=30,
-#             first=15,
-#             context=[crypto, sign, price, update.message.chat_id],
-#         )
-
-#         response = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
-#         response += f"the current price of {crypto} is ${float(coin_stats['price'])}"
-#     else:
-#         response = "⚠️ Please provide a crypto code and a price value: /alert [COIN] [<,>] [PRICE]"
-
-#     context.bot.send_message(chat_id=update.effective_chat.id, text=response)
-
-
-async def priceAlertCallback(message: Message, context: list, delay: int):
-    crypto = context.job.context[0]
-    sign = context.job.context[1]
-    price = context.job.context[2]
+    Args:
+        message (Message): Message to reply to
+        context (list): Alert context
+        delay (int): Interval of time to wait in seconds
+    """
+    crypto = context[0]
+    sign = context[1]
+    price = context[2]
 
     send = False
     dip = False
@@ -275,43 +261,43 @@ async def priceAlertCallback(message: Message, context: list, delay: int):
 
         if send:
             if dip:
-                response = f":( {crypto} has dipped below ${price} and is currently at ${spot_price}."
+                response = f":( {crypto} has dipped below {'${:,}'.format(price)} and is currently at {'${:,}'.format(spot_price)}."
 
             else:
-                response = f"👋 {crypto} has surpassed ${price} and has just reached ${spot_price}!"
+                response = f"👋 {crypto} has surpassed {'${:,}'.format(price)} and has just reached {'${:,}'.format(spot_price)}!"
             await message.reply(response)
 
         await asyncio.sleep(delay)
-        # context.bot.send_message(chat_id=chat_id, text=response)
 
 
-# def latest_listings(update: Update, context: CallbackContext) -> None:
-#     """Gets latest crypto listings
+async def send_latest_listings(message: Message) -> None:
+    """Replies to command with latest crypto listings
 
-#     Args:
-#         update (Update): Incoming chat update for latest listings
-#         context (CallbackContext): Bot context
-#     """
-#     logger.info("Retrieving latest crypto listings from CoinGecko")
-#     count = 5
-#     text = "Latest Listings 🤑\n"
-#     headers = {
-#         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
-#     }
-#     response = requests.get(
-#         "https://www.coingecko.com/en/coins/recently_added", headers=headers, timeout=5
-#     )
-#     df = pd.read_html(response.text, flavor="bs4")[0]
-#     for row in df.itertuples():
-#         if count == 0:
-#             break
+    Args:
+        message (Message): Message to reply to
+    """
+    logger.info("Retrieving latest crypto listings from CoinGecko")
+    count = 5
+    reply = "Latest Listings 🤑\n"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            "https://www.coingecko.com/en/coins/recently_added", headers=headers
+        ) as response:
+            df = pd.read_html(await response.text(), flavor="bs4")[0]
 
-#         words = row.Coin.split()
-#         words = sorted(set(words), key=words.index)
-#         words[-1] = f"({words[-1]})"
+            for row in df.itertuples():
+                if count == 0:
+                    break
 
-#         coin = " ".join(words)
-#         text += f"\n{coin}"
-#         count -= 1
+                words = row.Coin.split()
+                words = sorted(set(words), key=words.index)
+                words[-1] = f"({words[-1]})"
 
-#     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+                coin = " ".join(words)
+                reply += f"\n{coin}"
+                count -= 1
+
+    await message.reply(text=reply)

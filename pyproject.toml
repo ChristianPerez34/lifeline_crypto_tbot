@@ -16,9 +16,9 @@ etherscan-python = "^2.1.0"
 pandas = "^1.2.4"
 bs4 = "^0.0.1"
 html5lib = "^1.1"
-python-kucoin = "^2.1.2"
 aiogram = "^2.13"
 emoji = "^1.2.0"
+python-kucoin = "^2.1.2"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b0"

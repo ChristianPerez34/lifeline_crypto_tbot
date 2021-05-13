@@ -1,8 +1,9 @@
 # from lifeline_crypto_tbot import dp
+# from aiogram.bot import bot
 from aiogram.utils.emoji import emojize
-from aiogram.utils.callback_data import CallbackData
 from aiogram.types import ParseMode, Message, Update
-from aiogram.utils.markdown import bold, code, italic, text
+from aiogram.utils.markdown import bold, italic, text
+from app import bot
 
 # from telegram.ext.callbackcontext import CallbackContext
 # from telegram.update import Update
@@ -16,6 +17,7 @@ async def send_welcome(message: Message):
     Args:
         message (Message): Message to reply to
     """
+    logger.info(message.chat.id)
     logger.info("Start/Help command executed")
     reply = text(
         "Hi! :smile:\n",
@@ -38,12 +40,14 @@ async def send_greeting(message: Message):
     Args:
         message (Message): Message to reply to
     """
+    new_user = ""
     for new_user_obj in message.new_chat_members:
         try:
             new_user = "@" + new_user_obj["username"]
         except Exception:
             new_user = new_user_obj["first_name"]
-    await message.reply(text=f"Welcome fellow degen, {new_user}.")
+    if new_user:
+        await message.reply(text=f"Welcome fellow degen, {new_user}.")
 
 
 async def send_error(update: Update, exception: Exception):
@@ -58,3 +62,8 @@ async def send_error(update: Update, exception: Exception):
     logger.debug(update)
 
     await update.message.reply(text="Stonks! Sorry, encountered an error.")
+
+
+async def send_message(channel_id: int, text: str):
+
+    await bot.send_message(channel_id, text)

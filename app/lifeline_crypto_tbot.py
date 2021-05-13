@@ -1,18 +1,19 @@
-import os
+import asyncio
+from app import DEV, ENV, WEBAPP_HOST, WEBAPP_PORT, WEBHOOK_PATH, WEBHOOK_URL, dp, bot
+from aiogram import Dispatcher
+
 from handler.crypto import (
     send_coin,
     send_coin_address,
     send_gas,
+    send_latest_listings,
     send_price_alert,
     send_trending,
 )
+from handler.bot.kucoin_bot import kucoin_bot
 
 from handler.base import send_greeting, send_welcome, send_error
-
-
-from dotenv import load_dotenv
-from aiogram import Bot, Dispatcher, executor, types
-
+from aiogram import executor
 
 # from handler.base import error
 # from handler.base import greet
@@ -23,18 +24,6 @@ from aiogram import Bot, Dispatcher, executor, types
 # from handler.crypto import latest_listings
 # from handler.crypto import priceAlert
 # from handler.crypto import trending
-
-
-load_dotenv()
-
-DEV = "dev"
-PROD = "prod"
-TEST = "test"
-TELEGRAM_BOT_API_KEY = os.getenv("TELEGRAM_BOT_API_KEY")
-ENV = os.getenv("ENV", DEV).lower()
-
-bot = Bot(token=TELEGRAM_BOT_API_KEY)
-dp = Dispatcher(bot)
 
 
 # def main():
@@ -70,11 +59,14 @@ dp = Dispatcher(bot)
 # Run the bot until you press Ctrl-C or the process receives SIGINT,
 # SIGTERM or SIGABRT. This should be used most of the time, since
 # start_polling() is non-blocking and will stop the bot gracefully.
-# updater.idle()
 
 
 async def on_startup(dp: Dispatcher):
+    await bot.set_webhook(WEBHOOK_URL)
     setup_handlers(dp)
+    asyncio.create_task(kucoin_bot())
+    # # await send_message(channel_id=TELEGRAM_CHAT_ID, text="This is a test")
+    # await task
 
 
 def setup_handlers(dp: Dispatcher):
@@ -84,9 +76,20 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(send_coin_address, commands=["coin_address"])
     dp.register_message_handler(send_trending, commands=["trending"])
     dp.register_message_handler(send_price_alert, commands=["alert"])
+    dp.register_message_handler(send_latest_listings, commands=["latest_listings"])
     dp.register_message_handler(send_greeting)
     dp.register_errors_handler(send_error),
 
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
+    if ENV == DEV:
+        executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
+    else:
+        executor.start_webhook(
+            dispatcher=dp,
+            webhook_path=WEBHOOK_PATH,
+            on_startup=on_startup,
+            skip_updates=True,
+            host=WEBAPP_HOST,
+            port=WEBAPP_PORT,
+        )
