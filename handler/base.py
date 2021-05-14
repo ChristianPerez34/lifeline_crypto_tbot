@@ -33,7 +33,8 @@ async def send_welcome(message: Message):
         f"{bold('/alert')} {italic('COIN')} "
         "\[< or >] ",
         f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
-        f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings",
+        f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings\n\n"
+        f"{bold('/restart_kucoin')} to restart KuCoin bot 🤖",
     )
     await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
 
