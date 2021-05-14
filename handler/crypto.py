@@ -2,8 +2,10 @@ import asyncio
 
 import aiohttp
 import pandas as pd
+from app import bot
 from handler.base import send_message
-from handler.bot import TELEGRAM_CHAT_ID
+from bot import KUCOIN_TASK_NAME, TELEGRAM_CHAT_ID
+from bot.kucoin_bot import kucoin_bot
 from aiogram.types import Message
 from aiogram.types import ParseMode
 from aiogram.utils.markdown import bold
@@ -299,4 +301,22 @@ async def send_latest_listings(message: Message) -> None:
                 reply += f"\n{coin}"
                 count -= 1
 
+    await message.reply(text=reply)
+
+
+async def send_restart_kucoin_bot(message: Message) -> None:
+    logger.info("Verifying user is admin")
+    user = message.from_user
+    administrators = [
+        admin.user
+        for admin in await bot.get_chat_administrators(chat_id=TELEGRAM_CHAT_ID)
+    ]
+    if user in administrators:
+        logger.info("Restarting KuCoin Bot")
+        tasks = asyncio.all_tasks()
+        [task.cancel() for task in tasks if task.get_name() == KUCOIN_TASK_NAME]
+        asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
+        reply = f"Restarted KuCoin Bot 🤖"
+    else:
+        reply = "⚠️ Sorry, this command can only be executed by an admin"
     await message.reply(text=reply)
