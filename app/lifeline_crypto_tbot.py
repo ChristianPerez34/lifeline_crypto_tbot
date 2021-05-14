@@ -36,8 +36,7 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(send_coin_address, commands=["coin_address"])
     dp.register_message_handler(send_trending, commands=["trending"])
     dp.register_message_handler(send_price_alert, commands=["alert"])
-    dp.register_message_handler(
-        send_latest_listings, commands=["latest_listings"])
+    dp.register_message_handler(send_latest_listings, commands=["latest_listings"])
     dp.register_message_handler(send_greeting)
     dp.register_errors_handler(send_error),
 
