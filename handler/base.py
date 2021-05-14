@@ -30,7 +30,8 @@ async def send_welcome(message: Message):
         f"{bold('/coin')}\_{bold('address')} {italic('ADDRESS')} to display coin statistics for crypto address\n\n",
         f"{bold('/gas')} to display ETH gas prices\n\n",
         f"{bold('/trending')} to display trending coins\n\n",
-        f"{bold('/alert')} {italic('COIN')} " "\[< or >] ",
+        f"{bold('/alert')} {italic('COIN')} "
+        "\[< or >] ",
         f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
         f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings",
     )
@@ -51,20 +52,6 @@ async def send_greeting(message: Message):
             new_user = new_user_obj["first_name"]
     if new_user:
         await message.reply(text=f"Welcome fellow degen, {new_user}.")
-
-
-async def send_error(update: Update, exception: Exception):
-    """Exception handler
-
-    Args:
-        update (Update): Incoming chat update
-        exception (Exception): Raised exception
-    """
-
-    logger.exception(exception)
-    logger.debug(update)
-
-    await update.message.reply(text="Stonks! Sorry, encountered an error.")
 
 
 async def send_message(channel_id: int, text: str):
