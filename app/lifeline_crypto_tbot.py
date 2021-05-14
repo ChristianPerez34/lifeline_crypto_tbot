@@ -9,7 +9,7 @@ from app import dp
 from app import ENV
 from app import WEBHOOK_PATH
 from app import WEBHOOK_URL
-from handler.base import send_error
+from handler.error import send_error
 from handler.base import send_greeting
 from handler.base import send_welcome
 from handler.bot.kucoin_bot import kucoin_bot

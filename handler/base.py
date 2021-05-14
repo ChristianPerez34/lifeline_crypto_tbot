@@ -53,20 +53,6 @@ async def send_greeting(message: Message):
         await message.reply(text=f"Welcome fellow degen, {new_user}.")
 
 
-async def send_error(update: Update, exception: Exception):
-    """Exception handler
-
-    Args:
-        update (Update): Incoming chat update
-        exception (Exception): Raised exception
-    """
-
-    logger.exception(exception)
-    logger.debug(update)
-
-    await update.message.reply(text="Stonks! Sorry, encountered an error.")
-
-
 async def send_message(channel_id: int, text: str):
     logger.info(f"Sending message to chat id: {channel_id}")
     await bot.send_message(channel_id, text, parse_mode=ParseMode.MARKDOWN)
