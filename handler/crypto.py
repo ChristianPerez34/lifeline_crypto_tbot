@@ -2,20 +2,15 @@ import asyncio
 
 import aiohttp
 import pandas as pd
+from aiogram.types import Message, ParseMode
+from aiogram.utils.markdown import bold, italic
+
 from app import bot
-from handler.base import send_message
 from bot import KUCOIN_TASK_NAME, TELEGRAM_CHAT_ID
 from bot.kucoin_bot import kucoin_bot
-from aiogram.types import Message
-from aiogram.types import ParseMode
-from aiogram.utils.markdown import bold
-from aiogram.utils.markdown import italic
+from handler.base import send_message
 
-from . import cg
-from . import cmc
-from . import crypto_cache
-from . import eth
-from . import logger
+from . import cg, cmc, crypto_cache, eth, logger
 
 
 def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
