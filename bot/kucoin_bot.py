@@ -1,16 +1,17 @@
 import asyncio
 
-from aiogram.utils.markdown import bold, text
+from aiogram.utils.markdown import bold
+from aiogram.utils.markdown import text
 from kucoin.asyncio import KucoinSocketManager
 from kucoin.client import Client
 
-from handler import logger
-from handler.base import send_message
+from bot import active_orders
 from bot import KUCOIN_API_KEY
 from bot import KUCOIN_API_PASSPHRASE
 from bot import KUCOIN_API_SECRET
 from bot import TELEGRAM_CHAT_ID
-from bot import active_orders
+from handler import logger
+from handler.base import send_message
 
 
 async def kucoin_bot():
@@ -34,16 +35,13 @@ async def kucoin_bot():
 
                     if side == order["side"]:
                         message = text(
-                            (
-                                f"Futures Contract ⏳\n\n"
-                                f"Coin: {bold(symbol)}\n"
-                                f"LONG/SHORT: {bold(side)}\n"
-                                f"Entry: {entry}\n"
-                                f"Leverage: {bold('10')}-{bold('20x')}\n"
-                                f"Take Profit: {bold('At Your Discretion')}\n"
-                                f"Stop Loss: {bold('At Your Discretion')}\n"
-                            )
-                        )
+                            (f"Futures Contract ⏳\n\n"
+                             f"Coin: {bold(symbol)}\n"
+                             f"LONG/SHORT: {bold(side)}\n"
+                             f"Entry: {entry}\n"
+                             f"Leverage: {bold('10')}-{bold('20x')}\n"
+                             f"Take Profit: {bold('At Your Discretion')}\n"
+                             f"Stop Loss: {bold('At Your Discretion')}\n"))
                     else:
                         active_orders.pop(symbol, None)
                 await send_message(channel_id=TELEGRAM_CHAT_ID, text=message)
@@ -55,8 +53,7 @@ async def kucoin_bot():
                 entry = data["matchPrice"]
                 if symbol in active_orders:
                     active_orders[symbol][
-                        "entry"
-                    ] = f"{active_orders[symbol]['entry']}-{entry}"
+                        "entry"] = f"{active_orders[symbol]['entry']}-{entry}"
                 else:
                     active_orders[symbol] = {
                         "entry": entry,
@@ -67,7 +64,10 @@ async def kucoin_bot():
     # is private
     client = Client(KUCOIN_API_KEY, KUCOIN_API_SECRET, KUCOIN_API_PASSPHRASE)
 
-    ksm = await KucoinSocketManager.create(None, client, deal_msg, private=True)
+    ksm = await KucoinSocketManager.create(None,
+                                           client,
+                                           deal_msg,
+                                           private=True)
     await ksm.subscribe("/contractMarket/tradeOrders")
 
     while True:
