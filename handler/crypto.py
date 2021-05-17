@@ -37,7 +37,7 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
             vs_currencies="usd",
             include_market_cap=True,
             include_24hr_change=True,
-        ))
+    ))
 
 
 def coinmarketcap_coin_lookup(symbol: str) -> dict:
