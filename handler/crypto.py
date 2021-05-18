@@ -8,16 +8,16 @@ from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import italic
 from kucoin_futures.client import Trade
 
-from app import bot
-from bot import KUCOIN_TASK_NAME, KUCOIN_API_KEY, KUCOIN_API_SECRET, KUCOIN_API_PASSPHRASE, active_orders
-from bot import TELEGRAM_CHAT_ID
-from bot.kucoin_bot import kucoin_bot
-from handler.base import send_message
 from . import cg
 from . import cmc
 from . import crypto_cache
 from . import eth
 from . import logger
+from app import bot
+from bot import KUCOIN_TASK_NAME, KUCOIN_API_KEY, KUCOIN_API_SECRET, KUCOIN_API_PASSPHRASE, active_orders
+from bot import TELEGRAM_CHAT_ID
+from bot.kucoin_bot import kucoin_bot
+from handler.base import send_message
 
 
 def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
@@ -274,7 +274,7 @@ async def send_latest_listings(message: Message) -> None:
     reply = "CoinGecko Latest Listings 🤑\n"
     headers = {
         "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
     }
     async with aiohttp.ClientSession() as session:
         async with session.get(
@@ -296,13 +296,14 @@ async def send_latest_listings(message: Message) -> None:
         count = 5
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
-        async with session.get("https://coinmarketcap.com/new/", headers=headers) as response:
+        async with session.get("https://coinmarketcap.com/new/",
+                               headers=headers) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
                 if count == 0:
                     break
 
-                coin = row.Name.replace(str(index + 1), '-').split('-')
+                coin = row.Name.replace(str(index + 1), "-").split("-")
                 name, symbol = coin[0], f"({coin[1]})"
                 reply += f"{name} {symbol}\n"
                 count -= 1
