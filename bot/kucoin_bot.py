@@ -35,16 +35,13 @@ async def kucoin_bot():
 
                     if side == order["side"]:
                         message = text(
-                            (
-                                f"Futures Contract ⏳\n\n"
-                                f"Coin: {bold(symbol)}\n"
-                                f"LONG/SHORT: {bold(side)}\n"
-                                f"Entry: {entry}\n"
-                                f"Leverage: {bold('10')}-{bold('20x')}\n"
-                                f"Take Profit: {bold('At Your Discretion')}\n"
-                                f"Stop Loss: {bold('At Your Discretion')}\n"
-                            )
-                        )
+                            (f"Futures Contract ⏳\n\n"
+                             f"Coin: {bold(symbol)}\n"
+                             f"LONG/SHORT: {bold(side)}\n"
+                             f"Entry: {entry}\n"
+                             f"Leverage: {bold('10')}-{bold('20x')}\n"
+                             f"Take Profit: {bold('At Your Discretion')}\n"
+                             f"Stop Loss: {bold('At Your Discretion')}\n"))
                     else:
                         active_orders.pop(symbol, None)
                 await send_message(channel_id=TELEGRAM_CHAT_ID, text=message)
@@ -56,8 +53,7 @@ async def kucoin_bot():
                 entry = data["matchPrice"]
                 if symbol in active_orders:
                     active_orders[symbol][
-                        "entry"
-                    ] = f"{active_orders[symbol]['entry']}-{entry}"
+                        "entry"] = f"{active_orders[symbol]['entry']}-{entry}"
                 else:
                     active_orders[symbol] = {
                         "entry": entry,
@@ -73,7 +69,10 @@ async def kucoin_bot():
         url="",
     )
     loop = asyncio.get_event_loop()
-    ws_client = await KucoinFuturesWsClient.create(loop, client, deal_msg, private=True)
+    ws_client = await KucoinFuturesWsClient.create(loop,
+                                                   client,
+                                                   deal_msg,
+                                                   private=True)
     await ws_client.subscribe("/contractMarket/tradeOrders")
 
     while True:
