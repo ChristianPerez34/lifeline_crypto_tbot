@@ -58,6 +58,8 @@ async def kucoin_bot():
                     active_orders[symbol] = {
                         "entry": entry,
                         "side": "SHORT" if data["side"] == "sell" else "LONG",
+                        'take_profit': '',
+                        'stop_loss': ''
                     }
         elif msg["topic"] == "/contractMarket/advancedOrders":
             data = msg["data"]
