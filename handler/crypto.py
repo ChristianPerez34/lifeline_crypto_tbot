@@ -232,8 +232,7 @@ async def send_price_alert(message: Message) -> None:
 
         coin_stats = get_coin_stats(symbol=crypto)
 
-        asyncio.create_task(priceAlertCallback(
-            context=[crypto, sign, price], delay=15))
+        asyncio.create_task(priceAlertCallback(context=[crypto, sign, price], delay=15))
         response = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
         response += f"the current price of {crypto} is ${float(coin_stats['price'])}"
     else:
@@ -355,7 +354,10 @@ async def send_restart_kucoin_bot(message: Message) -> None:
 
                 for position_order in position_orders:
                     stop_price = position_order["stopPrice"]
-                    if position_order["stopPriceType"] == "TP" and position_order['stop'] == 'up':
+                    if (
+                        position_order["stopPriceType"] == "TP"
+                        and position_order["stop"] == "up"
+                    ):
                         take_profit = stop_price
                     else:
                         stop_loss = stop_price

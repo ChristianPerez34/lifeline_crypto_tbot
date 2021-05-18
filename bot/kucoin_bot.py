@@ -63,16 +63,16 @@ async def kucoin_bot():
                         "entry": entry,
                         "side": "SHORT" if data["side"] == "sell" else "LONG",
                     }
-        elif msg['topic'] == '/contractMarket/advancedOrders':
-            data = msg['data']
-            if data['type'] != 'cancel':
-                symbol = data['symbol'][:-1]
+        elif msg["topic"] == "/contractMarket/advancedOrders":
+            data = msg["data"]
+            if data["type"] != "cancel":
+                symbol = data["symbol"][:-1]
                 order = active_orders[symbol]
-                stop_price = data['stopPrice']
-                if data['stop'] == 'up' and order['take_profit'] != stop_price:
-                    order['take_profit'] = stop_price
+                stop_price = data["stopPrice"]
+                if data["stop"] == "up" and order["take_profit"] != stop_price:
+                    order["take_profit"] = stop_price
                 else:
-                    order['stop_loss'] = stop_price
+                    order["stop_loss"] = stop_price
                 message = text(
                     (
                         f"Futures Contract ⏳\n\nPosition Update ❗️❗️❗️\n\n"
