@@ -325,7 +325,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
             task.cancel() for task in tasks
             if task.get_name() == KUCOIN_TASK_NAME
         ]
-        client = Trade(key=KUCOIN_API_KEY, secret=KUCOIN_API_SECRET, passphrase=KUCOIN_API_PASSPHRASE)
+        client = Trade(key=KUCOIN_API_KEY, secret=KUCOIN_API_SECRET,
+                       passphrase=KUCOIN_API_PASSPHRASE)
         for position in client.get_all_position():
             if position['isOpen']:
                 symbol = position['symbol'][:-1]
@@ -334,7 +335,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                 mark_price = position["markPrice"]
                 unrealized_pnl = position["unrealisedPnl"]
                 side = "LONG" if (entry < mark_price and unrealized_pnl > 0) or (
-                        entry > mark_price and unrealized_pnl < 0) else "SHORT"
+                    entry > mark_price and unrealized_pnl < 0) else "SHORT"
                 active_orders.update({
                     symbol: {
                         "entry": entry,
