@@ -14,7 +14,11 @@ from . import crypto_cache
 from . import eth
 from . import logger
 from app import bot
-from bot import KUCOIN_TASK_NAME, KUCOIN_API_KEY, KUCOIN_API_SECRET, KUCOIN_API_PASSPHRASE, active_orders
+from bot import active_orders
+from bot import KUCOIN_API_KEY
+from bot import KUCOIN_API_PASSPHRASE
+from bot import KUCOIN_API_SECRET
+from bot import KUCOIN_TASK_NAME
 from bot import TELEGRAM_CHAT_ID
 from bot.kucoin_bot import kucoin_bot
 from handler.base import send_message
@@ -34,11 +38,11 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
 
     return (cg.get_coin_info_from_contract_address_by_id(
         id="ethereum", contract_address=ids) if is_address else cg.get_price(
-        ids=ids,
-        vs_currencies="usd",
-        include_market_cap=True,
-        include_24hr_change=True,
-    ))
+            ids=ids,
+            vs_currencies="usd",
+            include_market_cap=True,
+            include_24hr_change=True,
+        ))
 
 
 def coinmarketcap_coin_lookup(symbol: str) -> dict:
@@ -313,6 +317,7 @@ async def send_latest_listings(message: Message) -> None:
 
 async def send_restart_kucoin_bot(message: Message) -> None:
     logger.info("Verifying user is admin")
+    take_profit, stop_loss = "", ""
     user = message.from_user
     administrators = [
         admin.user for admin in await bot.get_chat_administrators(
@@ -325,20 +330,41 @@ async def send_restart_kucoin_bot(message: Message) -> None:
             task.cancel() for task in tasks
             if task.get_name() == KUCOIN_TASK_NAME
         ]
-        client = Trade(key=KUCOIN_API_KEY, secret=KUCOIN_API_SECRET, passphrase=KUCOIN_API_PASSPHRASE)
+        client = Trade(
+            key=KUCOIN_API_KEY,
+            secret=KUCOIN_API_SECRET,
+            passphrase=KUCOIN_API_PASSPHRASE,
+        )
+        orders = [order for order in client.get_open_stop_order()["items"]]
         for position in client.get_all_position():
-            if position['isOpen']:
-                symbol = position['symbol'][:-1]
+            if position["isOpen"]:
+                symbol = position["symbol"]
+                position_orders = [
+                    order for order in orders if order["symbol"] == symbol
+                ]
+
+                for position_order in position_orders:
+                    stop_price = position_order["stopPrice"]
+                    if (position_order["stopPriceType"] == "TP"
+                            and position_order["stop"] == "up"):
+                        take_profit = stop_price
+                    else:
+                        stop_loss = stop_price
+                symbol = symbol[:-1]
                 symbol = symbol.replace("XBTUSDT", "BTCUSDT")
                 entry = position["avgEntryPrice"]
                 mark_price = position["markPrice"]
                 unrealized_pnl = position["unrealisedPnl"]
-                side = "LONG" if (entry < mark_price and unrealized_pnl > 0) or (
-                        entry > mark_price and unrealized_pnl < 0) else "SHORT"
+                side = ("LONG" if
+                        (entry < mark_price and unrealized_pnl > 0) or
+                        (entry > mark_price and unrealized_pnl < 0) else
+                        "SHORT")
                 active_orders.update({
                     symbol: {
                         "entry": entry,
-                        "side": side
+                        "side": side,
+                        "take_profit": take_profit,
+                        "stop_loss": stop_loss,
                     }
                 })
         asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
