@@ -6,9 +6,10 @@ from aiogram.types import Message
 from aiogram.types import ParseMode
 from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import italic
+from kucoin_futures.client import Trade
 
 from app import bot
-from bot import KUCOIN_TASK_NAME
+from bot import KUCOIN_TASK_NAME, KUCOIN_API_KEY, KUCOIN_API_SECRET, KUCOIN_API_PASSPHRASE, active_orders
 from bot import TELEGRAM_CHAT_ID
 from bot.kucoin_bot import kucoin_bot
 from handler.base import send_message
@@ -33,11 +34,11 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
 
     return (cg.get_coin_info_from_contract_address_by_id(
         id="ethereum", contract_address=ids) if is_address else cg.get_price(
-            ids=ids,
-            vs_currencies="usd",
-            include_market_cap=True,
-            include_24hr_change=True,
-        ))
+        ids=ids,
+        vs_currencies="usd",
+        include_market_cap=True,
+        include_24hr_change=True,
+    ))
 
 
 def coinmarketcap_coin_lookup(symbol: str) -> dict:
@@ -317,14 +318,31 @@ async def send_restart_kucoin_bot(message: Message) -> None:
             chat_id=TELEGRAM_CHAT_ID)
     ]
     if user in administrators:
-        logger.info("Restarting KuCoin Bot")
+        logger.info("User is admin. Restarting KuCoin Bot")
         tasks = asyncio.all_tasks()
         [
             task.cancel() for task in tasks
             if task.get_name() == KUCOIN_TASK_NAME
         ]
+        client = Trade(key=KUCOIN_API_KEY, secret=KUCOIN_API_SECRET, passphrase=KUCOIN_API_PASSPHRASE)
+        for position in client.get_all_position():
+            if position['isOpen']:
+                symbol = position['symbol'][:-1]
+                symbol = symbol.replace("XBTUSDT", "BTCUSDT")
+                entry = position["avgEntryPrice"]
+                mark_price = position["markPrice"]
+                unrealized_pnl = position["unrealisedPnl"]
+                side = "LONG" if (entry < mark_price and unrealized_pnl > 0) or (
+                        entry > mark_price and unrealized_pnl < 0) else "SHORT"
+                active_orders.update({
+                    symbol: {
+                        "entry": entry,
+                        "side": side
+                    }
+                })
         asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
         reply = f"Restarted KuCoin Bot 🤖"
     else:
-        reply = "⚠️ Sorry, this command can only be executed by an admin"
+        logger.info("User is not admin")
+        reply = "⚠ Sorry, this command can only be executed by an admin"
     await message.reply(text=reply)

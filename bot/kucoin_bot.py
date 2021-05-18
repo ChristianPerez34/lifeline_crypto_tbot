@@ -2,14 +2,14 @@ import asyncio
 
 from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import text
-from kucoin.asyncio import KucoinSocketManager
-from kucoin.client import Client
+from kucoin_futures.client import WsToken
+from kucoin_futures.ws_client import KucoinFuturesWsClient
 
-from bot import active_orders
 from bot import KUCOIN_API_KEY
 from bot import KUCOIN_API_PASSPHRASE
 from bot import KUCOIN_API_SECRET
 from bot import TELEGRAM_CHAT_ID
+from bot import active_orders
 from handler import logger
 from handler.base import send_message
 
@@ -19,10 +19,10 @@ async def kucoin_bot():
         if msg["topic"] == "/contractMarket/tradeOrders":
             data = msg["data"]
             logger.info(data)
-            logger.info(active_orders)
 
             if data["type"] == "filled":
                 symbol = data["symbol"][:-1]
+                symbol = symbol.replace("XBTUSDT", "BTCUSDT")
                 message = (
                     f"Futures Contract ⌛️\n\nCoin: {bold(symbol)}\nClosed Position"
                 )
@@ -58,17 +58,17 @@ async def kucoin_bot():
                     active_orders[symbol] = {
                         "entry": entry,
                         "side": "SHORT" if data["side"] == "sell" else "LONG",
-                        "is_active": True,
                     }
 
     # is private
-    client = Client(KUCOIN_API_KEY, KUCOIN_API_SECRET, KUCOIN_API_PASSPHRASE)
-
-    ksm = await KucoinSocketManager.create(None,
-                                           client,
-                                           deal_msg,
-                                           private=True)
-    await ksm.subscribe("/contractMarket/tradeOrders")
+    client = WsToken(key=KUCOIN_API_KEY, secret=KUCOIN_API_SECRET, passphrase=KUCOIN_API_PASSPHRASE, is_sandbox=False,
+                     url='')
+    loop = asyncio.get_event_loop()
+    ws_client = await KucoinFuturesWsClient.create(loop,
+                                                   client,
+                                                   deal_msg,
+                                                   private=True)
+    await ws_client.subscribe("/contractMarket/tradeOrders")
 
     while True:
         await asyncio.sleep(20)
