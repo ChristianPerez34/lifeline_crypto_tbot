@@ -36,7 +36,8 @@ from handlers.base import send_message
 from models import TelegramGroupMember
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
@@ -52,18 +53,13 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
     """
     logger.info(f"Looking up price for {ids} in CoinGecko API")
 
-    return (
-        cg.get_coin_info_from_contract_address_by_id(
-            id="ethereum", contract_address=ids
-        )
-        if is_address
-        else cg.get_price(
+    return (cg.get_coin_info_from_contract_address_by_id(
+        id="ethereum", contract_address=ids) if is_address else cg.get_price(
             ids=ids,
             vs_currencies="usd",
             include_market_cap=True,
             include_24hr_change=True,
-        )
-    )
+        ))
 
 
 def coinmarketcap_coin_lookup(symbol: str) -> dict:
@@ -97,7 +93,8 @@ def get_coin_stats(symbol: str) -> dict:
             data = coingecko_coin_lookup(coin_id)[coin_id]
         else:
             coin = [
-                coin for coin in cg.get_coins_list() if coin["symbol"].upper() == symbol
+                coin for coin in cg.get_coins_list()
+                if coin["symbol"].upper() == symbol
             ][0]
             coin_id = coin["id"]
             crypto_cache[symbol] = coin_id
@@ -165,12 +162,10 @@ async def send_coin(message: Message) -> None:
         if coin_stats:
             price = "${:,}".format(float(coin_stats["price"]))
             market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-            reply = (
-                f"{coin_stats['slug']} ({symbol})\n\n"
-                f"Price\n{price}\n\n"
-                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                f"Market Cap\n{market_cap}"
-            )
+            reply = (f"{coin_stats['slug']} ({symbol})\n\n"
+                     f"Price\n{price}\n\n"
+                     f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                     f"Market Cap\n{market_cap}")
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -182,12 +177,10 @@ async def send_gas(message: Message) -> None:
     """
     logger.info("ETH gas price command executed")
     gas_price = eth.get_gas_oracle()
-    reply = (
-        "ETH Gas Prices ⛽️\n"
-        f"Slow: {gas_price['SafeGasPrice']}\n"
-        f"Average: {gas_price['ProposeGasPrice']}\n"
-        f"Fast: {gas_price['FastGasPrice']}\n"
-    )
+    reply = ("ETH Gas Prices ⛽️\n"
+             f"Slow: {gas_price['SafeGasPrice']}\n"
+             f"Average: {gas_price['ProposeGasPrice']}\n"
+             f"Fast: {gas_price['FastGasPrice']}\n")
     await message.reply(text=reply)
 
 
@@ -207,12 +200,10 @@ async def send_coin_address(message: Message) -> None:
         if coin_stats:
             price = "${:,}".format(float(coin_stats["price"]))
             market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-            reply = (
-                f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
-                f"Price\n{price}\n\n"
-                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                f"Market Cap\n{market_cap}"
-            )
+            reply = (f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
+                     f"Price\n{price}\n\n"
+                     f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                     f"Market Cap\n{market_cap}")
     await message.reply(text=reply)
 
 
@@ -224,8 +215,7 @@ async def send_trending(message: Message) -> None:
     """
     logger.info("Retrieving trending addresses from CoinGecko")
     trending_coins = "\n".join(
-        [coin["item"]["symbol"] for coin in cg.get_search_trending()["coins"]]
-    )
+        [coin["item"]["symbol"] for coin in cg.get_search_trending()["coins"]])
     reply = f"Trending 🔥\n\n{trending_coins}"
     await message.reply(text=reply)
 
@@ -246,7 +236,8 @@ async def send_price_alert(message: Message) -> None:
 
         coin_stats = get_coin_stats(symbol=crypto)
 
-        asyncio.create_task(priceAlertCallback(context=[crypto, sign, price], delay=15))
+        asyncio.create_task(
+            priceAlertCallback(context=[crypto, sign, price], delay=15))
         response = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
         response += f"the current price of {crypto} is ${float(coin_stats['price'])}"
     else:
@@ -305,8 +296,8 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
-        ) as response:
+                "https://www.coingecko.com/en/coins/recently_added",
+                headers=HEADERS) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
 
             for row in df.itertuples():
@@ -323,9 +314,8 @@ async def send_latest_listings(message: Message) -> None:
         count = 5
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
-        async with session.get(
-            "https://coinmarketcap.com/new/", headers=HEADERS
-        ) as response:
+        async with session.get("https://coinmarketcap.com/new/",
+                               headers=HEADERS) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
                 if count == 0:
@@ -344,13 +334,16 @@ async def send_restart_kucoin_bot(message: Message) -> None:
     take_profit, stop_loss = "", ""
     user = message.from_user
     administrators = [
-        admin.user
-        for admin in await bot.get_chat_administrators(chat_id=TELEGRAM_CHAT_ID)
+        admin.user for admin in await bot.get_chat_administrators(
+            chat_id=TELEGRAM_CHAT_ID)
     ]
     if user in administrators:
         logger.info("User is admin. Restarting KuCoin Bot")
         tasks = asyncio.all_tasks()
-        [task.cancel() for task in tasks if task.get_name() == KUCOIN_TASK_NAME]
+        [
+            task.cancel() for task in tasks
+            if task.get_name() == KUCOIN_TASK_NAME
+        ]
         client = Trade(
             key=KUCOIN_API_KEY,
             secret=KUCOIN_API_SECRET,
@@ -366,10 +359,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
 
                 for position_order in position_orders:
                     stop_price = position_order["stopPrice"]
-                    if (
-                        position_order["stopPriceType"] == "TP"
-                        and position_order["stop"] == "up"
-                    ):
+                    if (position_order["stopPriceType"] == "TP"
+                            and position_order["stop"] == "up"):
                         take_profit = stop_price
                     else:
                         stop_loss = stop_price
@@ -378,22 +369,18 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                 entry = position["avgEntryPrice"]
                 mark_price = position["markPrice"]
                 unrealized_pnl = position["unrealisedPnl"]
-                side = (
-                    "LONG"
-                    if (entry < mark_price and unrealized_pnl > 0)
-                    or (entry > mark_price and unrealized_pnl < 0)
-                    else "SHORT"
-                )
-                active_orders.update(
-                    {
-                        symbol: {
-                            "entry": entry,
-                            "side": side,
-                            "take_profit": take_profit,
-                            "stop_loss": stop_loss,
-                        }
+                side = ("LONG" if
+                        (entry < mark_price and unrealized_pnl > 0) or
+                        (entry > mark_price and unrealized_pnl < 0) else
+                        "SHORT")
+                active_orders.update({
+                    symbol: {
+                        "entry": entry,
+                        "side": side,
+                        "take_profit": take_profit,
+                        "stop_loss": stop_loss,
                     }
-                )
+                })
         asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
         reply = f"Restarted KuCoin Bot 🤖"
     else:
@@ -417,9 +404,8 @@ def swap_tokens(token_to_buy, amount_to_spend, user):
             token_to_buy = web3.toChecksumAddress(token_to_buy)
             amount_to_spend = web3.toWei(float(amount_to_spend), "ether")
             max_slippage = 0.1
-            url = BSCSCAN_API_URL.format(
-                address=contract_address, api_key=BSCSCAN_API_KEY
-            )
+            url = BSCSCAN_API_URL.format(address=contract_address,
+                                         api_key=BSCSCAN_API_KEY)
 
             # async with aiohttp.ClientSession() as session:
             #     async with session.get(url, headers=HEADERS) as response:
@@ -433,22 +419,21 @@ def swap_tokens(token_to_buy, amount_to_spend, user):
             deadline = int(time()) + 1000 * 60  # 1 minute deadline
             path = [wbnb_address, token_to_buy]
             amount_out_min = int(
-                (1 - max_slippage)
-                * contract.functions.getAmountsOut(amount_to_spend, path).call()[-1]
-            )
+                (1 - max_slippage) * contract.functions.getAmountsOut(
+                    amount_to_spend, path).call()[-1])
             txn = contract.functions.swapExactETHForTokens(
-                amount_out_min, path, user_address, deadline
-            ).buildTransaction(
-                {
+                amount_out_min, path, user_address,
+                deadline).buildTransaction({
                     "gas": 250000,
                     "gasPrice": web3.toWei("10", "gwei"),
                     "nonce": nonce,
                     "from": user_address,
                     "value": amount_to_spend,
-                }
-            )
-            sign_txn = web3.eth.account.signTransaction(txn, private_key=private_key)
-            txn_hash = web3.toHex(web3.eth.sendRawTransaction(sign_txn.rawTransaction))
+                })
+            sign_txn = web3.eth.account.signTransaction(
+                txn, private_key=private_key)
+            txn_hash = web3.toHex(
+                web3.eth.sendRawTransaction(sign_txn.rawTransaction))
 
             txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
             reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
@@ -469,12 +454,10 @@ async def send_buy_coin(message: Message):
         reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /buy_coin [ADDRESS] [AMOUNT]"
     else:
         user = await TelegramGroupMember.filter(
-            telegram_user_id=telegram_user.id
-        ).first()
+            telegram_user_id=telegram_user.id).first()
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
         loop = asyncio.get_event_loop()
-        reply = await loop.run_in_executor(
-            executor, swap_tokens, args[0], args[1], user
-        )
+        reply = await loop.run_in_executor(executor, swap_tokens, args[0],
+                                           args[1], user)
 
     await message.reply(text=reply)
