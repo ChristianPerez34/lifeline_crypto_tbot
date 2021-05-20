@@ -10,8 +10,8 @@ from bot import KUCOIN_API_KEY
 from bot import KUCOIN_API_PASSPHRASE
 from bot import KUCOIN_API_SECRET
 from bot import TELEGRAM_CHAT_ID
-from handler import logger
-from handler.base import send_message
+from handlers import logger
+from handlers.base import send_message
 
 
 async def kucoin_bot():
@@ -58,8 +58,8 @@ async def kucoin_bot():
                     active_orders[symbol] = {
                         "entry": entry,
                         "side": "SHORT" if data["side"] == "sell" else "LONG",
-                        'take_profit': '',
-                        'stop_loss': ''
+                        "take_profit": "",
+                        "stop_loss": "",
                     }
         elif msg["topic"] == "/contractMarket/advancedOrders":
             data = msg["data"]

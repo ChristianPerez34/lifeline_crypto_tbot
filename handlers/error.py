@@ -4,7 +4,7 @@ from . import logger
 
 
 async def send_error(update: Update, exception: Exception) -> bool:
-    """Exception handler
+    """Exception handlers
 
     Args:
         update (Update): Incoming chat update
