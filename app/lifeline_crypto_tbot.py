@@ -1,16 +1,28 @@
 import asyncio
 
-from aiogram import Dispatcher, executor
+from aiogram import Dispatcher
+from aiogram import executor
 
-from app import bot, dp
+from app import bot
+from app import dp
 from bot import KUCOIN_TASK_NAME
-from config import (DEV, ENV, WEBAPP_HOST, WEBAPP_PORT, WEBHOOK_PATH,
-                    WEBHOOK_URL)
+from config import DEV
+from config import ENV
+from config import WEBAPP_HOST
+from config import WEBAPP_PORT
+from config import WEBHOOK_PATH
+from config import WEBHOOK_URL
 from handlers import init_database
-from handlers.base import send_greeting, send_welcome
-from handlers.crypto import (send_buy_coin, send_coin, send_coin_address,
-                             send_gas, send_latest_listings, send_price_alert,
-                             send_restart_kucoin_bot, send_trending)
+from handlers.base import send_greeting
+from handlers.base import send_welcome
+from handlers.crypto import send_buy_coin
+from handlers.crypto import send_coin
+from handlers.crypto import send_coin_address
+from handlers.crypto import send_gas
+from handlers.crypto import send_latest_listings
+from handlers.crypto import send_price_alert
+from handlers.crypto import send_restart_kucoin_bot
+from handlers.crypto import send_trending
 from handlers.error import send_error
 from handlers.user import send_register
 
