@@ -8,9 +8,9 @@ authors = ["Christian Pérez Villanueva <christianp@e-3consulting.com>"]
 python = ">3.7.1,<4"
 python-dotenv = "^0.17.1"
 python-coinmarketcap = "^0.2"
-requests = "^2.25.1"
+requests = "2.22.0"
 pycoingecko = "^2.0.0"
-lru-dict = "^1.1.7"
+lru-dict = "1.1.6"
 requests-cache = "^0.6.3"
 etherscan-python = "^2.1.0"
 pandas = "^1.2.4"
@@ -19,10 +19,10 @@ html5lib = "^1.1"
 aiogram = "^2.13"
 emoji = "^1.2.0"
 kucoin-futures-python = "^1.0.3"
-web3 = "^5.19.0"
 uniswap-python = "^0.4.6"
 tortoise-orm = { extras = ["asyncpg"], version = "^0.17.2" }
 cryptography = "^3.4.7"
+web3 = "^5.19.0"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b0"
