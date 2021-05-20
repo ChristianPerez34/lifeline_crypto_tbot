@@ -6,11 +6,17 @@ from aiogram import executor
 from app import bot
 from app import dp
 from bot import KUCOIN_TASK_NAME
-from config import ENV, DEV, WEBHOOK_URL, WEBHOOK_PATH, WEBAPP_HOST, WEBAPP_PORT
+from config import DEV
+from config import ENV
+from config import WEBAPP_HOST
+from config import WEBAPP_PORT
+from config import WEBHOOK_PATH
+from config import WEBHOOK_URL
 from handlers import init_database
 from handlers.base import send_greeting
 from handlers.base import send_welcome
-from handlers.crypto import send_coin, send_buy_coin
+from handlers.crypto import send_buy_coin
+from handlers.crypto import send_coin
 from handlers.crypto import send_coin_address
 from handlers.crypto import send_gas
 from handlers.crypto import send_latest_listings
@@ -56,8 +62,10 @@ def setup_handlers(dp: Dispatcher) -> None:
     dp.register_message_handler(send_coin_address, commands=["coin_address"])
     dp.register_message_handler(send_trending, commands=["trending"])
     dp.register_message_handler(send_price_alert, commands=["alert"])
-    dp.register_message_handler(send_latest_listings, commands=["latest_listings"])
-    dp.register_message_handler(send_restart_kucoin_bot, commands=["restart_kucoin"])
+    dp.register_message_handler(send_latest_listings,
+                                commands=["latest_listings"])
+    dp.register_message_handler(send_restart_kucoin_bot,
+                                commands=["restart_kucoin"])
     dp.register_message_handler(send_buy_coin, commands=["buy_coin"])
     dp.register_message_handler(send_register, commands=["register"])
     dp.register_message_handler(send_greeting)
@@ -66,9 +74,10 @@ def setup_handlers(dp: Dispatcher) -> None:
 
 if __name__ == "__main__":
     if ENV == DEV:
-        executor.start_polling(
-            dp, skip_updates=True, on_startup=on_startup, on_shutdown=on_shutdown
-        )
+        executor.start_polling(dp,
+                               skip_updates=True,
+                               on_startup=on_startup,
+                               on_shutdown=on_shutdown)
     else:
         executor.start_webhook(
             dispatcher=dp,

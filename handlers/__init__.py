@@ -7,8 +7,8 @@ from lru import LRU
 from pycoingecko import CoinGeckoAPI
 from tortoise import Tortoise
 
-# Enable logging
 from config import DB_CONFIG
+# Enable logging
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -22,9 +22,6 @@ eth = Etherscan(os.getenv("ETHERSCAN_API_KEY"))
 
 
 async def init_database():
-    await Tortoise.init(
-        modules={'models': ['models']},
-        config=DB_CONFIG
-    )
+    await Tortoise.init(modules={"models": ["models"]}, config=DB_CONFIG)
     # Generate the schema
     await Tortoise.generate_schemas()

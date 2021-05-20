@@ -45,7 +45,7 @@ DB_CONFIG = {
                 "password": DB_PASSWORD,
                 "port": DB_PORT,
                 "user": DB_USER,
-            }
+            },
         }
     },
     "apps": {
