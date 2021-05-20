@@ -244,7 +244,8 @@ async def send_price_alert(message: Message) -> None:
 
         coin_stats = get_coin_stats(symbol=crypto)
 
-        asyncio.create_task(priceAlertCallback(context=[crypto, sign, price], delay=15))
+        asyncio.create_task(priceAlertCallback(
+            context=[crypto, sign, price], delay=15))
         response = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
         response += f"the current price of {crypto} is ${float(coin_stats['price'])}"
     else:
@@ -445,8 +446,10 @@ def swap_tokens(token_to_buy, amount_to_spend, user):
                     "value": amount_to_spend,
                 }
             )
-            sign_txn = web3.eth.account.signTransaction(txn, private_key=private_key)
-            txn_hash = web3.toHex(web3.eth.sendRawTransaction(sign_txn.rawTransaction))
+            sign_txn = web3.eth.account.signTransaction(
+                txn, private_key=private_key)
+            txn_hash = web3.toHex(
+                web3.eth.sendRawTransaction(sign_txn.rawTransaction))
 
             txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
             reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
