@@ -2,14 +2,13 @@
 # from aiogram.bot import bot
 from aiogram.types import Message
 from aiogram.types import ParseMode
-from aiogram.types import Update
 from aiogram.utils.emoji import emojize
 from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 
-from . import logger
 from app import bot
+from . import logger
 
 
 # from telegram.ext.callbackcontext import CallbackContext
@@ -34,6 +33,7 @@ async def send_welcome(message: Message):
         f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
         f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings\n\n"
         f"{bold('/restart')}\_{bold('kucoin')} to restart KuCoin bot 🤖",
+        f"{bold('/register')} {italic('ADDRESS')} {italic('PRIVATE_KEY')} to register to use PancakeSwap bot 🤖",
     )
     await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
 

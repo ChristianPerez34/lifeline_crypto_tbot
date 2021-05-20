@@ -1,23 +1,35 @@
 import asyncio
+import json
+from time import time
 
 import aiohttp
 import pandas as pd
+import requests
 from aiogram.types import Message
 from aiogram.types import ParseMode
 from aiogram.utils.markdown import bold
-from aiogram.utils.markdown import italic
+from aiogram.utils.markdown import italic, link
+from cryptography.fernet import Fernet
 from kucoin_futures.client import Trade
+from web3 import Web3
 
+from app import bot
+from bot import KUCOIN_TASK_NAME, KUCOIN_API_KEY, KUCOIN_API_SECRET, KUCOIN_API_PASSPHRASE, active_orders
+from bot import TELEGRAM_CHAT_ID
+from bot.kucoin_bot import kucoin_bot
+from config import BINANCE_SMART_CHAIN_URL, BSCSCAN_API_KEY, BSCSCAN_API_URL, FERNET_KEY
+from handlers.base import send_message
+from models import TelegramGroupMember
 from . import cg
 from . import cmc
 from . import crypto_cache
 from . import eth
 from . import logger
-from app import bot
-from bot import KUCOIN_TASK_NAME, KUCOIN_API_KEY, KUCOIN_API_SECRET, KUCOIN_API_PASSPHRASE, active_orders
-from bot import TELEGRAM_CHAT_ID
-from bot.kucoin_bot import kucoin_bot
-from handler.base import send_message
+
+HEADERS = {
+    "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+}
 
 
 def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
@@ -272,14 +284,11 @@ async def send_latest_listings(message: Message) -> None:
     logger.info("Retrieving latest crypto listings from CoinGecko")
     count = 5
     reply = "CoinGecko Latest Listings 🤑\n"
-    headers = {
-        "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
-    }
+
     async with aiohttp.ClientSession() as session:
         async with session.get(
                 "https://www.coingecko.com/en/coins/recently_added",
-                headers=headers) as response:
+                headers=HEADERS) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
 
             for row in df.itertuples():
@@ -297,7 +306,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get("https://coinmarketcap.com/new/",
-                               headers=headers) as response:
+                               headers=HEADERS) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
                 if count == 0:
@@ -346,4 +355,73 @@ async def send_restart_kucoin_bot(message: Message) -> None:
     else:
         logger.info("User is not admin")
         reply = "⚠ Sorry, this command can only be executed by an admin"
+    await message.reply(text=reply)
+
+
+def swap_tokens(token_to_buy, amount_to_spend, user):
+    web3 = Web3(Web3.HTTPProvider(BINANCE_SMART_CHAIN_URL))
+    contract_address = web3.toChecksumAddress(
+        "0x10ED43C718714eb63d5aA57B78B54704E256024E"
+    )  # Pancake Swap Contract Router
+
+    if web3.isConnected():
+        if user:
+            fernet = Fernet(FERNET_KEY)
+            user_address = web3.toChecksumAddress(user.bsc_address)
+            # a = bytes(user.bsc_private_key)
+            private_key = fernet.decrypt(user.bsc_private_key).decode()
+            token_to_buy = web3.toChecksumAddress(token_to_buy)
+            amount_to_spend = float(amount_to_spend)
+            max_slippage = 0.1
+            url = BSCSCAN_API_URL.format(address=token_to_buy, api_key=BSCSCAN_API_KEY)
+
+            # async with aiohttp.ClientSession() as session:
+            #     async with session.get(url, headers=HEADERS) as response:
+            #         data = await response.json()
+            #         abi = json.loads(data['result'])
+            data = requests.get(url).json()
+            abi = json.loads(data["result"])
+            contract = web3.eth.contract(address=contract_address, abi=abi)
+            wbnb_address = contract.functions.WETH().call()
+            nonce = web3.eth.getTransactionCount(user_address)
+            deadline = int(time()) + 1000 * 60  # 1 minute deadline
+            path = [wbnb_address, token_to_buy]
+            amount_out_min = int(
+                (1 - max_slippage) * contract.functions.getAmountsOut(amount_to_spend, path).call()[-1])
+            # txn = contract.functions.swapExactETHForTokens(amount_out_min, path, user_address,
+            #                                                deadline).buildTransaction(
+            #     {
+            #         "gas": 250000,
+            #         "gasPrice": web3.toWei("10", "gwei"),
+            #         "nonce": nonce,
+            #         "from": user_address,
+            #         "value": amount_to_spend,
+            #     }
+            # )
+            # sign_txn = web3.eth.account.signTransaction(txn, private_key=private_key)
+            # txn_hash = web3.eth.sendRawTransaction(sign_txn.rawTransaction)
+
+            txn_hash_url = f"https://bscscan.com/tx/"
+            reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
+        else:
+            reply = "⚠ Sorry, you must register prior to using this command."
+    else:
+        reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
+    yield reply
+
+
+async def send_buy_coin(message: Message):
+    logger.info("Started buy coin command")
+
+    telegram_user = message.from_user
+    args = message.get_args().split()
+
+    if len(args) != 2:
+        reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /buy_coin [ADDRESS] [AMOUNT]"
+    else:
+        user = await TelegramGroupMember.filter(telegram_user_id=telegram_user.id).first()
+        task = asyncio.get_event_loop().run_until_complete(
+            swap_tokens(token_to_buy=args[0], amount_to_spend=args[1], user=user))
+        a = task.result()
+
     await message.reply(text=reply)

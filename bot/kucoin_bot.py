@@ -10,8 +10,8 @@ from bot import KUCOIN_API_PASSPHRASE
 from bot import KUCOIN_API_SECRET
 from bot import TELEGRAM_CHAT_ID
 from bot import active_orders
-from handler import logger
-from handler.base import send_message
+from handlers import logger
+from handlers.base import send_message
 
 
 async def kucoin_bot():
