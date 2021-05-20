@@ -8,6 +8,7 @@ from pycoingecko import CoinGeckoAPI
 from tortoise import Tortoise
 
 from config import DB_CONFIG
+
 # Enable logging
 
 logging.basicConfig(
