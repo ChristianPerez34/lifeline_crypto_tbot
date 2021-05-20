@@ -1,12 +1,14 @@
 # from lifeline_crypto_tbot import dp
 # from aiogram.bot import bot
-from aiogram.types import Message, ParseMode
+from aiogram.types import Message
+from aiogram.types import ParseMode
 from aiogram.utils.emoji import emojize
-from aiogram.utils.markdown import bold, italic, text
-
-from app import bot
+from aiogram.utils.markdown import bold
+from aiogram.utils.markdown import italic
+from aiogram.utils.markdown import text
 
 from . import logger
+from app import bot
 
 
 # from telegram.ext.callbackcontext import CallbackContext
