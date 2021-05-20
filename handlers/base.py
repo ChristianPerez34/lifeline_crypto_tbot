@@ -29,12 +29,11 @@ async def send_welcome(message: Message):
         f"{bold('/coin')}\_{bold('address')} {italic('ADDRESS')} to display coin statistics for crypto address\n\n",
         f"{bold('/gas')} to display ETH gas prices\n\n",
         f"{bold('/trending')} to display trending coins\n\n",
-        f"{bold('/alert')} {italic('COIN')} "
-        "\[< or >] ",
+        f"{bold('/alert')} {italic('COIN')} " "\[< or >] ",
         f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
         f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings\n\n"
-        f"{bold('/restart')}\_{bold('kucoin')} to restart KuCoin bot 🤖",
-        f"{bold('/register')} {italic('ADDRESS')} {italic('PRIVATE_KEY')} to register to use PancakeSwap bot 🤖",
+        f"{bold('/restart')}\_{bold('kucoin')} to restart KuCoin bot 🤖\n\n",
+        f"{bold('/register')} {italic('ADDRESS')} {italic('PRIVATE_KEY')} to register to use PancakeSwap bot 🤖\n\n",
         f"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('AMOUNT')} to buy coins on pancakeswap",
     )
     await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
