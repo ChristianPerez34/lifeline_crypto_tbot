@@ -34,6 +34,7 @@ async def send_welcome(message: Message):
         f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings\n\n"
         f"{bold('/restart')}\_{bold('kucoin')} to restart KuCoin bot 🤖",
         f"{bold('/register')} {italic('ADDRESS')} {italic('PRIVATE_KEY')} to register to use PancakeSwap bot 🤖",
+        f"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('AMOUNT')} to buy coins on pancakeswap",
     )
     await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
 
