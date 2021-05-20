@@ -1,37 +1,27 @@
 import asyncio
+import concurrent
 import json
 from time import time
 
 import aiohttp
 import pandas as pd
 import requests
-from aiogram.types import Message
-from aiogram.types import ParseMode
-from aiogram.utils.markdown import bold
-from aiogram.utils.markdown import italic, link
+from aiogram.types import Message, ParseMode
+from aiogram.utils.markdown import bold, italic, link
 from cryptography.fernet import Fernet
 from kucoin_futures.client import Trade
 from web3 import Web3
-import concurrent
 
 from app import bot
-from bot import (
-    KUCOIN_TASK_NAME,
-    KUCOIN_API_KEY,
-    KUCOIN_API_SECRET,
-    KUCOIN_API_PASSPHRASE,
-    active_orders,
-)
-from bot import TELEGRAM_CHAT_ID
+from bot import (KUCOIN_API_KEY, KUCOIN_API_PASSPHRASE, KUCOIN_API_SECRET,
+                 KUCOIN_TASK_NAME, TELEGRAM_CHAT_ID, active_orders)
 from bot.kucoin_bot import kucoin_bot
-from config import BINANCE_SMART_CHAIN_URL, BSCSCAN_API_KEY, BSCSCAN_API_URL, FERNET_KEY
+from config import (BINANCE_SMART_CHAIN_URL, BSCSCAN_API_KEY, BSCSCAN_API_URL,
+                    FERNET_KEY)
 from handlers.base import send_message
 from models import TelegramGroupMember
-from . import cg
-from . import cmc
-from . import crypto_cache
-from . import eth
-from . import logger
+
+from . import cg, cmc, crypto_cache, eth, logger
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
