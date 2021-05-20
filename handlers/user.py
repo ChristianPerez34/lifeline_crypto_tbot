@@ -27,8 +27,11 @@ async def send_register(message: Message) -> None:
         try:
             fernet = Fernet(FERNET_KEY)
             private_key = fernet.encrypt(private_key.encode())
-            await TelegramGroupMember.create(telegram_user_id=telegram_user.id, bsc_address=address,
-                                             bsc_private_key=private_key)
+            await TelegramGroupMember.create(
+                telegram_user_id=telegram_user.id,
+                bsc_address=address,
+                bsc_private_key=private_key,
+            )
             text = f"Successfully registered @{telegram_user.username}"
         except Exception as e:
             logger.info("Failed to register user")
