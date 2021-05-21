@@ -23,6 +23,9 @@ tortoise-orm = { extras = ["asyncpg"], version = "^0.17.2" }
 cryptography = "^3.4.7"
 web3 = "^5.19.0"
 uniswap-python = { git = "https://github.com/shanefontaine/uniswap-python.git" }
+plotly = "^4.14.3"
+psutil = "^5.8.0"
+kaleido = "0.2.1"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b0"
