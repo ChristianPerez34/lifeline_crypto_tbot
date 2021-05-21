@@ -36,7 +36,6 @@ async def send_welcome(message: Message):
         f"{bold('/register')} {italic('ADDRESS')} {italic('PRIVATE')}\_{italic('KEY')} to register to use PancakeSwap bot 🤖\n\n",
         f"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on pancakeswap\n\n",
         f"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to sell coins on pancakeswap\n\n",
-
     )
     await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
 
