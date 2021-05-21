@@ -64,10 +64,8 @@ def setup_handlers(dp: Dispatcher) -> None:
     dp.register_message_handler(send_trending, commands=["trending"])
     dp.register_message_handler(send_chart, commands=["chart"])
     dp.register_message_handler(send_price_alert, commands=["alert"])
-    dp.register_message_handler(send_latest_listings,
-                                commands=["latest_listings"])
-    dp.register_message_handler(send_restart_kucoin_bot,
-                                commands=["restart_kucoin"])
+    dp.register_message_handler(send_latest_listings, commands=["latest_listings"])
+    dp.register_message_handler(send_restart_kucoin_bot, commands=["restart_kucoin"])
     dp.register_message_handler(send_buy_coin, commands=["buy_coin"])
     dp.register_message_handler(send_register, commands=["register"])
     dp.register_message_handler(send_greeting)
@@ -76,10 +74,9 @@ def setup_handlers(dp: Dispatcher) -> None:
 
 if __name__ == "__main__":
     if ENV == DEV:
-        executor.start_polling(dp,
-                               skip_updates=True,
-                               on_startup=on_startup,
-                               on_shutdown=on_shutdown)
+        executor.start_polling(
+            dp, skip_updates=True, on_startup=on_startup, on_shutdown=on_shutdown
+        )
     else:
         executor.start_webhook(
             dispatcher=dp,
