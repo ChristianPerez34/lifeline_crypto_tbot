@@ -1,28 +1,26 @@
 import asyncio
 import concurrent
+import io
 import json
+from io import BytesIO
 from time import time
 
 import aiohttp
 import pandas as pd
-import requests
-import io
-import plotly.io as pio
 import plotly.graph_objs as go
-
+import plotly.io as pio
+import requests
 from aiogram.types import Message
 from aiogram.types import ParseMode
+from aiogram.utils.emoji import emojize
 from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import link
 from aiogram.utils.markdown import text
-from aiogram.utils.emoji import emojize
 from cryptography.fernet import Fernet
 from kucoin_futures.client import Trade
-from web3 import Web3
-from io import BytesIO
 from pandas import DataFrame
-
+from web3 import Web3
 
 from . import cg
 from . import cmc
@@ -43,12 +41,6 @@ from config import BSCSCAN_API_URL
 from config import FERNET_KEY
 from handlers.base import send_message
 from models import TelegramGroupMember
-
-
-
-
-
-
 
 HEADERS = {
     "User-Agent":
@@ -208,7 +200,9 @@ async def send_coin_address(message: Message) -> None:
     logger.info("Searching for coin by contract address")
     args = message.get_args().split()
     if len(args) != 1:
-        reply = text(f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}")
+        reply = text(
+            f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"
+        )
     else:
         address = args[0]
         coin_stats = get_coin_stats_by_address(address=address)
@@ -490,10 +484,7 @@ def coingecko_coin_market_lookup(ids: str, time_frame: int) -> dict:
     """
     logger.info(f"Looking up chart data for {ids} in CoinGecko API")
 
-    return (cg.get_coin_market_chart_by_id(
-                ids,
-               "USD",
-                time_frame))
+    return cg.get_coin_market_chart_by_id(ids, "USD", time_frame)
 
 
 def get_coin_id(symbol: str) -> dict:
@@ -510,7 +501,7 @@ def get_coin_id(symbol: str) -> dict:
 
     if symbol in crypto_cache.keys():
         coin_id = crypto_cache[symbol]
-            
+
     else:
         coin = [
             coin for coin in cg.get_coins_list()
@@ -518,9 +509,8 @@ def get_coin_id(symbol: str) -> dict:
         ][0]
         coin_id = coin["id"]
         crypto_cache[symbol] = coin_id
-    
-    return coin_id
 
+    return coin_id
 
 
 async def send_chart(message: Message):
@@ -531,26 +521,27 @@ async def send_chart(message: Message):
     """
     logger.info("Searching for coin market data for chart")
     args = message.get_args().split()
-    reply = ''
+    reply = ""
 
     if len(args) != 2:
-        reply = text(f"⚠️ Please provide a valid crypto symbol and amount of days: \n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}")
+        reply = text(
+            f"⚠️ Please provide a valid crypto symbol and amount of days: \n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}"
+        )
     else:
-        symbol = args[0].upper()    
-        time_frame = args[1] 
+        symbol = args[0].upper()
+        time_frame = args[1]
         coin_id = get_coin_id(symbol)
         market = coingecko_coin_market_lookup(coin_id, time_frame)
 
-
         logger.info("Creating chart layout")
         # Volume
-        df_volume = DataFrame(market["total_volumes"], columns=["DateTime", "Volume"])
-        df_volume["DateTime"] = pd.to_datetime(df_volume["DateTime"], unit="ms")
-        volume = go.Scatter(
-            x=df_volume.get("DateTime"),
-            y=df_volume.get("Volume"),
-            name="Volume"
-        )
+        df_volume = DataFrame(market["total_volumes"],
+                              columns=["DateTime", "Volume"])
+        df_volume["DateTime"] = pd.to_datetime(df_volume["DateTime"],
+                                               unit="ms")
+        volume = go.Scatter(x=df_volume.get("DateTime"),
+                            y=df_volume.get("Volume"),
+                            name="Volume")
 
         # Price
         df_price = DataFrame(market["prices"], columns=["DateTime", "Price"])
@@ -560,12 +551,8 @@ async def send_chart(message: Message):
             y=df_price.get("Price"),
             yaxis="y2",
             name="Price",
-            line=dict(
-                color=("rgb(22, 96, 167)"),
-                width=2
-            )
+            line=dict(color=("rgb(22, 96, 167)"), width=2),
         )
-
 
         margin_l = 140
         tickformat = "0.8f"
@@ -580,44 +567,25 @@ async def send_chart(message: Message):
                 tickformat = "0.2f"
 
         layout = go.Layout(
-            paper_bgcolor='rgb(233,233,233)',
-            plot_bgcolor='rgb(233,233,233)',
+            paper_bgcolor="rgb(233,233,233)",
+            plot_bgcolor="rgb(233,233,233)",
             autosize=False,
             width=800,
             height=600,
-            margin=go.layout.Margin(
-                l=margin_l,
-                r=50,
-                b=85,
-                t=100,
-                pad=4
-            ),
-            yaxis=dict(
-                domain=[0, 0.20]
-            ),
+            margin=go.layout.Margin(l=margin_l, r=50, b=85, t=100, pad=4),
+            yaxis=dict(domain=[0, 0.20]),
             yaxis2=dict(
-                title=dict(
-                    text='USD',
-                    font=dict(
-                        size=18
-                    )
-                ),                domain=[0.25, 1],
+                title=dict(text="USD", font=dict(size=18)),
+                domain=[0.25, 1],
                 tickprefix="   ",
-                ticksuffix=f"  "
+                ticksuffix=f"  ",
             ),
-            title=dict(
-                text=symbol,
-                font=dict(
-                    size=26
-                )
-            ),
-            legend=dict(
-                orientation="h",
-                yanchor="top",
-                xanchor="center",
-                y=1.05,
-                x=0.45
-            ),
+            title=dict(text=symbol, font=dict(size=26)),
+            legend=dict(orientation="h",
+                        yanchor="top",
+                        xanchor="center",
+                        y=1.05,
+                        x=0.45),
             shapes=[{
                 "type": "line",
                 "xref": "paper",
@@ -630,11 +598,10 @@ async def send_chart(message: Message):
                     "color": "rgb(50, 171, 96)",
                     "width": 1,
                     "dash": "dot"
-                }
+                },
             }],
         )
 
-        
         fig = go.Figure(data=[price, volume], layout=layout)
         fig["layout"]["yaxis2"].update(tickformat=tickformat)
 
@@ -643,6 +610,7 @@ async def send_chart(message: Message):
     else:
         logger.info("Exporting chart as image")
         await message.reply_photo(
-            photo=io.BufferedReader(BytesIO(pio.to_image(fig, format='jpeg', engine='kaleido'))),
-            parse_mode=ParseMode.MARKDOWN)
-
+            photo=io.BufferedReader(
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
+            parse_mode=ParseMode.MARKDOWN,
+        )
