@@ -45,11 +45,6 @@ from handlers.base import send_message
 from models import TelegramGroupMember
 
 
-
-
-
-
-
 HEADERS = {
     "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
@@ -74,7 +69,7 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
             vs_currencies="usd",
             include_market_cap=True,
             include_24hr_change=True,
-        ))
+    ))
 
 
 def coinmarketcap_coin_lookup(symbol: str) -> dict:
@@ -208,7 +203,8 @@ async def send_coin_address(message: Message) -> None:
     logger.info("Searching for coin by contract address")
     args = message.get_args().split()
     if len(args) != 1:
-        reply = text(f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}")
+        reply = text(
+            f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}")
     else:
         address = args[0]
         coin_stats = get_coin_stats_by_address(address=address)
@@ -491,9 +487,9 @@ def coingecko_coin_market_lookup(ids: str, time_frame: int) -> dict:
     logger.info(f"Looking up chart data for {ids} in CoinGecko API")
 
     return (cg.get_coin_market_chart_by_id(
-                ids,
-               "USD",
-                time_frame))
+        ids,
+        "USD",
+        time_frame))
 
 
 def get_coin_id(symbol: str) -> dict:
@@ -510,7 +506,7 @@ def get_coin_id(symbol: str) -> dict:
 
     if symbol in crypto_cache.keys():
         coin_id = crypto_cache[symbol]
-            
+
     else:
         coin = [
             coin for coin in cg.get_coins_list()
@@ -518,9 +514,8 @@ def get_coin_id(symbol: str) -> dict:
         ][0]
         coin_id = coin["id"]
         crypto_cache[symbol] = coin_id
-    
-    return coin_id
 
+    return coin_id
 
 
 async def send_chart(message: Message):
@@ -534,18 +529,20 @@ async def send_chart(message: Message):
     reply = ''
 
     if len(args) != 2:
-        reply = text(f"⚠️ Please provide a valid crypto symbol and amount of days: \n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}")
+        reply = text(
+            f"⚠️ Please provide a valid crypto symbol and amount of days: \n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}")
     else:
-        symbol = args[0].upper()    
-        time_frame = args[1] 
+        symbol = args[0].upper()
+        time_frame = args[1]
         coin_id = get_coin_id(symbol)
         market = coingecko_coin_market_lookup(coin_id, time_frame)
 
-
         logger.info("Creating chart layout")
         # Volume
-        df_volume = DataFrame(market["total_volumes"], columns=["DateTime", "Volume"])
-        df_volume["DateTime"] = pd.to_datetime(df_volume["DateTime"], unit="ms")
+        df_volume = DataFrame(market["total_volumes"], columns=[
+                              "DateTime", "Volume"])
+        df_volume["DateTime"] = pd.to_datetime(
+            df_volume["DateTime"], unit="ms")
         volume = go.Scatter(
             x=df_volume.get("DateTime"),
             y=df_volume.get("Volume"),
@@ -565,7 +562,6 @@ async def send_chart(message: Message):
                 width=2
             )
         )
-
 
         margin_l = 140
         tickformat = "0.8f"
@@ -634,7 +630,6 @@ async def send_chart(message: Message):
             }],
         )
 
-        
         fig = go.Figure(data=[price, volume], layout=layout)
         fig["layout"]["yaxis2"].update(tickformat=tickformat)
 
@@ -643,6 +638,6 @@ async def send_chart(message: Message):
     else:
         logger.info("Exporting chart as image")
         await message.reply_photo(
-            photo=io.BufferedReader(BytesIO(pio.to_image(fig, format='jpeg', engine='kaleido'))),
+            photo=io.BufferedReader(
+                BytesIO(pio.to_image(fig, format='jpeg', engine='kaleido'))),
             parse_mode=ParseMode.MARKDOWN)
-

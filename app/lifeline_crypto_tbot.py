@@ -72,7 +72,6 @@ def setup_handlers(dp: Dispatcher) -> None:
     dp.register_message_handler(send_register, commands=["register"])
     dp.register_message_handler(send_greeting)
     dp.register_errors_handler(send_error),
-    
 
 
 if __name__ == "__main__":
