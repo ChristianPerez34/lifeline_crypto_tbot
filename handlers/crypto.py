@@ -104,6 +104,8 @@ def get_coin_stats(symbol: str) -> dict:
         market_data = data['market_data']
         coin_stats = {
             "slug": data['name'],
+            "contract_address": data['contract_address'],
+            "website": data['links']['homepage'][0],
             "price": market_data['current_price']["usd"],
             "usd_change_24h": market_data["price_change_percentage_24h"],
             "usd_change_7d": market_data["price_change_percentage_7d"],
@@ -142,6 +144,8 @@ def get_coin_stats_by_address(address: str) -> dict:
     slug = data["name"]
     return {
         "slug": slug,
+        "contract_address": data['contract_address'],
+        "website": data['links']['homepage'][0],
         "symbol": data["symbol"].upper(),
         "price": market_data["current_price"]["usd"],
         "usd_change_24h": market_data["price_change_percentage_24h"],
@@ -167,11 +171,18 @@ async def send_coin(message: Message) -> None:
         if coin_stats:
             price = "${:,}".format(float(coin_stats["price"]))
             market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-            reply = (f"{coin_stats['slug']} ({symbol})\n\n"
-                     f"Price\n{price}\n\n"
-                     f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                     f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                     f"Market Cap\n{market_cap}")
+            reply = f"{coin_stats['slug']} ({symbol})\n\n"
+
+            if 'contract_address' in coin_stats:
+                reply += f"{coin_stats['contract_address']}\n\n"
+
+            if 'website' in coin_stats:
+                reply += f"{coin_stats['website']}\n\n"
+            reply += (
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+                f"Market Cap\n{market_cap}")
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -208,11 +219,18 @@ async def send_coin_address(message: Message) -> None:
         if coin_stats:
             price = "${:,}".format(float(coin_stats["price"]))
             market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-            reply = (f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
-                     f"Price\n{price}\n\n"
-                     f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                     f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                     f"Market Cap\n{market_cap}")
+            reply = f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
+
+            if 'contract_address' in coin_stats:
+                reply += f"{coin_stats['contract_address']}\n\n"
+
+            if 'website' in coin_stats:
+                reply += f"{coin_stats['website']}\n\n"
+            reply += (
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+                f"Market Cap\n{market_cap}")
     await message.reply(text=reply)
 
 
