@@ -16,7 +16,7 @@ logging.basicConfig(
     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-crypto_cache = LRU(5)
+coingecko_coin_lookup_cache = LRU(5)
 cmc = CoinMarketCapAPI(os.getenv("COIN_MARKET_CAP_API_KEY"))
 cg = CoinGeckoAPI()
 eth = Etherscan(os.getenv("ETHERSCAN_API_KEY"))
