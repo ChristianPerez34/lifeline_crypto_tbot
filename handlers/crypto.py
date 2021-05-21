@@ -372,7 +372,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
             passphrase=KUCOIN_API_PASSPHRASE,
         )
         orders = [order for order in client.get_open_stop_order()["items"]]
-        for position in client.get_all_position():
+        for position in client.get_all_position()['data']:
             if position["isOpen"]:
                 symbol = position["symbol"]
                 position_orders = [
