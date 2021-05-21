@@ -23,6 +23,7 @@ from handlers.crypto import send_gas
 from handlers.crypto import send_latest_listings
 from handlers.crypto import send_price_alert
 from handlers.crypto import send_restart_kucoin_bot
+from handlers.crypto import send_sell_coin
 from handlers.crypto import send_trending
 from handlers.error import send_error
 from handlers.user import send_register
@@ -70,6 +71,7 @@ def setup_handlers(dp: Dispatcher) -> None:
                                 commands=["restart_kucoin"])
     dp.register_message_handler(send_buy_coin, commands=["buy_coin"])
     dp.register_message_handler(send_register, commands=["register"])
+    dp.register_message_handler(send_sell_coin, commands=["sell_coin"])
     dp.register_message_handler(send_greeting)
     dp.register_errors_handler(send_error),
 

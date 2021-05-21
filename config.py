@@ -1,6 +1,7 @@
 import os
 
 from dotenv import load_dotenv
+from web3 import Web3
 
 load_dotenv()
 
@@ -15,6 +16,16 @@ FERNET_KEY = os.getenv("FERNET_KEY")
 BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
 BSCSCAN_API_KEY = os.getenv("BSCSCAN_API_KEY")
 BSCSCAN_API_URL = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
+PANCAKESWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
+    "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
+PANCAKESWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
+    "0x10ED43C718714eb63d5aA57B78B54704E256024E")
+BNB_ADDRESS = "0x0000000000000000000000000000000000000000"
+MAX_SLIPPAGE = 0.1
+BUY = "BUY"
+SELL = "SELL"
+GAS = 250000
+GAS_PRICE = Web3.toWei("10", "gwei")
 
 # Telegram env settings
 TELEGRAM_BOT_API_KEY = os.getenv("TELEGRAM_BOT_API_KEY")

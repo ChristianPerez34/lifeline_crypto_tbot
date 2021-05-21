@@ -19,10 +19,10 @@ html5lib = "^1.1"
 aiogram = "^2.13"
 emoji = "^1.2.0"
 kucoin-futures-python = "^1.0.3"
-uniswap-python = "^0.4.6"
 tortoise-orm = { extras = ["asyncpg"], version = "^0.17.2" }
 cryptography = "^3.4.7"
 web3 = "^5.19.0"
+uniswap-python = { git = "https://github.com/shanefontaine/uniswap-python.git" }
 plotly = "^4.14.3"
 psutil = "^5.8.0"
 kaleido = "0.2.1"

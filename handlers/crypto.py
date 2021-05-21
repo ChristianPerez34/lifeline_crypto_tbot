@@ -1,15 +1,12 @@
 import asyncio
 import concurrent
 import io
-import json
 from io import BytesIO
-from time import time
 
 import aiohttp
 import pandas as pd
 import plotly.graph_objs as go
 import plotly.io as pio
-import requests
 from aiogram.types import Message
 from aiogram.types import ParseMode
 from aiogram.utils.emoji import emojize
@@ -20,6 +17,7 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from kucoin_futures.client import Trade
 from pandas import DataFrame
+from uniswap import Uniswap
 from web3 import Web3
 
 from . import cg
@@ -36,9 +34,12 @@ from bot import KUCOIN_TASK_NAME
 from bot import TELEGRAM_CHAT_ID
 from bot.kucoin_bot import kucoin_bot
 from config import BINANCE_SMART_CHAIN_URL
-from config import BSCSCAN_API_KEY
-from config import BSCSCAN_API_URL
+from config import BNB_ADDRESS
+from config import BUY
 from config import FERNET_KEY
+from config import PANCAKESWAP_FACTORY_ADDRESS
+from config import PANCAKESWAP_ROUTER_ADDRESS
+from config import SELL
 from handlers.base import send_message
 from models import TelegramGroupMember
 
@@ -398,62 +399,60 @@ async def send_restart_kucoin_bot(message: Message) -> None:
     await message.reply(text=reply)
 
 
-def swap_tokens(token_to_buy, amount_to_spend, user):
+def swap_tokens(token: str, amount_to_spend: float, side: str,
+                user: TelegramGroupMember) -> str:
+    """
+    Swaps crypto coins on PancakeSwap
+    Args:
+        token (str): Address of coin to buy/sell
+        amount_to_spend (float): Amount in BNB expected to spend/receive
+        side (str): Indicates if user wants to buy or sell coins
+        user (TelegramGroupMember): Telegram user
+
+    Returns: Reply to message
+
+    """
     web3 = Web3(Web3.HTTPProvider(BINANCE_SMART_CHAIN_URL))
-    contract_address = web3.toChecksumAddress(
-        "0x10ED43C718714eb63d5aA57B78B54704E256024E"
-    )  # Pancake Swap Contract Router
 
     if web3.isConnected():
-        if user:
-            fernet = Fernet(FERNET_KEY)
-            user_address = web3.toChecksumAddress(user.bsc_address)
-            # a = bytes(user.bsc_private_key)
-            private_key = fernet.decrypt(user.bsc_private_key).decode()
-            token_to_buy = web3.toChecksumAddress(token_to_buy)
-            amount_to_spend = web3.toWei(float(amount_to_spend), "ether")
-            max_slippage = 0.1
-            url = BSCSCAN_API_URL.format(address=contract_address,
-                                         api_key=BSCSCAN_API_KEY)
+        fernet = Fernet(FERNET_KEY)
+        user_address = web3.toChecksumAddress(user.bsc_address)
+        private_key = fernet.decrypt(user.bsc_private_key).decode()
+        token = web3.toChecksumAddress(token)
+        amount_to_spend = web3.toWei(amount_to_spend, "ether")
+        pancakeswap_wrapper = Uniswap(
+            user_address,
+            private_key,
+            version=2,
+            web3=web3,
+            factory_contract_addr=PANCAKESWAP_FACTORY_ADDRESS,
+            router_contract_addr=PANCAKESWAP_ROUTER_ADDRESS,
+        )
 
-            # async with aiohttp.ClientSession() as session:
-            #     async with session.get(url, headers=HEADERS) as response:
-            #         data = await response.json()
-            #         abi = json.loads(data['result'])
-            data = requests.get(url).json()
-            abi = json.loads(data["result"])
-            contract = web3.eth.contract(address=contract_address, abi=abi)
-            wbnb_address = contract.functions.WETH().call()
-            nonce = web3.eth.getTransactionCount(user_address)
-            deadline = int(time()) + 1000 * 60  # 1 minute deadline
-            path = [wbnb_address, token_to_buy]
-            amount_out_min = int(
-                (1 - max_slippage) * contract.functions.getAmountsOut(
-                    amount_to_spend, path).call()[-1])
-            txn = contract.functions.swapExactETHForTokens(
-                amount_out_min, path, user_address,
-                deadline).buildTransaction({
-                    "gas": 250000,
-                    "gasPrice": web3.toWei("10", "gwei"),
-                    "nonce": nonce,
-                    "from": user_address,
-                    "value": amount_to_spend,
-                })
-            sign_txn = web3.eth.account.signTransaction(
-                txn, private_key=private_key)
+        if side == BUY:
             txn_hash = web3.toHex(
-                web3.eth.sendRawTransaction(sign_txn.rawTransaction))
-
-            txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
-            reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
+                pancakeswap_wrapper.make_trade(BNB_ADDRESS, token,
+                                               amount_to_spend, user_address))
         else:
-            reply = "⚠ Sorry, you must register prior to using this command."
+            txn_hash = web3.toHex(
+                pancakeswap_wrapper.make_trade_output(token, BNB_ADDRESS,
+                                                      amount_to_spend,
+                                                      user_address))
+        txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
+        reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
+
     else:
         reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
     return reply
 
 
-async def send_buy_coin(message: Message):
+async def send_buy_coin(message: Message) -> None:
+    """
+    Command to buy coins in PancakeSwap
+    Args:
+        message (Message): Telegram chat message
+
+    """
     logger.info("Started buy coin command")
 
     telegram_user = message.from_user
@@ -464,10 +463,40 @@ async def send_buy_coin(message: Message):
     else:
         user = await TelegramGroupMember.filter(
             telegram_user_id=telegram_user.id).first()
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
-        loop = asyncio.get_event_loop()
-        reply = await loop.run_in_executor(executor, swap_tokens, args[0],
-                                           args[1], user)
+        if user:
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+            loop = asyncio.get_event_loop()
+            reply = await loop.run_in_executor(executor, swap_tokens, args[0],
+                                               float(args[1]), BUY, user)
+        else:
+            reply = "⚠ Sorry, you must register prior to using this command."
+
+    await message.reply(text=reply)
+
+
+async def send_sell_coin(message: Message) -> None:
+    """
+    Command to sell coins in PancakeSwap
+    Args:
+        message (Message): Message to reply to
+
+    """
+    logger.info("Started sell coin command")
+    telegram_user = message.from_user
+    args = message.get_args().split()
+
+    if len(args) != 2:
+        reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /sell_coin [ADDRESS] [AMOUNT]"
+    else:
+        user = await TelegramGroupMember.filter(
+            telegram_user_id=telegram_user.id).first()
+        if user:
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+            loop = asyncio.get_event_loop()
+            reply = await loop.run_in_executor(executor, swap_tokens, args[0],
+                                               float(args[1]), SELL, user)
+        else:
+            reply = "⚠ Sorry, you must register prior to using this command."
 
     await message.reply(text=reply)
 
