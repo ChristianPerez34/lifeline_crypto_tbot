@@ -23,6 +23,7 @@ from handlers.crypto import send_latest_listings
 from handlers.crypto import send_price_alert
 from handlers.crypto import send_restart_kucoin_bot
 from handlers.crypto import send_trending
+from handlers.crypto import send_chart
 from handlers.error import send_error
 from handlers.user import send_register
 
@@ -61,6 +62,7 @@ def setup_handlers(dp: Dispatcher) -> None:
     dp.register_message_handler(send_gas, commands=["gas"])
     dp.register_message_handler(send_coin_address, commands=["coin_address"])
     dp.register_message_handler(send_trending, commands=["trending"])
+    dp.register_message_handler(send_chart, commands=["chart"])
     dp.register_message_handler(send_price_alert, commands=["alert"])
     dp.register_message_handler(send_latest_listings,
                                 commands=["latest_listings"])
@@ -70,6 +72,7 @@ def setup_handlers(dp: Dispatcher) -> None:
     dp.register_message_handler(send_register, commands=["register"])
     dp.register_message_handler(send_greeting)
     dp.register_errors_handler(send_error),
+    
 
 
 if __name__ == "__main__":
