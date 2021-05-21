@@ -259,8 +259,7 @@ async def send_price_alert(message: Message) -> None:
 
         coin_stats = get_coin_stats(symbol=crypto)
 
-        asyncio.create_task(priceAlertCallback(
-            context=[crypto, sign, price], delay=15))
+        asyncio.create_task(priceAlertCallback(context=[crypto, sign, price], delay=15))
         response = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
         response += f"the current price of {crypto} is ${float(coin_stats['price'])}"
     else:
@@ -588,10 +587,8 @@ async def send_chart(message: Message):
 
         logger.info("Creating chart layout")
         # Volume
-        df_volume = DataFrame(market["total_volumes"], columns=[
-                              "DateTime", "Volume"])
-        df_volume["DateTime"] = pd.to_datetime(
-            df_volume["DateTime"], unit="ms")
+        df_volume = DataFrame(market["total_volumes"], columns=["DateTime", "Volume"])
+        df_volume["DateTime"] = pd.to_datetime(df_volume["DateTime"], unit="ms")
         volume = go.Scatter(
             x=df_volume.get("DateTime"), y=df_volume.get("Volume"), name="Volume"
         )
