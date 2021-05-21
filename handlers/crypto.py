@@ -20,13 +20,18 @@ from pandas import DataFrame
 from uniswap import Uniswap
 from web3 import Web3
 
+from . import cg
+from . import cmc
+from . import coingecko_coin_lookup_cache
+from . import eth
+from . import logger
 from app import bot
+from bot import active_orders
 from bot import KUCOIN_API_KEY
 from bot import KUCOIN_API_PASSPHRASE
 from bot import KUCOIN_API_SECRET
 from bot import KUCOIN_TASK_NAME
 from bot import TELEGRAM_CHAT_ID
-from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
 from config import BINANCE_SMART_CHAIN_URL
 from config import BNB_ADDRESS
@@ -37,15 +42,10 @@ from config import PANCAKESWAP_ROUTER_ADDRESS
 from config import SELL
 from handlers.base import send_message
 from models import TelegramGroupMember
-from . import cg
-from . import cmc
-from . import coingecko_coin_lookup_cache
-from . import eth
-from . import logger
 
 HEADERS = {
     "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
@@ -61,15 +61,13 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
     """
     logger.info(f"Looking up price for {ids} in CoinGecko API")
     try:
-        data = cg.get_coin_info_from_contract_address_by_id(
-            id="ethereum", contract_address=ids) if is_address else cg.get_coin_by_id(
-            id=ids
-        )
+        data = (cg.get_coin_info_from_contract_address_by_id(
+            id="ethereum", contract_address=ids)
+                if is_address else cg.get_coin_by_id(id=ids))
     except Exception:
-        data = cg.get_coin_info_from_contract_address_by_id(
-            id="binance", contract_address=ids) if is_address else cg.get_coin_by_id(
-            id=ids
-        )
+        data = (cg.get_coin_info_from_contract_address_by_id(
+            id="binance", contract_address=ids)
+                if is_address else cg.get_coin_by_id(id=ids))
     return data
 
 
@@ -101,15 +99,15 @@ def get_coin_stats(symbol: str) -> dict:
     try:
         coin_id = get_coingecko_coin_id(symbol=symbol)
         data = coingecko_coin_lookup(coin_id)
-        market_data = data['market_data']
+        market_data = data["market_data"]
         coin_stats = {
-            "slug": data['name'],
-            "contract_address": data['contract_address'],
-            "website": data['links']['homepage'][0],
-            "price": market_data['current_price']["usd"],
+            "slug": data["name"],
+            "contract_address": data["contract_address"],
+            "website": data["links"]["homepage"][0],
+            "price": market_data["current_price"]["usd"],
             "usd_change_24h": market_data["price_change_percentage_24h"],
             "usd_change_7d": market_data["price_change_percentage_7d"],
-            "market_cap": market_data['market_cap']["usd"],
+            "market_cap": market_data["market_cap"]["usd"],
         }
     except IndexError:
         logger.info(
@@ -122,7 +120,7 @@ def get_coin_stats(symbol: str) -> dict:
             "slug": data["name"],
             "price": quote["price"],
             "usd_change_24h": quote["percent_change_24h"],
-            "usd_change_7d": quote['percent_change_7d'],
+            "usd_change_7d": quote["percent_change_7d"],
             "market_cap": quote["market_cap"],
         }
     return coin_stats
@@ -144,8 +142,8 @@ def get_coin_stats_by_address(address: str) -> dict:
     slug = data["name"]
     return {
         "slug": slug,
-        "contract_address": data['contract_address'],
-        "website": data['links']['homepage'][0],
+        "contract_address": data["contract_address"],
+        "website": data["links"]["homepage"][0],
         "symbol": data["symbol"].upper(),
         "price": market_data["current_price"]["usd"],
         "usd_change_24h": market_data["price_change_percentage_24h"],
@@ -173,16 +171,15 @@ async def send_coin(message: Message) -> None:
             market_cap = "${:,}".format(float(coin_stats["market_cap"]))
             reply = f"{coin_stats['slug']} ({symbol})\n\n"
 
-            if 'contract_address' in coin_stats:
+            if "contract_address" in coin_stats:
                 reply += f"{coin_stats['contract_address']}\n\n"
 
-            if 'website' in coin_stats:
+            if "website" in coin_stats:
                 reply += f"{coin_stats['website']}\n\n"
-            reply += (
-                f"Price\n{price}\n\n"
-                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                f"Market Cap\n{market_cap}")
+            reply += (f"Price\n{price}\n\n"
+                      f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                      f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+                      f"Market Cap\n{market_cap}")
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -221,16 +218,15 @@ async def send_coin_address(message: Message) -> None:
             market_cap = "${:,}".format(float(coin_stats["market_cap"]))
             reply = f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
 
-            if 'contract_address' in coin_stats:
+            if "contract_address" in coin_stats:
                 reply += f"{coin_stats['contract_address']}\n\n"
 
-            if 'website' in coin_stats:
+            if "website" in coin_stats:
                 reply += f"{coin_stats['website']}\n\n"
-            reply += (
-                f"Price\n{price}\n\n"
-                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                f"Market Cap\n{market_cap}")
+            reply += (f"Price\n{price}\n\n"
+                      f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                      f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+                      f"Market Cap\n{market_cap}")
     await message.reply(text=reply)
 
 
