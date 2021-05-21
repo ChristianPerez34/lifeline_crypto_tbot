@@ -15,13 +15,14 @@ from config import WEBHOOK_URL
 from handlers import init_database
 from handlers.base import send_greeting
 from handlers.base import send_welcome
-from handlers.crypto import send_buy_coin, send_sell_coin
+from handlers.crypto import send_buy_coin
 from handlers.crypto import send_coin
 from handlers.crypto import send_coin_address
 from handlers.crypto import send_gas
 from handlers.crypto import send_latest_listings
 from handlers.crypto import send_price_alert
 from handlers.crypto import send_restart_kucoin_bot
+from handlers.crypto import send_sell_coin
 from handlers.crypto import send_trending
 from handlers.error import send_error
 from handlers.user import send_register

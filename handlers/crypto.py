@@ -13,28 +13,32 @@ from kucoin_futures.client import Trade
 from uniswap import Uniswap
 from web3 import Web3
 
-from app import bot
-from bot import KUCOIN_API_KEY
-from bot import KUCOIN_API_PASSPHRASE
-from bot import KUCOIN_API_SECRET
-from bot import KUCOIN_TASK_NAME
-from bot import TELEGRAM_CHAT_ID
-from bot import active_orders
-from bot.kucoin_bot import kucoin_bot
-from config import BINANCE_SMART_CHAIN_URL, PANCAKESWAP_ROUTER_ADDRESS, BUY, SELL, PANCAKESWAP_FACTORY_ADDRESS, \
-    BNB_ADDRESS
-from config import FERNET_KEY
-from handlers.base import send_message
-from models import TelegramGroupMember
 from . import cg
 from . import cmc
 from . import crypto_cache
 from . import eth
 from . import logger
+from app import bot
+from bot import active_orders
+from bot import KUCOIN_API_KEY
+from bot import KUCOIN_API_PASSPHRASE
+from bot import KUCOIN_API_SECRET
+from bot import KUCOIN_TASK_NAME
+from bot import TELEGRAM_CHAT_ID
+from bot.kucoin_bot import kucoin_bot
+from config import BINANCE_SMART_CHAIN_URL
+from config import BNB_ADDRESS
+from config import BUY
+from config import FERNET_KEY
+from config import PANCAKESWAP_FACTORY_ADDRESS
+from config import PANCAKESWAP_ROUTER_ADDRESS
+from config import SELL
+from handlers.base import send_message
+from models import TelegramGroupMember
 
 HEADERS = {
     "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
@@ -52,11 +56,11 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
 
     return (cg.get_coin_info_from_contract_address_by_id(
         id="ethereum", contract_address=ids) if is_address else cg.get_price(
-        ids=ids,
-        vs_currencies="usd",
-        include_market_cap=True,
-        include_24hr_change=True,
-    ))
+            ids=ids,
+            vs_currencies="usd",
+            include_market_cap=True,
+            include_24hr_change=True,
+        ))
 
 
 def coinmarketcap_coin_lookup(symbol: str) -> dict:
@@ -386,7 +390,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
     await message.reply(text=reply)
 
 
-def swap_tokens(token: str, amount_to_spend: float, side: str, user: TelegramGroupMember) -> str:
+def swap_tokens(token: str, amount_to_spend: float, side: str,
+                user: TelegramGroupMember) -> str:
     """
     Swaps crypto coins on PancakeSwap
     Args:
@@ -406,16 +411,24 @@ def swap_tokens(token: str, amount_to_spend: float, side: str, user: TelegramGro
         private_key = fernet.decrypt(user.bsc_private_key).decode()
         token = web3.toChecksumAddress(token)
         amount_to_spend = web3.toWei(amount_to_spend, "ether")
-        pancakeswap_wrapper = Uniswap(user_address, private_key, version=2, web3=web3,
-                                      factory_contract_addr=PANCAKESWAP_FACTORY_ADDRESS,
-                                      router_contract_addr=PANCAKESWAP_ROUTER_ADDRESS)
+        pancakeswap_wrapper = Uniswap(
+            user_address,
+            private_key,
+            version=2,
+            web3=web3,
+            factory_contract_addr=PANCAKESWAP_FACTORY_ADDRESS,
+            router_contract_addr=PANCAKESWAP_ROUTER_ADDRESS,
+        )
 
         if side == BUY:
             txn_hash = web3.toHex(
-                pancakeswap_wrapper.make_trade(BNB_ADDRESS, token, amount_to_spend, user_address))
+                pancakeswap_wrapper.make_trade(BNB_ADDRESS, token,
+                                               amount_to_spend, user_address))
         else:
             txn_hash = web3.toHex(
-                pancakeswap_wrapper.make_trade_output(token, BNB_ADDRESS, amount_to_spend, user_address))
+                pancakeswap_wrapper.make_trade_output(token, BNB_ADDRESS,
+                                                      amount_to_spend,
+                                                      user_address))
         txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
         reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
 
