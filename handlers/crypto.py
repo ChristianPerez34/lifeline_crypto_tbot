@@ -22,7 +22,7 @@ from web3 import Web3
 
 from . import cg
 from . import cmc
-from . import crypto_cache
+from . import coingecko_coin_lookup_cache
 from . import eth
 from . import logger
 from app import bot
@@ -60,14 +60,15 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
         dict: Data from CoinGecko API
     """
     logger.info(f"Looking up price for {ids} in CoinGecko API")
-
-    return (cg.get_coin_info_from_contract_address_by_id(
-        id="ethereum", contract_address=ids) if is_address else cg.get_price(
-            ids=ids,
-            vs_currencies="usd",
-            include_market_cap=True,
-            include_24hr_change=True,
-        ))
+    try:
+        data = (cg.get_coin_info_from_contract_address_by_id(
+            id="ethereum", contract_address=ids)
+                if is_address else cg.get_coin_by_id(id=ids))
+    except Exception:
+        data = (cg.get_coin_info_from_contract_address_by_id(
+            id="binance", contract_address=ids)
+                if is_address else cg.get_coin_by_id(id=ids))
+    return data
 
 
 def coinmarketcap_coin_lookup(symbol: str) -> dict:
@@ -96,23 +97,17 @@ def get_coin_stats(symbol: str) -> dict:
     # Search Coingecko API first
     logger.info(f"Getting coin stats for {symbol}")
     try:
-        if symbol in crypto_cache.keys():
-            coin_id = crypto_cache[symbol]
-            data = coingecko_coin_lookup(coin_id)[coin_id]
-        else:
-            coin = [
-                coin for coin in cg.get_coins_list()
-                if coin["symbol"].upper() == symbol
-            ][0]
-            coin_id = coin["id"]
-            crypto_cache[symbol] = coin_id
-            data = coingecko_coin_lookup(coin_id)[coin_id]
-        slug = crypto_cache[symbol]
+        coin_id = get_coingecko_coin_id(symbol=symbol)
+        data = coingecko_coin_lookup(coin_id)
+        market_data = data["market_data"]
         coin_stats = {
-            "slug": slug,
-            "price": data["usd"],
-            "usd_change_24h": data["usd_24h_change"],
-            "market_cap": data["usd_market_cap"],
+            "slug": data["name"],
+            "contract_address": data["contract_address"],
+            "website": data["links"]["homepage"][0],
+            "price": market_data["current_price"]["usd"],
+            "usd_change_24h": market_data["price_change_percentage_24h"],
+            "usd_change_7d": market_data["price_change_percentage_7d"],
+            "market_cap": market_data["market_cap"]["usd"],
         }
     except IndexError:
         logger.info(
@@ -125,6 +120,7 @@ def get_coin_stats(symbol: str) -> dict:
             "slug": data["name"],
             "price": quote["price"],
             "usd_change_24h": quote["percent_change_24h"],
+            "usd_change_7d": quote["percent_change_7d"],
             "market_cap": quote["market_cap"],
         }
     return coin_stats
@@ -146,9 +142,12 @@ def get_coin_stats_by_address(address: str) -> dict:
     slug = data["name"]
     return {
         "slug": slug,
+        "contract_address": data["contract_address"],
+        "website": data["links"]["homepage"][0],
         "symbol": data["symbol"].upper(),
         "price": market_data["current_price"]["usd"],
         "usd_change_24h": market_data["price_change_percentage_24h"],
+        "usd_change_7d": market_data["price_change_percentage_7d"],
         "market_cap": market_data["market_cap"]["usd"],
     }
 
@@ -170,10 +169,17 @@ async def send_coin(message: Message) -> None:
         if coin_stats:
             price = "${:,}".format(float(coin_stats["price"]))
             market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-            reply = (f"{coin_stats['slug']} ({symbol})\n\n"
-                     f"Price\n{price}\n\n"
-                     f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                     f"Market Cap\n{market_cap}")
+            reply = f"{coin_stats['slug']} ({symbol})\n\n"
+
+            if "contract_address" in coin_stats:
+                reply += f"{coin_stats['contract_address']}\n\n"
+
+            if "website" in coin_stats:
+                reply += f"{coin_stats['website']}\n\n"
+            reply += (f"Price\n{price}\n\n"
+                      f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                      f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+                      f"Market Cap\n{market_cap}")
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -210,10 +216,17 @@ async def send_coin_address(message: Message) -> None:
         if coin_stats:
             price = "${:,}".format(float(coin_stats["price"]))
             market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-            reply = (f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
-                     f"Price\n{price}\n\n"
-                     f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                     f"Market Cap\n{market_cap}")
+            reply = f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
+
+            if "contract_address" in coin_stats:
+                reply += f"{coin_stats['contract_address']}\n\n"
+
+            if "website" in coin_stats:
+                reply += f"{coin_stats['website']}\n\n"
+            reply += (f"Price\n{price}\n\n"
+                      f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                      f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+                      f"Market Cap\n{market_cap}")
     await message.reply(text=reply)
 
 
@@ -516,7 +529,7 @@ def coingecko_coin_market_lookup(ids: str, time_frame: int) -> dict:
     return cg.get_coin_market_chart_by_id(ids, "USD", time_frame)
 
 
-def get_coin_id(symbol: str) -> dict:
+def get_coingecko_coin_id(symbol: str) -> str:
     """Retrieves coinstats from connected services crypto services
 
     Args:
@@ -528,8 +541,8 @@ def get_coin_id(symbol: str) -> dict:
     # Search Coingecko API first
     logger.info(f"Getting coin ID for {symbol}")
 
-    if symbol in crypto_cache.keys():
-        coin_id = crypto_cache[symbol]
+    if symbol in coingecko_coin_lookup_cache.keys():
+        coin_id = coingecko_coin_lookup_cache[symbol]
 
     else:
         coin = [
@@ -537,7 +550,7 @@ def get_coin_id(symbol: str) -> dict:
             if coin["symbol"].upper() == symbol
         ][0]
         coin_id = coin["id"]
-        crypto_cache[symbol] = coin_id
+        coingecko_coin_lookup_cache[symbol] = coin_id
 
     return coin_id
 
@@ -559,7 +572,7 @@ async def send_chart(message: Message):
     else:
         symbol = args[0].upper()
         time_frame = args[1]
-        coin_id = get_coin_id(symbol)
+        coin_id = get_coingecko_coin_id(symbol)
         market = coingecko_coin_market_lookup(coin_id, time_frame)
 
         logger.info("Creating chart layout")
