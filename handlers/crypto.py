@@ -372,37 +372,39 @@ async def send_restart_kucoin_bot(message: Message) -> None:
             passphrase=KUCOIN_API_PASSPHRASE,
         )
         orders = [order for order in client.get_open_stop_order()["items"]]
-        for position in client.get_all_position()['data']:
-            if position["isOpen"]:
-                symbol = position["symbol"]
-                position_orders = [
-                    order for order in orders if order["symbol"] == symbol
-                ]
+        positions = client.get_all_position()
+        if isinstance(positions, list):
+            for position in client.get_all_position():
+                if position["isOpen"]:
+                    symbol = position["symbol"]
+                    position_orders = [
+                        order for order in orders if order["symbol"] == symbol
+                    ]
 
-                for position_order in position_orders:
-                    stop_price = position_order["stopPrice"]
-                    if (position_order["stopPriceType"] == "TP"
-                            and position_order["stop"] == "up"):
-                        take_profit = stop_price
-                    else:
-                        stop_loss = stop_price
-                symbol = symbol[:-1]
-                symbol = symbol.replace("XBTUSDT", "BTCUSDT")
-                entry = position["avgEntryPrice"]
-                mark_price = position["markPrice"]
-                unrealized_pnl = position["unrealisedPnl"]
-                side = ("LONG" if
-                        (entry < mark_price and unrealized_pnl > 0) or
-                        (entry > mark_price and unrealized_pnl < 0) else
-                        "SHORT")
-                active_orders.update({
-                    symbol: {
-                        "entry": entry,
-                        "side": side,
-                        "take_profit": take_profit,
-                        "stop_loss": stop_loss,
-                    }
-                })
+                    for position_order in position_orders:
+                        stop_price = position_order["stopPrice"]
+                        if (position_order["stopPriceType"] == "TP"
+                                and position_order["stop"] == "up"):
+                            take_profit = stop_price
+                        else:
+                            stop_loss = stop_price
+                    symbol = symbol[:-1]
+                    symbol = symbol.replace("XBTUSDT", "BTCUSDT")
+                    entry = position["avgEntryPrice"]
+                    mark_price = position["markPrice"]
+                    unrealized_pnl = position["unrealisedPnl"]
+                    side = ("LONG" if
+                            (entry < mark_price and unrealized_pnl > 0) or
+                            (entry > mark_price and unrealized_pnl < 0) else
+                            "SHORT")
+                    active_orders.update({
+                        symbol: {
+                            "entry": entry,
+                            "side": side,
+                            "take_profit": take_profit,
+                            "stop_loss": stop_loss,
+                        }
+                    })
         asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
         reply = f"Restarted KuCoin Bot 🤖"
     else:
