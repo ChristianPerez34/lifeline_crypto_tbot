@@ -64,11 +64,11 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
     try:
         data = (cg.get_coin_info_from_contract_address_by_id(
             id="ethereum", contract_address=ids)
-                if is_address else cg.get_coin_by_id(id=ids))
+            if is_address else cg.get_coin_by_id(id=ids))
     except Exception:
         data = (cg.get_coin_info_from_contract_address_by_id(
             id="binance", contract_address=ids)
-                if is_address else cg.get_coin_by_id(id=ids))
+            if is_address else cg.get_coin_by_id(id=ids))
     return data
 
 
@@ -450,8 +450,10 @@ def swap_tokens(token: str, amount_to_spend: float, side: str,
                 pancakeswap_wrapper.make_trade(BNB_ADDRESS, token,
                                                amount_to_spend, user_address))
         else:
-            balance = web3.fromWei(pancakeswap_wrapper.get_token_balance(token), 'ether')
-            amount_to_spend = web3.toWei(balance * Decimal(amount_to_spend), 'ether')
+            balance = web3.fromWei(
+                pancakeswap_wrapper.get_token_balance(token), 'ether')
+            amount_to_spend = web3.toWei(
+                balance * Decimal(amount_to_spend), 'ether')
             txn_hash = web3.toHex(
                 pancakeswap_wrapper.make_trade_output(token, BNB_ADDRESS,
                                                       amount_to_spend,
