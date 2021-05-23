@@ -34,9 +34,12 @@ async def send_welcome(message: Message):
         f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
         f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings\n\n"
         f"{bold('/restart')}\_{bold('kucoin')} to restart KuCoin bot 🤖\n\n",
-        f"{bold('/register')} {italic('ADDRESS')} {italic('PRIVATE')}\_{italic('KEY')} to register to use PancakeSwap bot 🤖\n\n",
-        f"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on pancakeswap\n\n",
-        f"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to sell coins on pancakeswap\n\n",
+        f"{bold('/register')} {italic('ADDRESS')} {italic('PRIVATE')}\_{italic('KEY')} to register to use PancakeSwap "
+        f"bot 🤖\n\n",
+        f"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on "
+        f"PancakeSwap\n\n",
+        f"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} {italic('PERCENTAGE')}\_{italic('TO')}\_{italic('SELL')} "
+        f"to sell coins on PancakeSwap\n\n",
         f"{bold('/chart')} {italic('COIN')} {italic('NUM')}\_{italic('DAYS')} to display coin chart\n\n",
     )
     await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
