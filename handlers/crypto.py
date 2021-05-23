@@ -1,6 +1,7 @@
 import asyncio
 import concurrent
 import io
+from decimal import Decimal
 from io import BytesIO
 
 import aiohttp
@@ -419,7 +420,7 @@ def swap_tokens(token: str, amount_to_spend: float, side: str,
     Swaps crypto coins on PancakeSwap
     Args:
         token (str): Address of coin to buy/sell
-        amount_to_spend (float): Amount in BNB expected to spend/receive
+        amount_to_spend (float): Amount in BNB expected to spend/receive. When selling will read as percentage
         side (str): Indicates if user wants to buy or sell coins
         user (TelegramGroupMember): Telegram user
 
@@ -433,7 +434,7 @@ def swap_tokens(token: str, amount_to_spend: float, side: str,
         user_address = web3.toChecksumAddress(user.bsc_address)
         private_key = fernet.decrypt(user.bsc_private_key).decode()
         token = web3.toChecksumAddress(token)
-        amount_to_spend = web3.toWei(amount_to_spend, "ether")
+
         pancakeswap_wrapper = Uniswap(
             user_address,
             private_key,
@@ -444,10 +445,13 @@ def swap_tokens(token: str, amount_to_spend: float, side: str,
         )
 
         if side == BUY:
+            amount_to_spend = web3.toWei(amount_to_spend, "ether")
             txn_hash = web3.toHex(
                 pancakeswap_wrapper.make_trade(BNB_ADDRESS, token,
                                                amount_to_spend, user_address))
         else:
+            balance = web3.fromWei(pancakeswap_wrapper.get_token_balance(token), 'ether')
+            amount_to_spend = web3.toWei(balance * Decimal(amount_to_spend), 'ether')
             txn_hash = web3.toHex(
                 pancakeswap_wrapper.make_trade_output(token, BNB_ADDRESS,
                                                       amount_to_spend,
@@ -505,10 +509,15 @@ async def send_sell_coin(message: Message) -> None:
         user = await TelegramGroupMember.filter(
             telegram_user_id=telegram_user.id).first()
         if user:
-            executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
-            loop = asyncio.get_event_loop()
-            reply = await loop.run_in_executor(executor, swap_tokens, args[0],
-                                               float(args[1]), SELL, user)
+            percentage = float(args[1])
+            if 0 < percentage < 101:
+                percentage_to_sell = float(args[1]) / 100
+                executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+                loop = asyncio.get_event_loop()
+                reply = await loop.run_in_executor(executor, swap_tokens, args[0],
+                                                   percentage_to_sell, SELL, user)
+            else:
+                reply = "⚠ Sorry, incorrect percentage value. Choose a value between 1 and 100 inclusive"
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
 
