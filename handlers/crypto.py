@@ -3,15 +3,14 @@ import concurrent
 import io
 import time
 from decimal import Decimal
-import dateutil.parser as dau
 from io import BytesIO
 
-
 import aiohttp
+import dateutil.parser as dau
 import pandas as pd
+import plotly.figure_factory as fif
 import plotly.graph_objs as go
 import plotly.io as pio
-import plotly.figure_factory as fif
 from aiogram.types import Message
 from aiogram.types import ParseMode
 from aiogram.utils.emoji import emojize
@@ -30,6 +29,8 @@ from . import cmc
 from . import coingecko_coin_lookup_cache
 from . import eth
 from . import logger
+from api.coinpaprika import CoinPaprika
+from api.cryptocompare import CryptoCompare
 from app import bot
 from bot import active_orders
 from bot import KUCOIN_API_KEY
@@ -46,11 +47,8 @@ from config import PANCAKESWAP_FACTORY_ADDRESS
 from config import PANCAKESWAP_ROUTER_ADDRESS
 from config import SELL
 from handlers.base import send_message
-from utils import all_same
 from models import TelegramGroupMember
-from api.coinpaprika import CoinPaprika
-from api.cryptocompare import CryptoCompare
-
+from utils import all_same
 
 HEADERS = {
     "User-Agent":
@@ -677,8 +675,6 @@ async def send_chart(message: Message):
                 BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
             parse_mode=ParseMode.MARKDOWN,
         )
-    
-
 
 
 async def send_candlechart(message: Message):
@@ -695,56 +691,46 @@ async def send_candlechart(message: Message):
         reply = text(
             f"⚠️ Please provide a valid crypto symbol and time followed by desired timeframe letter:\n"
             f" m - Minute\n h - Hour\n d - Day\n \n{bold('/candle')} {italic('SYMBOL')} "
-            f"{italic('NUMBER')} {italic('LETTER')}"
-        )
+            f"{italic('NUMBER')} {italic('LETTER')}")
     else:
-
 
         base_coin = "USD"
         symbol = args[0].upper()
         time_frame = args[1]
         res = args[2].lower()
 
-
         # Time frame
         if len(args) > 1:
-            if res == 'm':
+            if res == "m":
                 resolution = "MINUTE"
-            elif res == 'h':
+            elif res == "h":
                 resolution = "HOUR"
             else:
                 resolution = "DAY"
         logger.info("Searching for coin historical data for candlechart")
         if resolution == "MINUTE":
             ohlcv = CryptoCompare().get_historical_ohlcv_minute(
-                symbol,
-                base_coin,
-                time_frame)
+                symbol, base_coin, time_frame)
         elif resolution == "HOUR":
             ohlcv = CryptoCompare().get_historical_ohlcv_hourly(
-                symbol,
-                base_coin,
-                time_frame)
+                symbol, base_coin, time_frame)
         elif resolution == "DAY":
             ohlcv = CryptoCompare().get_historical_ohlcv_daily(
-                symbol,
-                base_coin,
-                time_frame)
+                symbol, base_coin, time_frame)
         else:
             ohlcv = CryptoCompare().get_historical_ohlcv_hourly(
-                symbol,
-                base_coin,
-                time_frame)
-
+                symbol, base_coin, time_frame)
 
         if ohlcv["Response"] == "Error":
             if ohlcv["Message"] == "limit is larger than max value.":
-                reply=text(f" Time frame can't be larger than {bold('2000')} DAYS data points")
+                reply = text(
+                    f" Time frame can't be larger than {bold('2000')} DAYS data points"
+                )
 
             else:
                 reply = text(f"Error: {ohlcv['Message']}")
         else:
-                
+
             ohlcv = ohlcv["Data"]
 
             if ohlcv:
@@ -753,20 +739,21 @@ async def send_candlechart(message: Message):
                 l = [value["low"] for value in ohlcv]
                 c = [value["close"] for value in ohlcv]
                 t = [value["time"] for value in ohlcv]
-      
-            if not ohlcv or all_same(o, h, l, c):
-                
-                reply =text(f"{symbol} not found on CryptoCompare. Initiated lookup on CoinPaprika."
-                        f" Data may not be as complete as CoinGecko or CMC")
-                await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
-                reply = ''
 
+            if not ohlcv or all_same(o, h, l, c):
+
+                reply = text(
+                    f"{symbol} not found on CryptoCompare. Initiated lookup on CoinPaprika."
+                    f" Data may not be as complete as CoinGecko or CMC")
+                await message.reply(text=emojize(reply),
+                                    parse_mode=ParseMode.MARKDOWN)
+                reply = ""
 
                 cp_ohlc = CoinPaprika().get_list_coins()
-                
+
                 for c in cp_ohlc:
                     if c["symbol"] == symbol:
-                        
+
                         # Current datetime in seconds
                         t_now = time.time()
                         # Convert chart time span to seconds
@@ -779,7 +766,8 @@ async def send_candlechart(message: Message):
                             int(t_start),
                             end=int(t_now),
                             quote=base_coin.lower(),
-                            limit=366)
+                            limit=366,
+                        )
 
                         if ohlcv:
                             cp_api = True
@@ -787,13 +775,14 @@ async def send_candlechart(message: Message):
                         else:
                             return
 
-
                 o = [value["open"] for value in ohlcv]
                 h = [value["high"] for value in ohlcv]
                 l = [value["low"] for value in ohlcv]
                 c = [value["close"] for value in ohlcv]
-                t = [time.mktime(dau.parse(value["time_close"]).timetuple()) for value in ohlcv]
-
+                t = [
+                    time.mktime(dau.parse(value["time_close"]).timetuple())
+                    for value in ohlcv
+                ]
 
             margin_l = 140
             tickformat = "0.8f"
@@ -807,68 +796,48 @@ async def send_candlechart(message: Message):
                     margin_l = 125
                     tickformat = "0.2f"
 
+            fig = fif.create_candlestick(o, h, l, c, pd.to_datetime(t,
+                                                                    unit="s"))
 
-            fig = fif.create_candlestick(o, h, l, c, pd.to_datetime(t, unit='s'))
+            fig["layout"]["yaxis"].update(tickformat=tickformat,
+                                          tickprefix="   ",
+                                          ticksuffix=f"  ")
 
-
-            fig['layout']['yaxis'].update(
-                tickformat=tickformat,
-                tickprefix="   ",
-                ticksuffix=f"  ")
-
-            fig['layout'].update(
-                title=dict(
-                    text=symbol,
-                    font=dict(
-                        size=26
-                    )
-                ),
-                yaxis=dict(
-                    title=dict(
-                        text=base_coin,
-                        font=dict(
-                            size=18
-                        )
-                    ),
-                )
+            fig["layout"].update(
+                title=dict(text=symbol, font=dict(size=26)),
+                yaxis=dict(title=dict(text=base_coin, font=dict(size=18)), ),
             )
 
-            fig['layout'].update(
-                shapes=[{
-                    "type": "line",
-                    "xref": "paper",
-                    "yref": "y",
-                    "x0": 0,
-                    "x1": 1,
-                    "y0": c[len(c) - 1],
-                    "y1": c[len(c) - 1],
-                    "line": {
-                        "color": "rgb(50, 171, 96)",
-                        "width": 1,
-                        "dash": "dot"
-                    }
-                }])
+            fig["layout"].update(shapes=[{
+                "type": "line",
+                "xref": "paper",
+                "yref": "y",
+                "x0": 0,
+                "x1": 1,
+                "y0": c[len(c) - 1],
+                "y1": c[len(c) - 1],
+                "line": {
+                    "color": "rgb(50, 171, 96)",
+                    "width": 1,
+                    "dash": "dot",
+                },
+            }])
 
-            fig['layout'].update(
-                paper_bgcolor='rgb(233,233,233)',
-                plot_bgcolor='rgb(233,233,233)',
+            fig["layout"].update(
+                paper_bgcolor="rgb(233,233,233)",
+                plot_bgcolor="rgb(233,233,233)",
                 autosize=False,
                 width=800,
                 height=600,
-                margin=go.layout.Margin(
-                    l=margin_l,
-                    r=50,
-                    b=85,
-                    t=100,
-                    pad=4
-                ))
-
+                margin=go.layout.Margin(l=margin_l, r=50, b=85, t=100, pad=4),
+            )
 
     if reply:
         await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
     else:
         logger.info("Exporting chart as image")
-        await message.reply_photo(photo=io.BufferedReader(
-            BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
-            parse_mode=ParseMode.MARKDOWN)
-                        
+        await message.reply_photo(
+            photo=io.BufferedReader(
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
+            parse_mode=ParseMode.MARKDOWN,
+        )
