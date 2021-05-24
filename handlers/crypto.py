@@ -72,11 +72,11 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
     try:
         data = (cg.get_coin_info_from_contract_address_by_id(
             id="ethereum", contract_address=ids)
-                if is_address else cg.get_coin_by_id(id=ids))
+            if is_address else cg.get_coin_by_id(id=ids))
     except Exception:
         data = (cg.get_coin_info_from_contract_address_by_id(
             id="binance", contract_address=ids)
-                if is_address else cg.get_coin_by_id(id=ids))
+            if is_address else cg.get_coin_by_id(id=ids))
     return data
 
 
@@ -677,8 +677,6 @@ async def send_chart(message: Message):
                 BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
             parse_mode=ParseMode.MARKDOWN,
         )
-    
-
 
 
 async def send_candlechart(message: Message):
@@ -699,12 +697,10 @@ async def send_candlechart(message: Message):
         )
     else:
 
-
         base_coin = "USD"
         symbol = args[0].upper()
         time_frame = args[1]
         res = args[2].lower()
-
 
         # Time frame
         if len(args) > 1:
@@ -736,15 +732,15 @@ async def send_candlechart(message: Message):
                 base_coin,
                 time_frame)
 
-
         if ohlcv["Response"] == "Error":
             if ohlcv["Message"] == "limit is larger than max value.":
-                reply=text(f" Time frame can't be larger than {bold('2000')} DAYS data points")
+                reply = text(
+                    f" Time frame can't be larger than {bold('2000')} DAYS data points")
 
             else:
                 reply = text(f"Error: {ohlcv['Message']}")
         else:
-                
+
             ohlcv = ohlcv["Data"]
 
             if ohlcv:
@@ -753,20 +749,19 @@ async def send_candlechart(message: Message):
                 l = [value["low"] for value in ohlcv]
                 c = [value["close"] for value in ohlcv]
                 t = [value["time"] for value in ohlcv]
-      
+
             if not ohlcv or all_same(o, h, l, c):
-                
-                reply =text(f"{symbol} not found on CryptoCompare. Initiated lookup on CoinPaprika."
-                        f" Data may not be as complete as CoinGecko or CMC")
+
+                reply = text(f"{symbol} not found on CryptoCompare. Initiated lookup on CoinPaprika."
+                             f" Data may not be as complete as CoinGecko or CMC")
                 await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
                 reply = ''
 
-
                 cp_ohlc = CoinPaprika().get_list_coins()
-                
+
                 for c in cp_ohlc:
                     if c["symbol"] == symbol:
-                        
+
                         # Current datetime in seconds
                         t_now = time.time()
                         # Convert chart time span to seconds
@@ -787,13 +782,12 @@ async def send_candlechart(message: Message):
                         else:
                             return
 
-
                 o = [value["open"] for value in ohlcv]
                 h = [value["high"] for value in ohlcv]
                 l = [value["low"] for value in ohlcv]
                 c = [value["close"] for value in ohlcv]
-                t = [time.mktime(dau.parse(value["time_close"]).timetuple()) for value in ohlcv]
-
+                t = [time.mktime(dau.parse(value["time_close"]).timetuple())
+                     for value in ohlcv]
 
             margin_l = 140
             tickformat = "0.8f"
@@ -807,9 +801,8 @@ async def send_candlechart(message: Message):
                     margin_l = 125
                     tickformat = "0.2f"
 
-
-            fig = fif.create_candlestick(o, h, l, c, pd.to_datetime(t, unit='s'))
-
+            fig = fif.create_candlestick(
+                o, h, l, c, pd.to_datetime(t, unit='s'))
 
             fig['layout']['yaxis'].update(
                 tickformat=tickformat,
@@ -863,7 +856,6 @@ async def send_candlechart(message: Message):
                     pad=4
                 ))
 
-
     if reply:
         await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
     else:
@@ -871,4 +863,3 @@ async def send_candlechart(message: Message):
         await message.reply_photo(photo=io.BufferedReader(
             BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
             parse_mode=ParseMode.MARKDOWN)
-                        
