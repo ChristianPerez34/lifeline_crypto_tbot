@@ -21,23 +21,18 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from kucoin_futures.client import Trade
 from pandas import DataFrame
-from uniswap import Uniswap
+from uniswap import Uniswap, InsufficientBalance
 from web3 import Web3
 
-from . import cg
-from . import cmc
-from . import coingecko_coin_lookup_cache
-from . import eth
-from . import logger
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from app import bot
-from bot import active_orders
 from bot import KUCOIN_API_KEY
 from bot import KUCOIN_API_PASSPHRASE
 from bot import KUCOIN_API_SECRET
 from bot import KUCOIN_TASK_NAME
 from bot import TELEGRAM_CHAT_ID
+from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
 from config import BINANCE_SMART_CHAIN_URL
 from config import BNB_ADDRESS
@@ -49,10 +44,15 @@ from config import SELL
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
+from . import cg
+from . import cmc
+from . import coingecko_coin_lookup_cache
+from . import eth
+from . import logger
 
 HEADERS = {
     "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
@@ -449,24 +449,26 @@ def swap_tokens(token: str, amount_to_spend: float, side: str,
             factory_contract_addr=PANCAKESWAP_FACTORY_ADDRESS,
             router_contract_addr=PANCAKESWAP_ROUTER_ADDRESS,
         )
+        try:
+            if side == BUY:
+                amount_to_spend = web3.toWei(amount_to_spend, "ether")
+                txn_hash = web3.toHex(
+                    pancakeswap_wrapper.make_trade(BNB_ADDRESS, token,
+                                                   amount_to_spend, user_address))
+            else:
+                balance = web3.fromWei(
+                    pancakeswap_wrapper.get_token_balance(token), "ether")
+                amount_to_spend = web3.toWei(balance * Decimal(amount_to_spend),
+                                             "ether")
+                txn_hash = web3.toHex(
+                    pancakeswap_wrapper.make_trade_output(token, BNB_ADDRESS,
+                                                          amount_to_spend,
+                                                          user_address))
 
-        if side == BUY:
-            amount_to_spend = web3.toWei(amount_to_spend, "ether")
-            txn_hash = web3.toHex(
-                pancakeswap_wrapper.make_trade(BNB_ADDRESS, token,
-                                               amount_to_spend, user_address))
-        else:
-            balance = web3.fromWei(
-                pancakeswap_wrapper.get_token_balance(token), "ether")
-            amount_to_spend = web3.toWei(balance * Decimal(amount_to_spend),
-                                         "ether")
-            txn_hash = web3.toHex(
-                pancakeswap_wrapper.make_trade_output(token, BNB_ADDRESS,
-                                                      amount_to_spend,
-                                                      user_address))
-        txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
-        reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
-
+            txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
+            reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
+        except InsufficientBalance as e:
+            reply = "⚠️ Insufficient balance. Top up you BNB balance and try again. "
     else:
         reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
     return reply
