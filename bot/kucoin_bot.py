@@ -66,6 +66,7 @@ async def kucoin_bot():
             data = msg["data"]
             if data["type"] != "cancel":
                 symbol = data["symbol"][:-1]
+                symbol = symbol.replace("XBTUSDT", "BTCUSDT")
                 order = active_orders[symbol]
                 stop_price = data["stopPrice"]
                 if data["stop"] == "up" and order["take_profit"] != stop_price:
@@ -84,6 +85,7 @@ async def kucoin_bot():
         elif '/contract/position' in msg["topic"]:
             data = msg['data']
             symbol = msg['topic'].split(':')[1][:-1]
+            symbol = symbol.replace("XBTUSDT", "BTCUSDT")
             active_orders[symbol]['pnl'] = data['unrealisedPnl']
 
     # is private
