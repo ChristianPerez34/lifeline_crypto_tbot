@@ -5,11 +5,11 @@ from aiogram.utils.markdown import text
 from kucoin_futures.client import WsToken
 from kucoin_futures.ws_client import KucoinFuturesWsClient
 
-from bot import active_orders
 from bot import KUCOIN_API_KEY
 from bot import KUCOIN_API_PASSPHRASE
 from bot import KUCOIN_API_SECRET
 from bot import TELEGRAM_CHAT_ID
+from bot import active_orders
 from handlers import logger
 from handlers.base import send_message
 
@@ -23,7 +23,7 @@ async def kucoin_bot():
             if data["type"] == "filled":
                 symbol = data["symbol"][:-1]
                 symbol = symbol.replace("XBTUSDT", "BTCUSDT")
-                pnl = active_orders[symbol]["pnl"]
+                pnl = active_orders[symbol].get("pnl", "")
                 message = f"Futures Contract ⌛️\n\nCoin: {bold(symbol)}\nClosed Position\nPNL: {pnl}"
 
                 if symbol in active_orders:
@@ -59,6 +59,7 @@ async def kucoin_bot():
                         "side": "SHORT" if data["side"] == "sell" else "LONG",
                         "take_profit": "",
                         "stop_loss": "",
+                        "pnl": ""
                     }
         elif msg["topic"] == "/contractMarket/advancedOrders":
             data = msg["data"]
