@@ -5,11 +5,11 @@ from aiogram.utils.markdown import text
 from kucoin_futures.client import WsToken
 from kucoin_futures.ws_client import KucoinFuturesWsClient
 
+from bot import active_orders
 from bot import KUCOIN_API_KEY
 from bot import KUCOIN_API_PASSPHRASE
 from bot import KUCOIN_API_SECRET
 from bot import TELEGRAM_CHAT_ID
-from bot import active_orders
 from handlers import logger
 from handlers.base import send_message
 
@@ -23,10 +23,8 @@ async def kucoin_bot():
             if data["type"] == "filled":
                 symbol = data["symbol"][:-1]
                 symbol = symbol.replace("XBTUSDT", "BTCUSDT")
-                pnl = active_orders[symbol]['pnl']
-                message = (
-                    f"Futures Contract ⌛️\n\nCoin: {bold(symbol)}\nClosed Position\nPNL: {pnl}"
-                )
+                pnl = active_orders[symbol]["pnl"]
+                message = f"Futures Contract ⌛️\n\nCoin: {bold(symbol)}\nClosed Position\nPNL: {pnl}"
 
                 if symbol in active_orders:
                     order = active_orders[symbol]
@@ -82,11 +80,11 @@ async def kucoin_bot():
                      f"Take Profit: {order['take_profit']}\n"
                      f"Stop Loss: {order['stop_loss']}\n"))
                 await send_message(channel_id=TELEGRAM_CHAT_ID, text=message)
-        elif '/contract/position' in msg["topic"]:
-            data = msg['data']
-            symbol = msg['topic'].split(':')[1][:-1]
+        elif "/contract/position" in msg["topic"]:
+            data = msg["data"]
+            symbol = msg["topic"].split(":")[1][:-1]
             symbol = symbol.replace("XBTUSDT", "BTCUSDT")
-            active_orders[symbol]['pnl'] = data['unrealisedPnl']
+            active_orders[symbol]["pnl"] = data["unrealisedPnl"]
 
     # is private
     client = WsToken(
