@@ -4,7 +4,7 @@ import requests
 
 class CoinPaprika(object):
 
-    _base_url = 'https://api.coinpaprika.com/v1/'
+    _base_url = "https://api.coinpaprika.com/v1/"
 
     response = None
 
@@ -16,7 +16,7 @@ class CoinPaprika(object):
         try:
             self.response = requests.get(url)
             self.response.raise_for_status()
-            return json.loads(self.response.content.decode('utf-8'))
+            return json.loads(self.response.content.decode("utf-8"))
         except Exception as e:
             raise e
 

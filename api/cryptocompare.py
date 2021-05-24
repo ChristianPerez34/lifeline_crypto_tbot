@@ -4,7 +4,7 @@ import requests
 
 class CryptoCompare(object):
 
-    _base_url = 'https://min-api.cryptocompare.com/data/'
+    _base_url = "https://min-api.cryptocompare.com/data/"
     _token = None
 
     response = None
@@ -19,12 +19,12 @@ class CryptoCompare(object):
         try:
             self.response = requests.get(url)
             self.response.raise_for_status()
-            return json.loads(self.response.content.decode('utf-8'))
+            return json.loads(self.response.content.decode("utf-8"))
         except Exception as e:
             raise e
 
     def load_key(self, path):
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             self._token = f.readline().strip()
 
     def get_historical_ohlcv_daily(self, fsym, tsym, limit):
