@@ -23,9 +23,8 @@ async def kucoin_bot():
             if data["type"] == "filled":
                 symbol = data["symbol"][:-1]
                 symbol = symbol.replace("XBTUSDT", "BTCUSDT")
-                message = (
-                    f"Futures Contract ⌛️\n\nCoin: {bold(symbol)}\nClosed Position"
-                )
+                pnl = active_orders[symbol]["pnl"]
+                message = f"Futures Contract ⌛️\n\nCoin: {bold(symbol)}\nClosed Position\nPNL: {pnl}"
 
                 if symbol in active_orders:
                     order = active_orders[symbol]
@@ -65,6 +64,7 @@ async def kucoin_bot():
             data = msg["data"]
             if data["type"] != "cancel":
                 symbol = data["symbol"][:-1]
+                symbol = symbol.replace("XBTUSDT", "BTCUSDT")
                 order = active_orders[symbol]
                 stop_price = data["stopPrice"]
                 if data["stop"] == "up" and order["take_profit"] != stop_price:
@@ -80,6 +80,11 @@ async def kucoin_bot():
                      f"Take Profit: {order['take_profit']}\n"
                      f"Stop Loss: {order['stop_loss']}\n"))
                 await send_message(channel_id=TELEGRAM_CHAT_ID, text=message)
+        elif "/contract/position" in msg["topic"]:
+            data = msg["data"]
+            symbol = msg["topic"].split(":")[1][:-1]
+            symbol = symbol.replace("XBTUSDT", "BTCUSDT")
+            active_orders[symbol]["pnl"] = data["unrealisedPnl"]
 
     # is private
     client = WsToken(
