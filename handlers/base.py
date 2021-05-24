@@ -41,6 +41,7 @@ async def send_welcome(message: Message):
         f"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} {italic('PERCENTAGE')}\_{italic('TO')}\_{italic('SELL')} "
         f"to sell coins on PancakeSwap\n\n",
         f"{bold('/chart')} {italic('COIN')} {italic('NUM')}\_{italic('DAYS')} to display coin chart\n\n",
+        f"{bold('/candle')} {italic('COIN')} {italic('NUM')}\_{italic('TIME')} {italic('LETTER')} to display coin candlechart\n\n",
     )
     await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
 
