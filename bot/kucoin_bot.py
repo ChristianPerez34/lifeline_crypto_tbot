@@ -23,7 +23,7 @@ async def kucoin_bot():
             if data["type"] == "filled":
                 symbol = data["symbol"][:-1]
                 symbol = symbol.replace("XBTUSDT", "BTCUSDT")
-                pnl = active_orders[symbol]["pnl"]
+                pnl = active_orders[symbol].get("pnl", "")
                 message = f"Futures Contract ⌛️\n\nCoin: {bold(symbol)}\nClosed Position\nPNL: {pnl}"
 
                 if symbol in active_orders:
@@ -59,6 +59,7 @@ async def kucoin_bot():
                         "side": "SHORT" if data["side"] == "sell" else "LONG",
                         "take_profit": "",
                         "stop_loss": "",
+                        "pnl": "",
                     }
         elif msg["topic"] == "/contractMarket/advancedOrders":
             data = msg["data"]
