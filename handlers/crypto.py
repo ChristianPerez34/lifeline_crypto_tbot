@@ -536,7 +536,7 @@ async def send_sell_coin(message: Message) -> None:
     await message.reply(text=reply)
 
 
-def coingecko_coin_market_lookup(ids: str, time_frame: int) -> dict:
+def coingecko_coin_market_lookup(ids: str, time_frame: int, base_coin: str) -> dict:
     """Coin lookup in CoinGecko API for Market Chart
 
     Args:
@@ -548,7 +548,7 @@ def coingecko_coin_market_lookup(ids: str, time_frame: int) -> dict:
     """
     logger.info(f"Looking up chart data for {ids} in CoinGecko API")
 
-    return cg.get_coin_market_chart_by_id(ids, "USD", time_frame)
+    return cg.get_coin_market_chart_by_id(ids, base_coin, time_frame)
 
 
 def get_coingecko_coin_id(symbol: str) -> str:
@@ -585,17 +585,33 @@ async def send_chart(message: Message):
     """
     logger.info("Searching for coin market data for chart")
     args = message.get_args().split()
-    reply = ""
+    base_coin = 'USD'
+    reply = ''
 
     if len(args) != 2:
         reply = text(
             f"⚠️ Please provide a valid crypto symbol and amount of days: \n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}"
         )
     else:
-        symbol = args[0].upper()
+        
+        if "-" in args[0]:
+            pair = args[0].split("-", 1)
+            base_coin = pair[1].upper()
+            symbol = pair[0].upper()
+        else:
+            symbol = args[0].upper()
+
+        if symbol == base_coin:
+            reply = text(f"Can't compare *{symbol}* to itself. Will default base coin to USD")
+            await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
+            reply = ''
+            base_coin = 'USD'
+            
+
         time_frame = args[1]
+
         coin_id = get_coingecko_coin_id(symbol)
-        market = coingecko_coin_market_lookup(coin_id, time_frame)
+        market = coingecko_coin_market_lookup(coin_id, time_frame, base_coin)
 
         logger.info("Creating chart layout")
         # Volume
@@ -639,7 +655,7 @@ async def send_chart(message: Message):
             margin=go.layout.Margin(l=margin_l, r=50, b=85, t=100, pad=4),
             yaxis=dict(domain=[0, 0.20]),
             yaxis2=dict(
-                title=dict(text="USD", font=dict(size=18)),
+                title=dict(text=base_coin, font=dict(size=18)),
                 domain=[0.25, 1],
                 tickprefix="   ",
                 ticksuffix=f"  ",
@@ -698,7 +714,22 @@ async def send_candlechart(message: Message):
     else:
 
         base_coin = "USD"
-        symbol = args[0].upper()
+
+        if "-" in args[0]:
+            pair = args[0].split("-", 1)
+            base_coin = pair[1].upper()
+            symbol = pair[0].upper()
+        else:
+            symbol = args[0].upper()
+
+        if symbol == base_coin:
+            reply = text(f"Can't compare *{symbol}* to itself. Will default base coin to USD")
+            await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
+            reply = ''
+            base_coin = 'USD'
+            
+
+        
         time_frame = args[1]
         res = args[2].lower()
 
