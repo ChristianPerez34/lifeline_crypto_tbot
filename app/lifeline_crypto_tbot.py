@@ -15,7 +15,7 @@ from config import WEBHOOK_URL
 from handlers import init_database
 from handlers.base import send_greeting
 from handlers.base import send_welcome
-from handlers.crypto import send_buy_coin
+from handlers.crypto import send_buy_coin, kucoin_inline_query_handler
 from handlers.crypto import send_candlechart
 from handlers.crypto import send_chart
 from handlers.crypto import send_coin
@@ -72,6 +72,7 @@ def setup_handlers(dp: Dispatcher) -> None:
                                 commands=["restart_kucoin"])
     dp.register_message_handler(send_buy_coin, commands=["buy_coin"])
     dp.register_message_handler(send_register, commands=["register"])
+    dp.register_callback_query_handler(kucoin_inline_query_handler)
     # dp.register_message_handler(send_sell_coin, commands=["sell_coin"])
     dp.register_message_handler(send_greeting)
     dp.register_errors_handler(send_error),

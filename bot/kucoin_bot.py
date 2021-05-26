@@ -1,15 +1,16 @@
 import asyncio
+import json
 
 from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import text
 from kucoin_futures.client import WsToken
 from kucoin_futures.ws_client import KucoinFuturesWsClient
 
-from bot import active_orders
 from bot import KUCOIN_API_KEY
 from bot import KUCOIN_API_PASSPHRASE
 from bot import KUCOIN_API_SECRET
 from bot import TELEGRAM_CHAT_ID
+from bot import active_orders
 from handlers import logger
 from handlers.base import send_message
 
@@ -19,6 +20,7 @@ async def kucoin_bot():
         if msg["topic"] == "/contractMarket/tradeOrders":
             data = msg["data"]
             logger.info(data)
+            inline = False
 
             if data["type"] == "filled":
                 symbol = data["symbol"][:-1]
@@ -41,9 +43,11 @@ async def kucoin_bot():
                              f"Leverage: {bold('10')}-{bold('20x')}\n"
                              f"Take Profit: {bold('At Your Discretion')}\n"
                              f"Stop Loss: {bold('At Your Discretion')}\n"))
+                        inline = True
                     else:
+                        data = {}
                         active_orders.pop(symbol, None)
-                await send_message(channel_id=TELEGRAM_CHAT_ID, text=message)
+                await send_message(channel_id=TELEGRAM_CHAT_ID, text=message, inline=inline, data=json.dumps(data))
             elif data["type"] == "match":
                 symbol = data["symbol"][:-1]
 
