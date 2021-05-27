@@ -25,20 +25,14 @@ from uniswap import InsufficientBalance
 from uniswap import Uniswap
 from web3 import Web3
 
-from . import cg
-from . import cmc
-from . import coingecko_coin_lookup_cache
-from . import eth
-from . import logger
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from app import bot
-from bot import active_orders
 from bot import KUCOIN_API_KEY
 from bot import KUCOIN_API_PASSPHRASE
 from bot import KUCOIN_API_SECRET
-from bot import KUCOIN_TASK_NAME
 from bot import TELEGRAM_CHAT_ID
+from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
 from config import BINANCE_SMART_CHAIN_URL
 from config import BNB_ADDRESS
@@ -50,10 +44,15 @@ from config import SELL
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
+from . import cg
+from . import cmc
+from . import coingecko_coin_lookup_cache
+from . import eth
+from . import logger
 
 HEADERS = {
     "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
@@ -369,11 +368,11 @@ async def send_restart_kucoin_bot(message: Message) -> None:
     ]
     if user in administrators:
         logger.info("User is admin. Restarting KuCoin Bot")
-        tasks = asyncio.all_tasks()
-        [
-            task.cancel() for task in tasks
-            if task.get_name() == KUCOIN_TASK_NAME
-        ]
+        # tasks = asyncio.all_tasks()
+        # [
+        #     task.cancel() for task in tasks
+        #     if task.nam == KUCOIN_TASK_NAME
+        # ]
         client = Trade(
             key=KUCOIN_API_KEY,
             secret=KUCOIN_API_SECRET,
@@ -413,7 +412,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                             "stop_loss": stop_loss,
                         }
                     })
-        asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
+        asyncio.create_task(kucoin_bot())
         reply = f"Restarted KuCoin Bot 🤖"
     else:
         logger.info("User is not admin")
