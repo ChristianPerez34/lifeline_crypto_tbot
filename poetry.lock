@@ -514,7 +514,7 @@ format_nongpl = ["idna", "jsonpointer (>1.13)", "webcolors", "rfc3986-validator 
 
 [[package]]
 name = "kaleido"
-version = "0.2.1"
+version = "0.2.0"
 description = "Static image export for web-based visualization libraries with zero dependencies"
 category = "main"
 optional = false
@@ -684,7 +684,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "pypika-tortoise"
-version = "0.1.0"
+version = "0.1.1"
 description = "Forked from pypika and streamline just for tortoise-orm"
 category = "main"
 optional = false
@@ -853,7 +853,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "tortoise-orm"
-version = "0.17.2"
+version = "0.17.3"
 description = "Easy async ORM for python, built with relations in mind"
 category = "main"
 optional = false
@@ -863,8 +863,8 @@ python-versions = ">=3.7,<4.0"
 aiosqlite = ">=0.16.0,<0.17.0"
 asyncpg = {version = "*", optional = true, markers = "extra == \"asyncpg\""}
 iso8601 = ">=0.1.13,<0.2.0"
-pypika-tortoise = ">=0.1.0,<0.2.0"
-pytz = ">=2020.4,<2021.0"
+pypika-tortoise = ">=0.1.1,<0.2.0"
+pytz = "*"
 
 [package.extras]
 docs = ["pygments", "cloud-sptheme", "docutils", "sphinx"]
@@ -1014,7 +1014,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = ">3.7.1,<4"
-content-hash = "81b20934937f288f6381bf738bdd8f7f2de9915d9d4c8c9cef0e878155938e0e"
+content-hash = "58a7efabac129ffe905b125040c36b33e9b79c0b697a562886bd154c3b1db393"
 
 [metadata.files]
 aiogram = [
@@ -1269,12 +1269,12 @@ jsonschema = [
     {file = "jsonschema-3.2.0.tar.gz", hash = "sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a"},
 ]
 kaleido = [
-    {file = "kaleido-0.2.1-py2.py3-none-macosx_10_11_x86_64.whl", hash = "sha256:ca6f73e7ff00aaebf2843f73f1d3bacde1930ef5041093fe76b83a15785049a7"},
-    {file = "kaleido-0.2.1-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:bb9a5d1f710357d5d432ee240ef6658a6d124c3e610935817b4b42da9c787c05"},
-    {file = "kaleido-0.2.1-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:aa21cf1bf1c78f8fa50a9f7d45e1003c387bd3d6fe0a767cfbbf344b95bdc3a8"},
-    {file = "kaleido-0.2.1-py2.py3-none-manylinux2014_aarch64.whl", hash = "sha256:845819844c8082c9469d9c17e42621fbf85c2b237ef8a86ec8a8527f98b6512a"},
-    {file = "kaleido-0.2.1-py2.py3-none-win32.whl", hash = "sha256:ecc72635860be616c6b7161807a65c0dbd9b90c6437ac96965831e2e24066552"},
-    {file = "kaleido-0.2.1-py2.py3-none-win_amd64.whl", hash = "sha256:4670985f28913c2d063c5734d125ecc28e40810141bdb0a46f15b76c1d45f23c"},
+    {file = "kaleido-0.2.0-py2.py3-none-macosx_10_11_x86_64.whl", hash = "sha256:73f46490168f9af7aac3b01035ad8851457e5b0088bc61425ae3c56bf0968065"},
+    {file = "kaleido-0.2.0-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:3af187bf6cc2b3af61f5737bf1b10f4ea75ba53391ae20e6df96784f6ca0a9a1"},
+    {file = "kaleido-0.2.0-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:9db17625f5c6ae4600762b97c1d8296d67be20f34a8854ebe5fb264acb5eed97"},
+    {file = "kaleido-0.2.0-py2.py3-none-manylinux2014_aarch64.whl", hash = "sha256:f264b876c7ea6622425fe25db8731e8dff4308a9e5a8753bdc78cdb4ffa1aadd"},
+    {file = "kaleido-0.2.0-py2.py3-none-win32.whl", hash = "sha256:54f41f426d18ff3cecf42549ff122fa841f15ab75c8fa8e19b40c3b282d19e8b"},
+    {file = "kaleido-0.2.0-py2.py3-none-win_amd64.whl", hash = "sha256:e083250f8a7b950fcb3978655960662aed74926629f2a278b4ad83787ce22020"},
 ]
 kucoin-futures-python = [
     {file = "kucoin-futures-python-1.0.3.tar.gz", hash = "sha256:7b2e41ffcde8eb3de6380fa81fcfaef70d34ceab27f14c860aa4d1f92c550421"},
@@ -1485,8 +1485,8 @@ pycryptodome = [
     {file = "pycryptodome-3.10.1.tar.gz", hash = "sha256:3e2e3a06580c5f190df843cdb90ea28d61099cf4924334d5297a995de68e4673"},
 ]
 pypika-tortoise = [
-    {file = "pypika-tortoise-0.1.0.tar.gz", hash = "sha256:7176e98ff0cf7c311d4ba58f28f1755956265dee2f9781e65e1304a67a3e5aa5"},
-    {file = "pypika_tortoise-0.1.0-py3-none-any.whl", hash = "sha256:ec83b0b2964be01ef563f5f019b0332a18177604e841c47ad39d798798c6dfe9"},
+    {file = "pypika-tortoise-0.1.1.tar.gz", hash = "sha256:6831d0a56e5e0ecefac3307dd9bdb3e5073fdac5d617401601d3a6713e059f3c"},
+    {file = "pypika_tortoise-0.1.1-py3-none-any.whl", hash = "sha256:860020094e01058ea80602c90d4a843d0a42cffefcf4f3cb1a7f2c18b880c638"},
 ]
 pyrsistent = [
     {file = "pyrsistent-0.17.3.tar.gz", hash = "sha256:2e636185d9eb976a18a8a8e96efce62f2905fea90041958d8cc2a189756ebf3e"},
@@ -1595,8 +1595,8 @@ toolz = [
     {file = "toolz-0.11.1.tar.gz", hash = "sha256:c7a47921f07822fe534fb1c01c9931ab335a4390c782bd28c6bcc7c2f71f3fbf"},
 ]
 tortoise-orm = [
-    {file = "tortoise-orm-0.17.2.tar.gz", hash = "sha256:1a742b2f15a31d47a8dea7706b478cc9a7ce9af268b61d77d0fa22cfbaea271a"},
-    {file = "tortoise_orm-0.17.2-py3-none-any.whl", hash = "sha256:b0c02be3800398053058377ddca91fa051eb98eebb704d2db2a3ab1c6a58e347"},
+    {file = "tortoise-orm-0.17.3.tar.gz", hash = "sha256:6e5e56694b64118faaada2670343c909d6c9f84c7235f3372b8a398b2e8d6628"},
+    {file = "tortoise_orm-0.17.3-py3-none-any.whl", hash = "sha256:99b448a870a81b6edb3ef9d2f0e22b2c83afa2b6348178840d3ccdbf03e206d3"},
 ]
 typed-ast = [
     {file = "typed_ast-1.4.3-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:2068531575a125b87a41802130fa7e29f26c09a2833fea68d9a40cf33902eba6"},

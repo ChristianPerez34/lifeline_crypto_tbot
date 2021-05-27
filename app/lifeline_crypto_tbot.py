@@ -3,15 +3,8 @@ import asyncio
 from aiogram import Dispatcher
 from aiogram import executor
 
-from app import bot
 from app import dp
 from bot import KUCOIN_TASK_NAME
-from config import DEV
-from config import ENV
-from config import WEBAPP_HOST
-from config import WEBAPP_PORT
-from config import WEBHOOK_PATH
-from config import WEBHOOK_URL
 from handlers import init_database
 from handlers.base import send_greeting
 from handlers.base import send_welcome
@@ -35,9 +28,9 @@ async def on_startup(dp: Dispatcher):
     Args:
         dp (Dispatcher): Bot dispatcher
     """
-    if ENV != DEV:
-        await bot.delete_webhook()
-        await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+    # if ENV != DEV:
+    #     await bot.delete_webhook()
+    #     await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
     await init_database()
     setup_handlers(dp)
 
@@ -78,18 +71,18 @@ def setup_handlers(dp: Dispatcher) -> None:
 
 
 if __name__ == "__main__":
-    if ENV == DEV:
-        executor.start_polling(dp,
-                               skip_updates=True,
-                               on_startup=on_startup,
-                               on_shutdown=on_shutdown)
-    else:
-        executor.start_webhook(
-            dispatcher=dp,
-            webhook_path=WEBHOOK_PATH,
-            on_startup=on_startup,
-            on_shutdown=on_shutdown,
-            skip_updates=True,
-            host=WEBAPP_HOST,
-            port=WEBAPP_PORT,
-        )
+    # if ENV == DEV:
+    executor.start_polling(dp,
+                           skip_updates=True,
+                           on_startup=on_startup,
+                           on_shutdown=on_shutdown)
+    # else:
+    #     executor.start_webhook(
+    #         dispatcher=dp,
+    #         webhook_path=WEBHOOK_PATH,
+    #         on_startup=on_startup,
+    #         on_shutdown=on_shutdown,
+    #         skip_updates=True,
+    #         host=WEBAPP_HOST,
+    #         port=WEBAPP_PORT,
+    #     )
