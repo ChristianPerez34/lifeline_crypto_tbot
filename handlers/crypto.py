@@ -19,7 +19,6 @@ from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import link
 from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
-from kucoin_futures.client import Trade
 from pandas import DataFrame
 from uniswap import InsufficientBalance
 from uniswap import Uniswap
@@ -27,15 +26,11 @@ from web3 import Web3
 
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
+from api.kucoin import KucoinApi
 from app import bot
-from bot import KUCOIN_API_KEY
-from bot import KUCOIN_API_PASSPHRASE
-from bot import KUCOIN_API_SECRET
-from bot import KUCOIN_TASK_NAME
-from bot import TELEGRAM_CHAT_ID
 from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
-from config import BINANCE_SMART_CHAIN_URL
+from config import BINANCE_SMART_CHAIN_URL, TELEGRAM_CHAT_ID, KUCOIN_TASK_NAME
 from config import BNB_ADDRESS
 from config import BUY
 from config import FERNET_KEY
@@ -367,22 +362,20 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         admin.user for admin in await bot.get_chat_administrators(
             chat_id=TELEGRAM_CHAT_ID)
     ]
+
     if user in administrators:
-        logger.info("User is admin. Restarting KuCoin Bot")
-        tasks = asyncio.all_tasks()
-        [
-            task.cancel() for task in tasks
-            if task.get_name() == KUCOIN_TASK_NAME
-        ]
-        client = Trade(
-            key=KUCOIN_API_KEY,
-            secret=KUCOIN_API_SECRET,
-            passphrase=KUCOIN_API_PASSPHRASE,
-        )
-        orders = [order for order in client.get_open_stop_order()["items"]]
-        positions = client.get_all_position()
-        if isinstance(positions, list):
-            for position in client.get_all_position():
+        logger.info(f"User {user.username} is admin. Restarting KuCoin Bot")
+        user = await TelegramGroupMember.filter(telegram_user_id=user.id).first()
+
+        if user.kucoin_api_key and user.kucoin_api_secret and user.kucoin_api_passphrase:
+            fernet = Fernet(FERNET_KEY)
+            api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
+            api_secret = fernet.decrypt(user.kucoin_api_secret.encode()).decode()
+            api_passphrase = fernet.decrypt(user.kucoin_api_passphrase.encode()).decode()
+            kucoin_api = KucoinApi(api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase)
+            orders = [order for order in kucoin_api.get_open_stop_order()]
+
+            for position in kucoin_api.get_all_position():
                 if position["isOpen"]:
                     symbol = position["symbol"]
                     position_orders = [
@@ -391,6 +384,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
 
                     for position_order in position_orders:
                         stop_price = position_order["stopPrice"]
+
                         if (position_order["stopPriceType"] == "TP"
                                 and position_order["stop"] == "up"):
                             take_profit = stop_price
@@ -413,8 +407,11 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                             "stop_loss": stop_loss,
                         }
                     })
-        asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
-        reply = f"Restarted KuCoin Bot 🤖"
+            asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
+            reply = f"Restarted KuCoin Bot 🤖"
+        else:
+            logger.info("User does not have a registered KuCoin account")
+            reply = "⚠ Sorry, please register KuCoin account"
     else:
         logger.info("User is not admin")
         reply = "⚠ Sorry, this command can only be executed by an admin"
@@ -875,7 +872,23 @@ async def send_candlechart(message: Message):
 
 
 async def kucoin_inline_query_handler(query: CallbackQuery):
-    await query.answer()
+    # Ideally gets kucoin keys from user
+    user = await TelegramGroupMember.filter(telegram_user_id=query.from_user.id).first()
+    if user.kucoin_api_key and user.kucoin_api_secret and user.kucoin_api_passphrase:
+        fernet = Fernet(FERNET_KEY)
+        api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
+        api_secret = fernet.decrypt(user.kucoin_api_secret.encode()).decode()
+        api_passphrase = fernet.decrypt(user.kucoin_api_passphrase.encode()).decode()
+        kucoin_api = KucoinApi(api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase)
+        balance = kucoin_api.get_balance()
+
+        # Use ten percent of available balance
+        ten_percent_port = balance * Decimal(0.10)
+        reply = str(ten_percent_port)
+    else:
+        reply = f"⚠️ Please register KuCoin account to follow signals"
+
+    await query.answer(text=reply)
     answer_data = query.data
 
 #     TODO: Allow user to follow trade

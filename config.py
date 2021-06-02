@@ -1,7 +1,14 @@
 import os
+from enum import Enum
 
 from dotenv import load_dotenv
 from web3 import Web3
+
+
+class RegisterTypes(Enum):
+    BSC = "BSC"
+    KUCOIN = "KUCOIN"
+
 
 load_dotenv()
 
@@ -11,6 +18,7 @@ PROD = "prod"
 TEST = "test"
 ENV = os.getenv("ENV", DEV).lower()
 FERNET_KEY = os.getenv("FERNET_KEY")
+REGISTER_TYPES = ("BSC", "KUCOIN")
 
 # Binance Smart Chain settings
 BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
@@ -61,8 +69,15 @@ DB_CONFIG = {
     },
     "apps": {
         "models": {
-            "models": ["models"],
+            "models": ["models", "aerich.models"],
             "default_connection": "default",
         }
     },
 }
+
+# KuCoin settings
+KUCOIN_API_KEY = os.getenv("KUCOIN_API_KEY")
+KUCOIN_API_SECRET = os.getenv("KUCOIN_API_SECRET")
+KUCOIN_API_PASSPHRASE = os.getenv("KUCOIN_API_PASSPHRASE")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+KUCOIN_TASK_NAME = "KUCOIN_BOT"

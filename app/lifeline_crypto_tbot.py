@@ -5,8 +5,7 @@ from aiogram import executor
 
 from app import bot
 from app import dp
-from bot import KUCOIN_TASK_NAME
-from config import DEV
+from config import DEV, KUCOIN_TASK_NAME
 from config import ENV
 from config import WEBAPP_HOST
 from config import WEBAPP_PORT

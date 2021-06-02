@@ -64,11 +64,11 @@ async def send_greeting(message: Message):
 
 async def send_message(channel_id: int, text: str, inline: bool = False, data: str = ''):
     logger.info(f"Sending message to chat id: {channel_id}")
-    keyboard_markup = InlineKeyboardMarkup(row_width=3)
+    keyboard_markup = InlineKeyboardMarkup()
     # default row_width is 3, so here we can omit it actually
     # kept for clearness
     if inline:
-        keyboard_markup.row(InlineKeyboardButton("Follow Signal", callback_data=data), )
+        keyboard_markup.row(InlineKeyboardButton("Follow Signal", callback_data=data))
         await bot.send_message(channel_id, text, parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard_markup)
     else:
         await bot.send_message(channel_id, text, parse_mode=ParseMode.MARKDOWN)
