@@ -494,8 +494,8 @@ async def send_buy_coin(message: Message) -> None:
     if len(args) != 2:
         reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /buy_coin [ADDRESS] [AMOUNT]"
     else:
-        user = await TelegramGroupMember.filter(
-            telegram_user_id=telegram_user.id).first()
+        user = await TelegramGroupMember.get(
+            id=telegram_user.id)
         if user:
             executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
             loop = asyncio.get_event_loop()
