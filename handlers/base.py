@@ -1,5 +1,7 @@
 # from lifeline_crypto_tbot import dp
 # from aiogram.bot import bot
+from aiogram.types import InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup
 from aiogram.types import Message
 from aiogram.types import ParseMode
 from aiogram.utils.emoji import emojize
@@ -62,6 +64,22 @@ async def send_greeting(message: Message):
         await message.reply(text=f"Welcome fellow degen, {new_user}.")
 
 
-async def send_message(channel_id: int, text: str):
+async def send_message(channel_id: int,
+                       text: str,
+                       inline: bool = False,
+                       data: str = ""):
     logger.info(f"Sending message to chat id: {channel_id}")
-    await bot.send_message(channel_id, text, parse_mode=ParseMode.MARKDOWN)
+    keyboard_markup = InlineKeyboardMarkup()
+    # default row_width is 3, so here we can omit it actually
+    # kept for clearness
+    if inline:
+        keyboard_markup.row(
+            InlineKeyboardButton("Follow Signal", callback_data=data))
+        await bot.send_message(
+            channel_id,
+            text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=keyboard_markup,
+        )
+    else:
+        await bot.send_message(channel_id, text, parse_mode=ParseMode.MARKDOWN)

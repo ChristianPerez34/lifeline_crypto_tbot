@@ -11,6 +11,7 @@ import pandas as pd
 import plotly.figure_factory as fif
 import plotly.graph_objs as go
 import plotly.io as pio
+from aiogram.types import CallbackQuery
 from aiogram.types import Message
 from aiogram.types import ParseMode
 from aiogram.utils.emoji import emojize
@@ -19,19 +20,20 @@ from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import link
 from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
-from kucoin_futures.client import Trade
 from pandas import DataFrame
 from uniswap import InsufficientBalance
 from uniswap import Uniswap
 from web3 import Web3
 
+from . import cg
+from . import cmc
+from . import coingecko_coin_lookup_cache
+from . import eth
+from . import logger
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
+from api.kucoin import KucoinApi
 from app import bot
-from bot import KUCOIN_API_KEY
-from bot import KUCOIN_API_PASSPHRASE
-from bot import KUCOIN_API_SECRET
-from bot import TELEGRAM_CHAT_ID
 from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
 from config import BINANCE_SMART_CHAIN_URL
@@ -41,18 +43,14 @@ from config import FERNET_KEY
 from config import PANCAKESWAP_FACTORY_ADDRESS
 from config import PANCAKESWAP_ROUTER_ADDRESS
 from config import SELL
+from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
-from . import cg
-from . import cmc
-from . import coingecko_coin_lookup_cache
-from . import eth
-from . import logger
 
 HEADERS = {
     "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
@@ -366,22 +364,26 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         admin.user for admin in await bot.get_chat_administrators(
             chat_id=TELEGRAM_CHAT_ID)
     ]
+
     if user in administrators:
-        logger.info("User is admin. Restarting KuCoin Bot")
-        # tasks = asyncio.all_tasks()
-        # [
-        #     task.cancel() for task in tasks
-        #     if task.nam == KUCOIN_TASK_NAME
-        # ]
-        client = Trade(
-            key=KUCOIN_API_KEY,
-            secret=KUCOIN_API_SECRET,
-            passphrase=KUCOIN_API_PASSPHRASE,
-        )
-        orders = [order for order in client.get_open_stop_order()["items"]]
-        positions = client.get_all_position()
-        if isinstance(positions, list):
-            for position in client.get_all_position():
+        logger.info(f"User {user.username} is admin. Restarting KuCoin Bot")
+        user = await TelegramGroupMember.filter(telegram_user_id=user.id
+                                                ).first()
+
+        if (user.kucoin_api_key and user.kucoin_api_secret
+                and user.kucoin_api_passphrase):
+            fernet = Fernet(FERNET_KEY)
+            api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
+            api_secret = fernet.decrypt(
+                user.kucoin_api_secret.encode()).decode()
+            api_passphrase = fernet.decrypt(
+                user.kucoin_api_passphrase.encode()).decode()
+            kucoin_api = KucoinApi(api_key=api_key,
+                                   api_secret=api_secret,
+                                   api_passphrase=api_passphrase)
+            orders = [order for order in kucoin_api.get_open_stop_order()]
+
+            for position in kucoin_api.get_all_position():
                 if position["isOpen"]:
                     symbol = position["symbol"]
                     position_orders = [
@@ -390,6 +392,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
 
                     for position_order in position_orders:
                         stop_price = position_order["stopPrice"]
+
                         if (position_order["stopPriceType"] == "TP"
                                 and position_order["stop"] == "up"):
                             take_profit = stop_price
@@ -412,8 +415,11 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                             "stop_loss": stop_loss,
                         }
                     })
-        asyncio.create_task(kucoin_bot())
-        reply = f"Restarted KuCoin Bot 🤖"
+            asyncio.create_task(kucoin_bot())
+            reply = f"Restarted KuCoin Bot 🤖"
+        else:
+            logger.info("User does not have a registered KuCoin account")
+            reply = "⚠ Sorry, please register KuCoin account"
     else:
         logger.info("User is not admin")
         reply = "⚠ Sorry, this command can only be executed by an admin"
@@ -535,7 +541,8 @@ async def send_sell_coin(message: Message) -> None:
     await message.reply(text=reply)
 
 
-def coingecko_coin_market_lookup(ids: str, time_frame: int, base_coin: str) -> dict:
+def coingecko_coin_market_lookup(ids: str, time_frame: int,
+                                 base_coin: str) -> dict:
     """Coin lookup in CoinGecko API for Market Chart
 
     Args:
@@ -584,15 +591,15 @@ async def send_chart(message: Message):
     """
     logger.info("Searching for coin market data for chart")
     args = message.get_args().split()
-    base_coin = 'USD'
-    reply = ''
+    base_coin = "USD"
+    reply = ""
 
     if len(args) != 2:
         reply = text(
             f"⚠️ Please provide a valid crypto symbol and amount of days: \n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}"
         )
     else:
-        
+
         if "-" in args[0]:
             pair = args[0].split("-", 1)
             base_coin = pair[1].upper()
@@ -601,11 +608,13 @@ async def send_chart(message: Message):
             symbol = args[0].upper()
 
         if symbol == base_coin:
-            reply = text(f"Can't compare *{symbol}* to itself. Will default base coin to USD")
-            await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
-            reply = ''
-            base_coin = 'USD'
-            
+            reply = text(
+                f"Can't compare *{symbol}* to itself. Will default base coin to USD"
+            )
+            await message.reply(text=emojize(reply),
+                                parse_mode=ParseMode.MARKDOWN)
+            reply = ""
+            base_coin = "USD"
 
         time_frame = args[1]
 
@@ -722,13 +731,14 @@ async def send_candlechart(message: Message):
             symbol = args[0].upper()
 
         if symbol == base_coin:
-            reply = text(f"Can't compare *{symbol}* to itself. Will default base coin to USD")
-            await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
-            reply = ''
-            base_coin = 'USD'
-            
+            reply = text(
+                f"Can't compare *{symbol}* to itself. Will default base coin to USD"
+            )
+            await message.reply(text=emojize(reply),
+                                parse_mode=ParseMode.MARKDOWN)
+            reply = ""
+            base_coin = "USD"
 
-        
         time_frame = args[1]
         res = args[2].lower()
 
@@ -874,3 +884,51 @@ async def send_candlechart(message: Message):
                 BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
             parse_mode=ParseMode.MARKDOWN,
         )
+
+
+async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
+    """
+    Inline query handler for KuCoin Futures signals
+    Args:
+        query (CallbackQuery): Query
+
+    """
+    await query.answer(text="")
+    user = query.from_user
+    username = user.username
+    logger.info(f"{username} following KuCoin signal")
+    user = await TelegramGroupMember.filter(telegram_user_id=user.id).first()
+    if user.kucoin_api_key and user.kucoin_api_secret and user.kucoin_api_passphrase:
+        fernet = Fernet(FERNET_KEY)
+        api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
+        api_secret = fernet.decrypt(user.kucoin_api_secret.encode()).decode()
+        api_passphrase = fernet.decrypt(
+            user.kucoin_api_passphrase.encode()).decode()
+        kucoin_api = KucoinApi(api_key=api_key,
+                               api_secret=api_secret,
+                               api_passphrase=api_passphrase)
+        logger.info("Retrieving user balance")
+        balance = kucoin_api.get_balance()
+
+        # Use ten percent of available balance
+        ten_percent_port = balance * Decimal(0.10)
+        data = query.data.split(";")
+        symbol = f"{data[0]}M"
+        symbol = symbol.replace("BTC", "XBT")
+        side = data[1]
+        leverage = 10
+        try:
+            ticker = kucoin_api.get_ticker(symbol=symbol)
+            size = (ten_percent_port / Decimal(ticker["price"])) * leverage
+            kucoin_api.create_market_order(symbol=symbol,
+                                           side=side,
+                                           size=int(size),
+                                           lever=str(leverage))
+            reply = f"@{username} successfully followed signal"
+        except Exception as e:
+            logger.exception(e)
+            reply = f"⚠️ Unable to follow signal"
+
+    else:
+        reply = f"⚠️ Please register KuCoin account to follow signals"
+    await send_message(channel_id=query.message.chat.id, text=reply)
