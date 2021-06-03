@@ -92,7 +92,8 @@ async def kucoin_bot():
             data = msg["data"]
             symbol = msg["topic"].split(":")[1][:-1]
             symbol = symbol.replace("XBTUSDT", "BTCUSDT")
-            active_orders[symbol]["pnl"] = data["unrealisedPnl"]
+            if symbol in active_orders:
+                active_orders[symbol]["pnl"] = data["unrealisedPnl"]
 
     # is private
     client = WsToken(
