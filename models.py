@@ -11,7 +11,7 @@ class TelegramGroupMember(Model):
     kucoin_api_passphrase = fields.TextField(null=True)
 
     async def create_or_update(self, data: dict) -> MODEL:
-        _id = data.get('id', None)
+        _id = data.get("id", None)
         member = await self.get_or_none(id=_id)
 
         if member:
