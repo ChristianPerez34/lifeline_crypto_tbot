@@ -18,7 +18,8 @@ class KucoinApi:
         Returns: balance
 
         """
-        account_overview = self.user_client.get_account_overview(currency="USDT")
+        account_overview = self.user_client.get_account_overview(
+            currency="USDT")
         return Decimal(account_overview['availableBalance'])
 
     def create_market_order(self, symbol: str, side: str, size: int, lever: str = "10"):

@@ -68,7 +68,8 @@ async def send_message(channel_id: int, text: str, inline: bool = False, data: s
     # default row_width is 3, so here we can omit it actually
     # kept for clearness
     if inline:
-        keyboard_markup.row(InlineKeyboardButton("Follow Signal", callback_data=data))
+        keyboard_markup.row(InlineKeyboardButton(
+            "Follow Signal", callback_data=data))
         await bot.send_message(channel_id, text, parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard_markup)
     else:
         await bot.send_message(channel_id, text, parse_mode=ParseMode.MARKDOWN)

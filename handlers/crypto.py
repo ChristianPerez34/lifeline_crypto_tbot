@@ -66,11 +66,11 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
     try:
         data = (cg.get_coin_info_from_contract_address_by_id(
             id="ethereum", contract_address=ids)
-                if is_address else cg.get_coin_by_id(id=ids))
+            if is_address else cg.get_coin_by_id(id=ids))
     except Exception:
         data = (cg.get_coin_info_from_contract_address_by_id(
             id="binance", contract_address=ids)
-                if is_address else cg.get_coin_by_id(id=ids))
+            if is_address else cg.get_coin_by_id(id=ids))
     return data
 
 
@@ -370,9 +370,12 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         if user.kucoin_api_key and user.kucoin_api_secret and user.kucoin_api_passphrase:
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
-            api_secret = fernet.decrypt(user.kucoin_api_secret.encode()).decode()
-            api_passphrase = fernet.decrypt(user.kucoin_api_passphrase.encode()).decode()
-            kucoin_api = KucoinApi(api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase)
+            api_secret = fernet.decrypt(
+                user.kucoin_api_secret.encode()).decode()
+            api_passphrase = fernet.decrypt(
+                user.kucoin_api_passphrase.encode()).decode()
+            kucoin_api = KucoinApi(
+                api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase)
             orders = [order for order in kucoin_api.get_open_stop_order()]
 
             for position in kucoin_api.get_all_position():
@@ -599,7 +602,8 @@ async def send_chart(message: Message):
             symbol = args[0].upper()
 
         if symbol == base_coin:
-            reply = text(f"Can't compare *{symbol}* to itself. Will default base coin to USD")
+            reply = text(
+                f"Can't compare *{symbol}* to itself. Will default base coin to USD")
             await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
             reply = ''
             base_coin = 'USD'
@@ -719,7 +723,8 @@ async def send_candlechart(message: Message):
             symbol = args[0].upper()
 
         if symbol == base_coin:
-            reply = text(f"Can't compare *{symbol}* to itself. Will default base coin to USD")
+            reply = text(
+                f"Can't compare *{symbol}* to itself. Will default base coin to USD")
             await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
             reply = ''
             base_coin = 'USD'
@@ -887,8 +892,10 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
         fernet = Fernet(FERNET_KEY)
         api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
         api_secret = fernet.decrypt(user.kucoin_api_secret.encode()).decode()
-        api_passphrase = fernet.decrypt(user.kucoin_api_passphrase.encode()).decode()
-        kucoin_api = KucoinApi(api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase)
+        api_passphrase = fernet.decrypt(
+            user.kucoin_api_passphrase.encode()).decode()
+        kucoin_api = KucoinApi(
+            api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase)
         logger.info("Retrieving user balance")
         balance = kucoin_api.get_balance()
 
@@ -902,7 +909,8 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
         try:
             ticker = kucoin_api.get_ticker(symbol=symbol)
             size = (ten_percent_port / Decimal(ticker['price'])) * leverage
-            kucoin_api.create_market_order(symbol=symbol, side=side, size=int(size), lever=str(leverage))
+            kucoin_api.create_market_order(
+                symbol=symbol, side=side, size=int(size), lever=str(leverage))
             reply = f"@{username} successfully followed signal"
         except Exception as e:
             logger.exception(e)
