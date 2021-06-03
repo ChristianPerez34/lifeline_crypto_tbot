@@ -39,7 +39,7 @@ async def send_welcome(message: Message):
         f"{bold('/register')} {bold('bsc')} {italic('ADDRESS')} {italic('PRIVATE')}\_{italic('KEY')} to register to "
         f"use PancakeSwap bot 🤖\n\n",
         f"{bold('/register')} {bold('kucoin')} {italic('API')}\_{italic('KEY')} {italic('API')}\_{italic('SECRET')} "
-        f"{italic('API')}\_{italic('PASSPHRASE')} to register KuCoin account and follow signals "
+        f"{italic('API')}\_{italic('PASSPHRASE')} to register KuCoin account and follow signals\n\n"
         f"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on "
         f"PancakeSwap\n\n",
         f"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} {italic('PERCENTAGE')}\_{italic('TO')}\_{italic('SELL')} "
