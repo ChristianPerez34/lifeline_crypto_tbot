@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from kucoin_futures.client import Trade, User, Market
+from kucoin_futures.client import Market, Trade, User
 
 
 class KucoinApi:
