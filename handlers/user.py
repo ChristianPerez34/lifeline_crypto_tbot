@@ -68,12 +68,7 @@ async def send_register(message: Message) -> None:
 
     if not is_error:
         try:
-            member = await TelegramGroupMember.get_or_none(id=telegram_user.id)
-            if member:
-                member = await member.update_from_dict(data=data)
-                await member.save()
-            else:
-                await TelegramGroupMember.create(**data)
+            await TelegramGroupMember.create_or_update(**data)
             text = f"Successfully registered @{telegram_user.username}"
         except Exception as e:
             logger.info("Failed to register user")
