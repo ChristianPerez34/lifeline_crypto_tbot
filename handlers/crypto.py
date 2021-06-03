@@ -25,11 +25,6 @@ from uniswap import InsufficientBalance
 from uniswap import Uniswap
 from web3 import Web3
 
-from . import cg
-from . import cmc
-from . import coingecko_coin_lookup_cache
-from . import eth
-from . import logger
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from api.kucoin import KucoinApi
@@ -47,10 +42,15 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
+from . import cg
+from . import cmc
+from . import coingecko_coin_lookup_cache
+from . import eth
+from . import logger
 
 HEADERS = {
     "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
@@ -443,7 +443,7 @@ def swap_tokens(token: str, amount_to_spend: float, side: str,
     if web3.isConnected():
         fernet = Fernet(FERNET_KEY)
         user_address = web3.toChecksumAddress(user.bsc_address)
-        private_key = fernet.decrypt(user.bsc_private_key).decode()
+        private_key = fernet.decrypt(user.bsc_private_key.encode()).decode()
         token = web3.toChecksumAddress(token)
 
         pancakeswap_wrapper = Uniswap(
