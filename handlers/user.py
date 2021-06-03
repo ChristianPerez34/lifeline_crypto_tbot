@@ -2,7 +2,8 @@ from aiogram.types import Message
 from cryptography.fernet import Fernet
 
 from app import bot
-from config import FERNET_KEY, RegisterTypes
+from config import FERNET_KEY
+from config import RegisterTypes
 from handlers import logger
 from handlers.base import send_message
 from models import TelegramGroupMember
