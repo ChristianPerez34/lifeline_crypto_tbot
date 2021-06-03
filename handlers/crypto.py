@@ -25,6 +25,11 @@ from uniswap import InsufficientBalance
 from uniswap import Uniswap
 from web3 import Web3
 
+from . import cg
+from . import cmc
+from . import coingecko_coin_lookup_cache
+from . import eth
+from . import logger
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from api.kucoin import KucoinApi
@@ -42,15 +47,10 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
-from . import cg
-from . import cmc
-from . import coingecko_coin_lookup_cache
-from . import eth
-from . import logger
 
 HEADERS = {
     "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
@@ -494,8 +494,7 @@ async def send_buy_coin(message: Message) -> None:
     if len(args) != 2:
         reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /buy_coin [ADDRESS] [AMOUNT]"
     else:
-        user = await TelegramGroupMember.filter(
-            telegram_user_id=telegram_user.id).first()
+        user = await TelegramGroupMember.get(id=telegram_user.id)
         if user:
             executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
             loop = asyncio.get_event_loop()
