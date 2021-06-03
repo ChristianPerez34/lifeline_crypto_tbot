@@ -36,11 +36,11 @@ async def send_register(message: Message) -> None:
             address, private_key = tuple(args[1:])
             data.update({
                 "id":
-                    telegram_user.id,
+                telegram_user.id,
                 "bsc_address":
-                    address,
+                address,
                 "bsc_private_key":
-                    fernet.encrypt(private_key.encode()).decode(),
+                fernet.encrypt(private_key.encode()).decode(),
             })
     elif register_type == RegisterTypes.KUCOIN.value:
         if len(args) != 4:
@@ -52,7 +52,7 @@ async def send_register(message: Message) -> None:
             api_key, api_secret, api_passphrase = tuple(args[1:])
             data.update({
                 "id":
-                    telegram_user.id,
+                telegram_user.id,
                 "kucoin_api_key":
                 fernet.encrypt(api_key.encode()).decode(),
                 "kucoin_api_secret":
