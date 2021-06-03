@@ -407,7 +407,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                             "stop_loss": stop_loss,
                         }
                     })
-            asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
+            asyncio.create_task(kucoin_bot())
             reply = f"Restarted KuCoin Bot 🤖"
         else:
             logger.info("User does not have a registered KuCoin account")
