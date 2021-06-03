@@ -9,8 +9,8 @@ from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 
-from . import logger
 from app import bot
+from . import logger
 
 
 # from telegram.ext.callbackcontext import CallbackContext
@@ -36,8 +36,10 @@ async def send_welcome(message: Message):
         f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
         f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings\n\n"
         f"{bold('/restart')}\_{bold('kucoin')} to restart KuCoin bot 🤖\n\n",
-        f"{bold('/register')} {italic('ADDRESS')} {italic('PRIVATE')}\_{italic('KEY')} to register to use PancakeSwap "
-        f"bot 🤖\n\n",
+        f"{bold('/register')} {bold('bsc')} {italic('ADDRESS')} {italic('PRIVATE')}\_{italic('KEY')} to register to "
+        f"use PancakeSwap bot 🤖\n\n",
+        f"{bold('/register')} {bold('kucoin')} {italic('API')}\_{italic('KEY')} {italic('API')}\_{italic('SECRET')} "
+        f"{italic('API')}\_{italic('PASSPHRASE')} to register KuCoin account and follow signals "
         f"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on "
         f"PancakeSwap\n\n",
         f"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} {italic('PERCENTAGE')}\_{italic('TO')}\_{italic('SELL')} "
