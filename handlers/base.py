@@ -31,7 +31,8 @@ async def send_welcome(message: Message):
         f"{bold('/coin')}\_{bold('address')} {italic('ADDRESS')} to display coin statistics for crypto address\n\n",
         f"{bold('/gas')} to display ETH gas prices\n\n",
         f"{bold('/trending')} to display trending coins\n\n",
-        f"{bold('/alert')} {italic('COIN')} " "\[< or >] ",
+        f"{bold('/alert')} {italic('COIN')} "
+        "\[< or >] ",
         f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
         f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings\n\n"
         f"{bold('/restart')}\_{bold('kucoin')} to restart KuCoin bot 🤖\n\n",
@@ -63,15 +64,17 @@ async def send_greeting(message: Message):
         await message.reply(text=f"Welcome fellow degen, {new_user}.")
 
 
-async def send_message(
-    channel_id: int, text: str, inline: bool = False, data: str = ""
-):
+async def send_message(channel_id: int,
+                       text: str,
+                       inline: bool = False,
+                       data: str = ""):
     logger.info(f"Sending message to chat id: {channel_id}")
     keyboard_markup = InlineKeyboardMarkup()
     # default row_width is 3, so here we can omit it actually
     # kept for clearness
     if inline:
-        keyboard_markup.row(InlineKeyboardButton("Follow Signal", callback_data=data))
+        keyboard_markup.row(
+            InlineKeyboardButton("Follow Signal", callback_data=data))
         await bot.send_message(
             channel_id,
             text,
