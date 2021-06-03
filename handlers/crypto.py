@@ -871,24 +871,43 @@ async def send_candlechart(message: Message):
         )
 
 
-async def kucoin_inline_query_handler(query: CallbackQuery):
-    # Ideally gets kucoin keys from user
-    user = await TelegramGroupMember.filter(telegram_user_id=query.from_user.id).first()
+async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
+    """
+    Inline query handler for KuCoin Futures signals
+    Args:
+        query (CallbackQuery): Query
+
+    """
+    await query.answer(text='')
+    user = query.from_user
+    username = user.username
+    logger.info(f"{username} following KuCoin signal")
+    user = await TelegramGroupMember.filter(telegram_user_id=user.id).first()
     if user.kucoin_api_key and user.kucoin_api_secret and user.kucoin_api_passphrase:
         fernet = Fernet(FERNET_KEY)
         api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
         api_secret = fernet.decrypt(user.kucoin_api_secret.encode()).decode()
         api_passphrase = fernet.decrypt(user.kucoin_api_passphrase.encode()).decode()
         kucoin_api = KucoinApi(api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase)
+        logger.info("Retrieving user balance")
         balance = kucoin_api.get_balance()
 
         # Use ten percent of available balance
         ten_percent_port = balance * Decimal(0.10)
-        reply = str(ten_percent_port)
+        data = query.data.split(";")
+        symbol = f"{data[0]}M"
+        symbol = symbol.replace("BTC", "XBT")
+        side = data[1]
+        leverage = 10
+        try:
+            ticker = kucoin_api.get_ticker(symbol=symbol)
+            size = (ten_percent_port / Decimal(ticker['price'])) * leverage
+            kucoin_api.create_market_order(symbol=symbol, side=side, size=int(size), lever=str(leverage))
+            reply = f"@{username} successfully followed signal"
+        except Exception as e:
+            logger.exception(e)
+            reply = f"⚠️ Unable to follow signal"
+
     else:
         reply = f"⚠️ Please register KuCoin account to follow signals"
-
-    await query.answer(text=reply)
-    answer_data = query.data
-
-#     TODO: Allow user to follow trade
+    await send_message(channel_id=query.message.chat.id, text=reply)

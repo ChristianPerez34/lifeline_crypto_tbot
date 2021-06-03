@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from kucoin_futures.client import Trade, User
+from kucoin_futures.client import Trade, User, Market
 
 
 class KucoinApi:
@@ -9,6 +9,8 @@ class KucoinApi:
                                   is_sandbox=False)
         self.user_client = User(key=api_key, secret=api_secret, passphrase=api_passphrase,
                                 is_sandbox=False)
+        self.market_client = Market(key=api_key, secret=api_secret, passphrase=api_passphrase,
+                                    is_sandbox=False)
 
     def get_balance(self) -> Decimal:
         """
@@ -19,8 +21,9 @@ class KucoinApi:
         account_overview = self.user_client.get_account_overview(currency="USDT")
         return Decimal(account_overview['availableBalance'])
 
-    def create_market_order(self):
-        self.trade_client.create_market_order()
+    def create_market_order(self, symbol: str, side: str, size: int, lever: str = "10"):
+        return self.trade_client.create_market_order(symbol=symbol, side="buy" if side == "LONG" else 'sell',
+                                                     lever=lever, size=size)
 
     def get_open_stop_order(self) -> list:
         """
@@ -38,3 +41,14 @@ class KucoinApi:
         """
         positions = self.trade_client.get_all_position()
         return positions if isinstance(positions, list) else []
+
+    def get_ticker(self, symbol) -> dict:
+        """
+        Gets real-time market data for symbol
+        Args:
+            symbol (str): Crypto symbol to get data for
+
+        Returns: Real time crypto symbol data
+
+        """
+        return self.market_client.get_ticker(symbol=symbol)
