@@ -25,11 +25,6 @@ from uniswap import InsufficientBalance
 from uniswap import Uniswap
 from web3 import Web3
 
-from . import cg
-from . import cmc
-from . import coingecko_coin_lookup_cache
-from . import eth
-from . import logger
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from api.kucoin import KucoinApi
@@ -40,7 +35,6 @@ from config import BINANCE_SMART_CHAIN_URL
 from config import BNB_ADDRESS
 from config import BUY
 from config import FERNET_KEY
-from config import KUCOIN_TASK_NAME
 from config import PANCAKESWAP_FACTORY_ADDRESS
 from config import PANCAKESWAP_ROUTER_ADDRESS
 from config import SELL
@@ -48,10 +42,15 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
+from . import cg
+from . import cmc
+from . import coingecko_coin_lookup_cache
+from . import eth
+from . import logger
 
 HEADERS = {
     "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
