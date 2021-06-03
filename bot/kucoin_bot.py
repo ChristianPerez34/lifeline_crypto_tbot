@@ -6,7 +6,10 @@ from kucoin_futures.client import WsToken
 from kucoin_futures.ws_client import KucoinFuturesWsClient
 
 from bot import active_orders
-from config import TELEGRAM_CHAT_ID, KUCOIN_API_KEY, KUCOIN_API_SECRET, KUCOIN_API_PASSPHRASE
+from config import KUCOIN_API_KEY
+from config import KUCOIN_API_PASSPHRASE
+from config import KUCOIN_API_SECRET
+from config import TELEGRAM_CHAT_ID
 from handlers import logger
 from handlers.base import send_message
 
@@ -44,7 +47,10 @@ async def kucoin_bot():
                     else:
                         data = ""
                         active_orders.pop(symbol, None)
-                await send_message(channel_id=TELEGRAM_CHAT_ID, text=message, inline=inline, data=data)
+                await send_message(channel_id=TELEGRAM_CHAT_ID,
+                                   text=message,
+                                   inline=inline,
+                                   data=data)
             elif data["type"] == "match":
                 symbol = data["symbol"][:-1]
 

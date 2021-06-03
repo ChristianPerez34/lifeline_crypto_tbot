@@ -4,8 +4,9 @@ from aiogram import Dispatcher
 from aiogram import executor
 
 from app import dp
-from config import DEV, KUCOIN_TASK_NAME
+from config import DEV
 from config import ENV
+from config import KUCOIN_TASK_NAME
 from config import WEBAPP_HOST
 from config import WEBAPP_PORT
 from config import WEBHOOK_PATH
@@ -13,7 +14,8 @@ from config import WEBHOOK_URL
 from handlers import init_database
 from handlers.base import send_greeting
 from handlers.base import send_welcome
-from handlers.crypto import send_buy_coin, kucoin_inline_query_handler
+from handlers.crypto import kucoin_inline_query_handler
+from handlers.crypto import send_buy_coin
 from handlers.crypto import send_candlechart
 from handlers.crypto import send_chart
 from handlers.crypto import send_coin

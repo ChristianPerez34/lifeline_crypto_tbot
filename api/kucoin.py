@@ -1,15 +1,23 @@
 from decimal import Decimal
 
-from kucoin_futures.client import Trade, User, Market
+from kucoin_futures.client import Market
+from kucoin_futures.client import Trade
+from kucoin_futures.client import User
 
 
 class KucoinApi:
     def __init__(self, api_key: str, api_secret: str, api_passphrase: str):
-        self.trade_client = Trade(key=api_key, secret=api_secret, passphrase=api_passphrase,
+        self.trade_client = Trade(key=api_key,
+                                  secret=api_secret,
+                                  passphrase=api_passphrase,
                                   is_sandbox=False)
-        self.user_client = User(key=api_key, secret=api_secret, passphrase=api_passphrase,
+        self.user_client = User(key=api_key,
+                                secret=api_secret,
+                                passphrase=api_passphrase,
                                 is_sandbox=False)
-        self.market_client = Market(key=api_key, secret=api_secret, passphrase=api_passphrase,
+        self.market_client = Market(key=api_key,
+                                    secret=api_secret,
+                                    passphrase=api_passphrase,
                                     is_sandbox=False)
 
     def get_balance(self) -> Decimal:
@@ -18,12 +26,21 @@ class KucoinApi:
         Returns: balance
 
         """
-        account_overview = self.user_client.get_account_overview(currency="USDT")
-        return Decimal(account_overview['availableBalance'])
+        account_overview = self.user_client.get_account_overview(
+            currency="USDT")
+        return Decimal(account_overview["availableBalance"])
 
-    def create_market_order(self, symbol: str, side: str, size: int, lever: str = "10"):
-        return self.trade_client.create_market_order(symbol=symbol, side="buy" if side == "LONG" else 'sell',
-                                                     lever=lever, size=size)
+    def create_market_order(self,
+                            symbol: str,
+                            side: str,
+                            size: int,
+                            lever: str = "10"):
+        return self.trade_client.create_market_order(
+            symbol=symbol,
+            side="buy" if side == "LONG" else "sell",
+            lever=lever,
+            size=size,
+        )
 
     def get_open_stop_order(self) -> list:
         """
@@ -31,7 +48,7 @@ class KucoinApi:
         Returns: List of open stop orders
 
         """
-        return self.trade_client.get_open_stop_order()['items']
+        return self.trade_client.get_open_stop_order()["items"]
 
     def get_all_position(self) -> list:
         """

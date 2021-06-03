@@ -2,7 +2,8 @@ from aiogram.types import Message
 from cryptography.fernet import Fernet
 
 from app import bot
-from config import FERNET_KEY, RegisterTypes
+from config import FERNET_KEY
+from config import RegisterTypes
 from handlers import logger
 from handlers.base import send_message
 from models import TelegramGroupMember
@@ -34,27 +35,36 @@ async def send_register(message: Message) -> None:
         else:
             address, private_key = tuple(args[1:])
             data.update({
-                'telegram_user_id': telegram_user.id,
-                'bsc_address': address,
-                'bsc_private_key': fernet.encrypt(private_key.encode())
+                "telegram_user_id":
+                telegram_user.id,
+                "bsc_address":
+                address,
+                "bsc_private_key":
+                fernet.encrypt(private_key.encode()),
             })
     elif register_type == RegisterTypes.KUCOIN.value:
         if len(args) != 4:
             is_error = True
-            text = "⚠️ Please provide KuCoin API Key, Secret and Passphrase: /register kucoin [API_KEY] " \
-                   "[API_SECRET] [API_PASSPHRASE]"
+            text = (
+                "⚠️ Please provide KuCoin API Key, Secret and Passphrase: /register kucoin [API_KEY] "
+                "[API_SECRET] [API_PASSPHRASE]")
         else:
             api_key, api_secret, api_passphrase = tuple(args[1:])
             data.update({
-                'telegram_user_id': telegram_user.id,
-                'kucoin_api_key': fernet.encrypt(api_key.encode()).decode(),
-                'kucoin_api_secret': fernet.encrypt(api_secret.encode()).decode(),
-                'kucoin_api_passphrase': fernet.encrypt(api_passphrase.encode()).decode()
+                "telegram_user_id":
+                telegram_user.id,
+                "kucoin_api_key":
+                fernet.encrypt(api_key.encode()).decode(),
+                "kucoin_api_secret":
+                fernet.encrypt(api_secret.encode()).decode(),
+                "kucoin_api_passphrase":
+                fernet.encrypt(api_passphrase.encode()).decode(),
             })
     else:
         is_error = True
-        text = "⚠️ Stonks! Sorry about that, couldn't identify type of account to register. Specify account type: " \
-               "/register [bsc] or [kucoin] "
+        text = (
+            "⚠️ Stonks! Sorry about that, couldn't identify type of account to register. Specify account type: "
+            "/register [bsc] or [kucoin] ")
 
     if not is_error:
         try:
