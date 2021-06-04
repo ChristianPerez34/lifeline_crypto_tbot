@@ -453,6 +453,7 @@ def swap_tokens(token: str, amount_to_spend: float, side: str,
             web3=web3,
             factory_contract_addr=PANCAKESWAP_FACTORY_ADDRESS,
             router_contract_addr=PANCAKESWAP_ROUTER_ADDRESS,
+            max_slippage=0.15
         )
         try:
             if side == BUY:
