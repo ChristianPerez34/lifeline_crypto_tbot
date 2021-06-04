@@ -896,7 +896,7 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
     user = query.from_user
     username = user.username
     logger.info(f"{username} following KuCoin signal")
-    user = await TelegramGroupMember.filter(telegram_user_id=user.id).first()
+    user = await TelegramGroupMember.get(id=user.id)
     if user.kucoin_api_key and user.kucoin_api_secret and user.kucoin_api_passphrase:
         fernet = Fernet(FERNET_KEY)
         api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
