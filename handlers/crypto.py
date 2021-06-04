@@ -521,8 +521,8 @@ async def send_sell_coin(message: Message) -> None:
     if len(args) != 2:
         reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /sell_coin [ADDRESS] [AMOUNT]"
     else:
-        user = await TelegramGroupMember.filter(
-            telegram_user_id=telegram_user.id).first()
+        user = await TelegramGroupMember.get(
+            id=telegram_user.id)
         if user:
             percentage = float(args[1])
             if 0 < percentage < 101:
