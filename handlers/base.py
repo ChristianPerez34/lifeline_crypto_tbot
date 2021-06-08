@@ -46,6 +46,7 @@ async def send_welcome(message: Message):
         f"to sell coins on PancakeSwap\n\n",
         f"{bold('/chart')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('DAYS')} to display coin chart. If BaseCoin not specified, will default to USD\n\n",
         f"{bold('/candle')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('TIME')} {italic('LETTER')} to display coin candlechart. If BaseCoin not specified, will default to USD\n\n",
+        f"{bold('/balance')} to display binance smart chain balance. Responds privately.\n\n",
     )
     await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
 
