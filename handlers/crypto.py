@@ -25,6 +25,8 @@ from uniswap import InsufficientBalance
 from uniswap import Uniswap
 from web3 import Web3
 
+from . import eth
+from . import logger
 from api.bsc import BinanceSmartChain
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
@@ -45,13 +47,12 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
-from . import eth
-from . import logger
 
 HEADERS = {
     "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
+
 
 def get_coin_stats(symbol: str) -> dict:
     """Retrieves coinstats from connected services crypto services
