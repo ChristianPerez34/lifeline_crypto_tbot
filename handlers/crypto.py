@@ -25,6 +25,7 @@ from uniswap import InsufficientBalance
 from uniswap import Uniswap
 from web3 import Web3
 
+from api.bsc import BinanceSmartChain
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from api.kucoin import KucoinApi
@@ -931,3 +932,18 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
     else:
         reply = f"⚠️ Please register KuCoin account to follow signals"
     await send_message(channel_id=query.message.chat.id, text=reply)
+
+
+async def send_balance(message: Message):
+    logger.info("Retrieving account balance")
+    user_id = message.from_user.id
+    bsc = BinanceSmartChain()
+    user = await TelegramGroupMember.get(id=user_id)
+
+    balance = bsc.get_account_balance(address=user.bsc_address)
+    price = get_coin_stats(symbol='BNB')['price']
+
+    balance = (balance * Decimal(price)).quantize(Decimal('0.01'))
+
+    reply = f"Account Balance 💲\n\nBNB: ${balance}"
+    await send_message(channel_id=user_id, text=reply)
