@@ -69,11 +69,11 @@ def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
     try:
         data = (cg.get_coin_info_from_contract_address_by_id(
             id="ethereum", contract_address=ids)
-                if is_address else cg.get_coin_by_id(id=ids))
+            if is_address else cg.get_coin_by_id(id=ids))
     except Exception:
         data = (cg.get_coin_info_from_contract_address_by_id(
             id="binance", contract_address=ids)
-                if is_address else cg.get_coin_by_id(id=ids))
+            if is_address else cg.get_coin_by_id(id=ids))
     return data
 
 
