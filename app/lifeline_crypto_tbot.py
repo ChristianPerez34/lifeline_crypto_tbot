@@ -9,6 +9,7 @@ from handlers import init_database
 from handlers.base import send_greeting
 from handlers.base import send_welcome
 from handlers.crypto import kucoin_inline_query_handler
+from handlers.crypto import send_balance
 from handlers.crypto import send_buy_coin
 from handlers.crypto import send_candlechart
 from handlers.crypto import send_chart
@@ -66,6 +67,7 @@ def setup_handlers(dp: Dispatcher) -> None:
                                 commands=["restart_kucoin"])
     dp.register_message_handler(send_buy_coin, commands=["buy_coin"])
     dp.register_message_handler(send_register, commands=["register"])
+    dp.register_message_handler(send_balance, commands=["balance"])
     dp.register_callback_query_handler(kucoin_inline_query_handler)
     # dp.register_message_handler(send_sell_coin, commands=["sell_coin"])
     dp.register_message_handler(send_greeting)

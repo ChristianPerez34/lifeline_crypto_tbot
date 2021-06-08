@@ -25,6 +25,12 @@ from uniswap import InsufficientBalance
 from uniswap import Uniswap
 from web3 import Web3
 
+from . import cg
+from . import cmc
+from . import coingecko_coin_lookup_cache
+from . import eth
+from . import logger
+from api.bsc import BinanceSmartChain
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from api.kucoin import KucoinApi
@@ -42,15 +48,10 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
-from . import cg
-from . import cmc
-from . import coingecko_coin_lookup_cache
-from . import eth
-from . import logger
 
 HEADERS = {
     "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
@@ -453,7 +454,7 @@ def swap_tokens(token: str, amount_to_spend: float, side: str,
             web3=web3,
             factory_contract_addr=PANCAKESWAP_FACTORY_ADDRESS,
             router_contract_addr=PANCAKESWAP_ROUTER_ADDRESS,
-            max_slippage=0.15
+            max_slippage=0.15,
         )
         try:
             if side == BUY:
@@ -521,8 +522,7 @@ async def send_sell_coin(message: Message) -> None:
     if len(args) != 2:
         reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /sell_coin [ADDRESS] [AMOUNT]"
     else:
-        user = await TelegramGroupMember.get(
-            id=telegram_user.id)
+        user = await TelegramGroupMember.get(id=telegram_user.id)
         if user:
             percentage = float(args[1])
             if 0 < percentage < 101:
@@ -931,3 +931,18 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
     else:
         reply = f"⚠️ Please register KuCoin account to follow signals"
     await send_message(channel_id=query.message.chat.id, text=reply)
+
+
+async def send_balance(message: Message):
+    logger.info("Retrieving account balance")
+    user_id = message.from_user.id
+    bsc = BinanceSmartChain()
+    user = await TelegramGroupMember.get(id=user_id)
+
+    balance = bsc.get_account_balance(address=user.bsc_address)
+    price = get_coin_stats(symbol="BNB")["price"]
+
+    balance = (balance * Decimal(price)).quantize(Decimal("0.01"))
+
+    reply = f"Account Balance 💲\n\nBNB: ${balance}"
+    await send_message(channel_id=user_id, text=reply)
