@@ -8,7 +8,8 @@ from config import KUCOIN_TASK_NAME
 from handlers import init_database
 from handlers.base import send_greeting
 from handlers.base import send_welcome
-from handlers.crypto import kucoin_inline_query_handler, send_balance
+from handlers.crypto import kucoin_inline_query_handler
+from handlers.crypto import send_balance
 from handlers.crypto import send_buy_coin
 from handlers.crypto import send_candlechart
 from handlers.crypto import send_chart
