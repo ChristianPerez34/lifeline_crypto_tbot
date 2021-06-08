@@ -1,6 +1,7 @@
 from pycoingecko import CoinGeckoAPI
 
-from handlers import coingecko_coin_lookup_cache, logger
+from handlers import coingecko_coin_lookup_cache
+from handlers import logger
 
 
 class CoinGecko:
