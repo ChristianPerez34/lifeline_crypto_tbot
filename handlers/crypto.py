@@ -27,6 +27,7 @@ from web3 import Web3
 
 from api.bsc import BinanceSmartChain
 from api.coingecko import CoinGecko
+from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from api.kucoin import KucoinApi
@@ -44,7 +45,6 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
-from . import cmc
 from . import eth
 from . import logger
 
@@ -52,21 +52,6 @@ HEADERS = {
     "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
-
-
-def coinmarketcap_coin_lookup(symbol: str) -> dict:
-    """Coin lookup in CoinMarketCap API
-
-    Args:
-        symbol (str): Symbol of coin to lookup
-
-    Returns:
-        dict: Results of coin lookup
-    """
-    logger.info(f"Looking up price for {symbol} in CoinMarketCap API")
-    response = cmc.cryptocurrency_quotes_latest(symbol=symbol, convert="usd")
-    return response.data
-
 
 def get_coin_stats(symbol: str) -> dict:
     """Retrieves coinstats from connected services crypto services
@@ -80,6 +65,7 @@ def get_coin_stats(symbol: str) -> dict:
     # Search Coingecko API first
     logger.info(f"Getting coin stats for {symbol}")
     coingecko = CoinGecko()
+    coin_market_cap = CoinMarketCap()
     try:
         coin_id = coingecko.get_coin_id(symbol=symbol)
         data = coingecko.coin_lookup(ids=coin_id)
@@ -97,7 +83,7 @@ def get_coin_stats(symbol: str) -> dict:
         logger.info(
             f"{symbol} not found in Coingecko. Initiated lookup on CoinMarketCap."
         )
-        data = coinmarketcap_coin_lookup(symbol)[symbol]
+        data = coin_market_cap.coin_lookup(symbol)
         # crypto_cache[symbol] = data["slug"]
         quote = data["quote"]["USD"]
         coin_stats = {
