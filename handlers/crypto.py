@@ -25,12 +25,8 @@ from uniswap import InsufficientBalance
 from uniswap import Uniswap
 from web3 import Web3
 
-from . import cg
-from . import cmc
-from . import coingecko_coin_lookup_cache
-from . import eth
-from . import logger
 from api.bsc import BinanceSmartChain
+from api.coingecko import CoinGecko
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from api.kucoin import KucoinApi
@@ -48,33 +44,14 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
+from . import cmc
+from . import eth
+from . import logger
 
 HEADERS = {
     "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
-
-
-def coingecko_coin_lookup(ids: str, is_address: bool = False) -> dict:
-    """Coin lookup in CoinGecko API
-
-    Args:
-        ids (str): id of coin to lookup
-        is_address (bool): Indicates if given ids is a crypto address
-
-    Returns:
-        dict: Data from CoinGecko API
-    """
-    logger.info(f"Looking up price for {ids} in CoinGecko API")
-    try:
-        data = (cg.get_coin_info_from_contract_address_by_id(
-            id="ethereum", contract_address=ids)
-                if is_address else cg.get_coin_by_id(id=ids))
-    except Exception:
-        data = (cg.get_coin_info_from_contract_address_by_id(
-            id="binance", contract_address=ids)
-                if is_address else cg.get_coin_by_id(id=ids))
-    return data
 
 
 def coinmarketcap_coin_lookup(symbol: str) -> dict:
@@ -102,9 +79,10 @@ def get_coin_stats(symbol: str) -> dict:
     """
     # Search Coingecko API first
     logger.info(f"Getting coin stats for {symbol}")
+    coingecko = CoinGecko()
     try:
-        coin_id = get_coingecko_coin_id(symbol=symbol)
-        data = coingecko_coin_lookup(coin_id)
+        coin_id = coingecko.get_coin_id(symbol=symbol)
+        data = coingecko.coin_lookup(ids=coin_id)
         market_data = data["market_data"]
         coin_stats = {
             "slug": data["name"],
@@ -143,7 +121,8 @@ def get_coin_stats_by_address(address: str) -> dict:
     """
     # Search Coingecko API first
     logger.info(f"Getting coin stats for {address}")
-    data = coingecko_coin_lookup(ids=address, is_address=True)
+    coingecko = CoinGecko()
+    data = coingecko.coin_lookup(ids=address, is_address=True)
     market_data = data["market_data"]
     slug = data["name"]
     return {
@@ -242,8 +221,9 @@ async def send_trending(message: Message) -> None:
         message (Message): Message to reply to
     """
     logger.info("Retrieving trending addresses from CoinGecko")
+    coingecko = CoinGecko()
     trending_coins = "\n".join(
-        [coin["item"]["symbol"] for coin in cg.get_search_trending()["coins"]])
+        [coin["item"]["symbol"] for coin in coingecko.get_trending_coins()])
     reply = f"Trending 🔥\n\n{trending_coins}"
     await message.reply(text=reply)
 
@@ -540,48 +520,6 @@ async def send_sell_coin(message: Message) -> None:
     await message.reply(text=reply)
 
 
-def coingecko_coin_market_lookup(ids: str, time_frame: int,
-                                 base_coin: str) -> dict:
-    """Coin lookup in CoinGecko API for Market Chart
-
-    Args:
-        ids (str): id of coin to lookup
-        time_frame (int): Indicates number of days for data span
-
-    Returns:
-        dict: Data from CoinGecko API
-    """
-    logger.info(f"Looking up chart data for {ids} in CoinGecko API")
-
-    return cg.get_coin_market_chart_by_id(ids, base_coin, time_frame)
-
-
-def get_coingecko_coin_id(symbol: str) -> str:
-    """Retrieves coinstats from connected services crypto services
-
-    Args:
-        symbol (str): Cryptocurrency symbol of coin to lookup
-
-    Returns:
-        str: coin id of the cryptocurrency
-    """
-    # Search Coingecko API first
-    logger.info(f"Getting coin ID for {symbol}")
-
-    if symbol in coingecko_coin_lookup_cache.keys():
-        coin_id = coingecko_coin_lookup_cache[symbol]
-
-    else:
-        coin = [
-            coin for coin in cg.get_coins_list()
-            if coin["symbol"].upper() == symbol
-        ][0]
-        coin_id = coin["id"]
-        coingecko_coin_lookup_cache[symbol] = coin_id
-
-    return coin_id
-
-
 async def send_chart(message: Message):
     """Replies to command with coin chart for given crypto symbol and amount of days
 
@@ -589,6 +527,7 @@ async def send_chart(message: Message):
         message (Message): Message to reply to
     """
     logger.info("Searching for coin market data for chart")
+    coingecko = CoinGecko()
     args = message.get_args().split()
     base_coin = "USD"
     reply = ""
@@ -615,10 +554,10 @@ async def send_chart(message: Message):
             reply = ""
             base_coin = "USD"
 
-        time_frame = args[1]
+        time_frame = int(args[1])
 
-        coin_id = get_coingecko_coin_id(symbol)
-        market = coingecko_coin_market_lookup(coin_id, time_frame, base_coin)
+        coin_id = coingecko.get_coin_id(symbol)
+        market = coingecko.coin_market_lookup(coin_id, time_frame, base_coin)
 
         logger.info("Creating chart layout")
         # Volume
