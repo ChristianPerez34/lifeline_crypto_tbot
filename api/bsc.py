@@ -2,11 +2,10 @@ from decimal import Decimal
 
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
-from uniswap import InsufficientBalance
-from uniswap import Uniswap
+from uniswap import InsufficientBalance, Uniswap
 from web3 import Web3
 
-from config import FERNET_KEY, BUY
+from config import BUY, FERNET_KEY
 
 PANCAKESWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
     "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"

@@ -10,13 +10,9 @@ import pandas as pd
 import plotly.figure_factory as fif
 import plotly.graph_objs as go
 import plotly.io as pio
-from aiogram.types import CallbackQuery
-from aiogram.types import Message
-from aiogram.types import ParseMode
+from aiogram.types import CallbackQuery, Message, ParseMode
 from aiogram.utils.emoji import emojize
-from aiogram.utils.markdown import bold
-from aiogram.utils.markdown import italic
-from aiogram.utils.markdown import text
+from aiogram.utils.markdown import bold, italic, text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
@@ -29,12 +25,12 @@ from api.kucoin import KucoinApi
 from app import bot
 from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
-from config import TELEGRAM_CHAT_ID, FERNET_KEY, BUY
+from config import BUY, FERNET_KEY, TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
-from . import eth
-from . import logger
+
+from . import eth, logger
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
