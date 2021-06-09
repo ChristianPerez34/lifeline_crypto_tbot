@@ -22,7 +22,7 @@ kucoin-futures-python = "^1.0.3"
 tortoise-orm = { extras = ["asyncpg"], version = "^0.17.2" }
 cryptography = "^3.4.7"
 web3 = "^5.19.0"
-uniswap-python = { git = "https://github.com/shanefontaine/uniswap-python.git" }
+uniswap-python = "^0.5.1"
 plotly = "^4.14.3"
 psutil = "^5.8.0"
 kaleido = "^0.2.1"
