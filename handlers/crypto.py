@@ -20,7 +20,10 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
-from api.bsc import BinanceSmartChain, PancakeSwap
+from . import eth
+from . import logger
+from api.bsc import BinanceSmartChain
+from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
@@ -29,16 +32,16 @@ from api.kucoin import KucoinApi
 from app import bot
 from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
-from config import TELEGRAM_CHAT_ID, FERNET_KEY, BUY
+from config import BUY
+from config import FERNET_KEY
+from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
-from . import eth
-from . import logger
 
 HEADERS = {
     "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
 }
 
 
@@ -398,8 +401,11 @@ async def send_buy_coin(message: Message) -> None:
     else:
         user = await TelegramGroupMember.get(id=telegram_user.id)
         if user:
-            pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
-            reply = pancake_swap.swap_tokens(token=args[0], amount_to_spend=Decimal(args[1]), side=BUY)
+            pancake_swap = PancakeSwap(address=user.bsc_address,
+                                       key=user.bsc_private_key)
+            reply = pancake_swap.swap_tokens(token=args[0],
+                                             amount_to_spend=Decimal(args[1]),
+                                             side=BUY)
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
 
@@ -425,8 +431,12 @@ async def send_sell_coin(message: Message) -> None:
             percentage = float(args[1])
             if 0 < percentage < 101:
                 percentage_to_sell = Decimal(args[1]) / 100
-                pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
-                reply = pancake_swap.swap_tokens(token=args[0], amount_to_spend=percentage_to_sell, side=BUY)
+                pancake_swap = PancakeSwap(address=user.bsc_address,
+                                           key=user.bsc_private_key)
+                reply = pancake_swap.swap_tokens(
+                    token=args[0],
+                    amount_to_spend=percentage_to_sell,
+                    side=BUY)
             else:
                 reply = "⚠ Sorry, incorrect percentage value. Choose a value between 1 and 100 inclusive"
         else:
