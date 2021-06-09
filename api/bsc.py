@@ -2,8 +2,8 @@ from decimal import Decimal
 
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
-from uniswap import InsufficientBalance
 from uniswap import Uniswap
+from uniswap.exceptions import InsufficientBalance
 from web3 import Web3
 
 from config import BUY
