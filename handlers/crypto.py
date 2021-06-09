@@ -398,8 +398,10 @@ async def send_buy_coin(message: Message) -> None:
     else:
         user = await TelegramGroupMember.get(id=telegram_user.id)
         if user:
-            pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
-            reply = pancake_swap.swap_tokens(token=args[0], amount_to_spend=Decimal(args[1]), side=BUY)
+            pancake_swap = PancakeSwap(
+                address=user.bsc_address, key=user.bsc_private_key)
+            reply = pancake_swap.swap_tokens(
+                token=args[0], amount_to_spend=Decimal(args[1]), side=BUY)
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
 
@@ -425,8 +427,10 @@ async def send_sell_coin(message: Message) -> None:
             percentage = float(args[1])
             if 0 < percentage < 101:
                 percentage_to_sell = Decimal(args[1]) / 100
-                pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
-                reply = pancake_swap.swap_tokens(token=args[0], amount_to_spend=percentage_to_sell, side=BUY)
+                pancake_swap = PancakeSwap(
+                    address=user.bsc_address, key=user.bsc_private_key)
+                reply = pancake_swap.swap_tokens(
+                    token=args[0], amount_to_spend=percentage_to_sell, side=BUY)
             else:
                 reply = "⚠ Sorry, incorrect percentage value. Choose a value between 1 and 100 inclusive"
         else:

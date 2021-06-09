@@ -8,8 +8,10 @@ from web3 import Web3
 
 from config import FERNET_KEY, BUY
 
-PANCAKESWAP_FACTORY_ADDRESS = Web3.toChecksumAddress("0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
-PANCAKESWAP_ROUTER_ADDRESS = Web3.toChecksumAddress("0x10ED43C718714eb63d5aA57B78B54704E256024E")
+PANCAKESWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
+    "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
+PANCAKESWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
+    "0x10ED43C718714eb63d5aA57B78B54704E256024E")
 BNB_ADDRESS = "0x0000000000000000000000000000000000000000"
 BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
 BSCSCAN_API_URL = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
@@ -65,8 +67,10 @@ class PancakeSwap(BinanceSmartChain):
                     txn_hash = self.web3.toHex(
                         self.pancake_swap.make_trade(BNB_ADDRESS, token, amount_to_spend, self.address))
                 else:
-                    balance = self.web3.fromWei(self.pancake_swap.get_token_balance(token), "ether")
-                    amount_to_spend = self.web3.toWei(balance * amount_to_spend, "ether")
+                    balance = self.web3.fromWei(
+                        self.pancake_swap.get_token_balance(token), "ether")
+                    amount_to_spend = self.web3.toWei(
+                        balance * amount_to_spend, "ether")
                     txn_hash = self.web3.toHex(
                         self.pancake_swap.make_trade_output(token, BNB_ADDRESS, amount_to_spend, self.address))
 
