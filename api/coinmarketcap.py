@@ -2,7 +2,8 @@ import aiohttp
 import pandas as pd
 from coinmarketcapapi import CoinMarketCapAPI
 
-from config import COIN_MARKET_CAP_API_KEY, HEADERS
+from config import COIN_MARKET_CAP_API_KEY
+from config import HEADERS
 from handlers import logger
 
 
@@ -41,7 +42,7 @@ class CoinMarketCap:
                 for row in df.itertuples():
                     if row.Index > 6:
                         break
-                    name = row.Name.replace(f"{row.Index + 1}", ' ')
+                    name = row.Name.replace(f"{row.Index + 1}", " ")
                     words = name.split()
                     words[-1] = f"({words[-1]})"
                     coin = " ".join(words)

@@ -20,6 +20,8 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
+from . import eth
+from . import logger
 from api.bsc import BinanceSmartChain
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
@@ -30,14 +32,13 @@ from api.kucoin import KucoinApi
 from app import bot
 from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
-from config import BUY, HEADERS
+from config import BUY
 from config import FERNET_KEY
+from config import HEADERS
 from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
 from utils import all_same
-from . import eth
-from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -196,12 +197,15 @@ async def send_trending(message: Message) -> None:
     logger.info("Retrieving trending addresses from CoinGecko")
     coingecko = CoinGecko()
     coin_market_cap = CoinMarketCap()
-    coingecko_trending_coins = "\n".join(
-        [f"{coin['item']['name']} ({coin['item']['symbol']})" for coin in coingecko.get_trending_coins()])
-    coin_market_cap_trending_coins = "\n".join(await coin_market_cap.get_trending_coins())
+    coingecko_trending_coins = "\n".join([
+        f"{coin['item']['name']} ({coin['item']['symbol']})"
+        for coin in coingecko.get_trending_coins()
+    ])
+    coin_market_cap_trending_coins = "\n".join(
+        await coin_market_cap.get_trending_coins())
 
-    reply = f"Trending 🔥\n\nCoingecko\n\n{coingecko_trending_coins}\n\n" \
-            f"CoinMarketCap\n\n{coin_market_cap_trending_coins}"
+    reply = (f"Trending 🔥\n\nCoingecko\n\n{coingecko_trending_coins}\n\n"
+             f"CoinMarketCap\n\n{coin_market_cap_trending_coins}")
     await message.reply(text=reply)
 
 
