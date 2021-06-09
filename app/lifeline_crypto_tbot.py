@@ -75,7 +75,6 @@ def setup_handlers(dp: Dispatcher) -> None:
 
 
 if __name__ == "__main__":
-    # This is a test
     # if ENV == DEV:
     executor.start_polling(dp,
                            skip_updates=True,
