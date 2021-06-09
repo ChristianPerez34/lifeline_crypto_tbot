@@ -10,11 +10,9 @@ from config import BUY
 from config import FERNET_KEY
 
 PANCAKESWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
-    "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
-)
+    "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
 PANCAKESWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
-    "0x10ED43C718714eb63d5aA57B78B54704E256024E"
-)
+    "0x10ED43C718714eb63d5aA57B78B54704E256024E")
 BNB_ADDRESS = "0x0000000000000000000000000000000000000000"
 BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
 BSCSCAN_API_URL = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
@@ -48,7 +46,8 @@ class PancakeSwap(BinanceSmartChain):
             max_slippage=MAX_SLIPPAGE,
         )
 
-    def swap_tokens(self, token: str, amount_to_spend: Decimal, side: str) -> str:
+    def swap_tokens(self, token: str, amount_to_spend: Decimal,
+                    side: str) -> str:
         """
         Swaps crypto coins on PancakeSwap
         Args:
@@ -66,22 +65,17 @@ class PancakeSwap(BinanceSmartChain):
                 if side == BUY:
                     amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
                     txn_hash = self.web3.toHex(
-                        self.pancake_swap.make_trade(
-                            BNB_ADDRESS, token, amount_to_spend, self.address
-                        )
-                    )
+                        self.pancake_swap.make_trade(BNB_ADDRESS, token,
+                                                     amount_to_spend,
+                                                     self.address))
                 else:
                     balance = self.web3.fromWei(
-                        self.pancake_swap.get_token_balance(token), "ether"
-                    )
+                        self.pancake_swap.get_token_balance(token), "ether")
                     amount_to_spend = self.web3.toWei(
-                        balance * amount_to_spend, "ether"
-                    )
+                        balance * amount_to_spend, "ether")
                     txn_hash = self.web3.toHex(
                         self.pancake_swap.make_trade_output(
-                            token, BNB_ADDRESS, amount_to_spend, self.address
-                        )
-                    )
+                            token, BNB_ADDRESS, amount_to_spend, self.address))
 
                 txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
