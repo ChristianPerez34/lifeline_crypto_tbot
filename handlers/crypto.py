@@ -1,5 +1,4 @@
 import asyncio
-import concurrent
 import io
 import time
 from decimal import Decimal
@@ -17,17 +16,14 @@ from aiogram.types import ParseMode
 from aiogram.utils.emoji import emojize
 from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import italic
-from aiogram.utils.markdown import link
 from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
-from uniswap import InsufficientBalance
-from uniswap import Uniswap
-from web3 import Web3
 
 from . import eth
 from . import logger
 from api.bsc import BinanceSmartChain
+from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
@@ -36,13 +32,8 @@ from api.kucoin import KucoinApi
 from app import bot
 from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
-from config import BINANCE_SMART_CHAIN_URL
-from config import BNB_ADDRESS
 from config import BUY
 from config import FERNET_KEY
-from config import PANCAKESWAP_FACTORY_ADDRESS
-from config import PANCAKESWAP_ROUTER_ADDRESS
-from config import SELL
 from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import TelegramGroupMember
@@ -393,61 +384,6 @@ async def send_restart_kucoin_bot(message: Message) -> None:
     await message.reply(text=reply)
 
 
-def swap_tokens(token: str, amount_to_spend: float, side: str,
-                user: TelegramGroupMember) -> str:
-    """
-    Swaps crypto coins on PancakeSwap
-    Args:
-        token (str): Address of coin to buy/sell
-        amount_to_spend (float): Amount in BNB expected to spend/receive. When selling will read as percentage
-        side (str): Indicates if user wants to buy or sell coins
-        user (TelegramGroupMember): Telegram user
-
-    Returns: Reply to message
-
-    """
-    web3 = Web3(Web3.HTTPProvider(BINANCE_SMART_CHAIN_URL))
-
-    if web3.isConnected():
-        fernet = Fernet(FERNET_KEY)
-        user_address = web3.toChecksumAddress(user.bsc_address)
-        private_key = fernet.decrypt(user.bsc_private_key.encode()).decode()
-        token = web3.toChecksumAddress(token)
-
-        pancakeswap_wrapper = Uniswap(
-            user_address,
-            private_key,
-            version=2,
-            web3=web3,
-            factory_contract_addr=PANCAKESWAP_FACTORY_ADDRESS,
-            router_contract_addr=PANCAKESWAP_ROUTER_ADDRESS,
-            max_slippage=0.15,
-        )
-        try:
-            if side == BUY:
-                amount_to_spend = web3.toWei(amount_to_spend, "ether")
-                txn_hash = web3.toHex(
-                    pancakeswap_wrapper.make_trade(BNB_ADDRESS, token,
-                                                   amount_to_spend,
-                                                   user_address))
-            else:
-                balance = web3.fromWei(
-                    pancakeswap_wrapper.get_token_balance(token), "ether")
-                amount_to_spend = web3.toWei(
-                    balance * Decimal(amount_to_spend), "ether")
-                txn_hash = web3.toHex(
-                    pancakeswap_wrapper.make_trade_output(
-                        token, BNB_ADDRESS, amount_to_spend, user_address))
-
-            txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
-            reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
-        except InsufficientBalance as e:
-            reply = "⚠️ Insufficient balance. Top up you BNB balance and try again. "
-    else:
-        reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
-    return reply
-
-
 async def send_buy_coin(message: Message) -> None:
     """
     Command to buy coins in PancakeSwap
@@ -465,10 +401,11 @@ async def send_buy_coin(message: Message) -> None:
     else:
         user = await TelegramGroupMember.get(id=telegram_user.id)
         if user:
-            executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
-            loop = asyncio.get_event_loop()
-            reply = await loop.run_in_executor(executor, swap_tokens, args[0],
-                                               float(args[1]), BUY, user)
+            pancake_swap = PancakeSwap(address=user.bsc_address,
+                                       key=user.bsc_private_key)
+            reply = pancake_swap.swap_tokens(token=args[0],
+                                             amount_to_spend=Decimal(args[1]),
+                                             side=BUY)
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
 
@@ -493,12 +430,13 @@ async def send_sell_coin(message: Message) -> None:
         if user:
             percentage = float(args[1])
             if 0 < percentage < 101:
-                percentage_to_sell = float(args[1]) / 100
-                executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
-                loop = asyncio.get_event_loop()
-                reply = await loop.run_in_executor(executor, swap_tokens,
-                                                   args[0], percentage_to_sell,
-                                                   SELL, user)
+                percentage_to_sell = Decimal(args[1]) / 100
+                pancake_swap = PancakeSwap(address=user.bsc_address,
+                                           key=user.bsc_private_key)
+                reply = pancake_swap.swap_tokens(
+                    token=args[0],
+                    amount_to_spend=percentage_to_sell,
+                    side=BUY)
             else:
                 reply = "⚠ Sorry, incorrect percentage value. Choose a value between 1 and 100 inclusive"
         else:
