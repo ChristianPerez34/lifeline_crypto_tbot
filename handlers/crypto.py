@@ -20,6 +20,8 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
+from . import eth
+from . import logger
 from api.bsc import BinanceSmartChain
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
@@ -35,10 +37,9 @@ from config import FERNET_KEY
 from config import HEADERS
 from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
-from models import TelegramGroupMember, CryptoAlert
+from models import CryptoAlert
+from models import TelegramGroupMember
 from utils import all_same
-from . import eth
-from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -227,8 +228,7 @@ async def send_price_alert(message: Message) -> None:
 
         alert = await CryptoAlert.create(symbol=crypto, sign=sign, price=price)
 
-        asyncio.create_task(
-            price_alert_callback(alert=alert, delay=15))
+        asyncio.create_task(price_alert_callback(alert=alert, delay=15))
         reply = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
         reply += f"the current price of {crypto} is ${float(coin_stats['price'])}"
     else:
@@ -264,8 +264,8 @@ async def price_alert_callback(alert: CryptoAlert, delay: int) -> None:
                 send = True
 
         if send:
-            price = '${:,}'.format(price)
-            spot_price = '${:,}'.format(spot_price)
+            price = "${:,}".format(price)
+            spot_price = "${:,}".format(spot_price)
             if dip:
                 response = f":( {crypto} has dipped below {price} and is currently at {spot_price}."
             else:
