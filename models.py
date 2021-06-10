@@ -1,6 +1,5 @@
 from tortoise import fields
-from tortoise.models import MODEL
-from tortoise.models import Model
+from tortoise.models import MODEL, Model
 
 
 class TelegramGroupMember(Model):
