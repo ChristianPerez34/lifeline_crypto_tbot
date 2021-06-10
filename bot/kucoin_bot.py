@@ -1,4 +1,5 @@
 import asyncio
+from decimal import Decimal
 
 from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import text
@@ -31,7 +32,8 @@ async def kucoin_bot():
                     if symbol in active_orders:
                         order = active_orders[symbol]
 
-                        entry = order["entry"]
+                        entries = list(map(Decimal, order['entry'].split('-')))
+                        entry = f"{min(entries)}-{max(entries)}" if len(entries) > 1 else entries[0]
                         side = "SHORT" if data["side"] == "sell" else "LONG"
 
                         if side == order["side"]:
