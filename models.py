@@ -21,3 +21,10 @@ class TelegramGroupMember(Model):
         else:
             member = await self.create(**data)
         return member
+
+
+class CryptoAlert(Model):
+    id = fields.IntField(pk=True)
+    symbol = fields.TextField(null=False)
+    sign = fields.TextField(null=False)
+    price = fields.DecimalField(null=False, decimal_places=18, max_digits=36)
