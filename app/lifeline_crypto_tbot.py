@@ -8,7 +8,7 @@ from config import KUCOIN_TASK_NAME
 from handlers import init_database
 from handlers.base import send_greeting
 from handlers.base import send_welcome
-from handlers.crypto import kucoin_inline_query_handler
+from handlers.crypto import kucoin_inline_query_handler, price_alert_callback
 from handlers.crypto import send_balance
 from handlers.crypto import send_buy_coin
 from handlers.crypto import send_candlechart
@@ -22,6 +22,7 @@ from handlers.crypto import send_restart_kucoin_bot
 from handlers.crypto import send_trending
 from handlers.error import send_error
 from handlers.user import send_register
+from models import CryptoAlert
 
 
 async def on_startup(dp: Dispatcher):
@@ -34,6 +35,9 @@ async def on_startup(dp: Dispatcher):
     #     await bot.delete_webhook()
     #     await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
     await init_database()
+    for alert in await CryptoAlert.all():
+        asyncio.create_task(price_alert_callback(alert=alert, delay=15))
+
     setup_handlers(dp)
 
 

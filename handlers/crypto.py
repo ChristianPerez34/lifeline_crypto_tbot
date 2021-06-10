@@ -20,8 +20,6 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
-from . import eth
-from . import logger
 from api.bsc import BinanceSmartChain
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
@@ -37,8 +35,10 @@ from config import FERNET_KEY
 from config import HEADERS
 from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
-from models import TelegramGroupMember
+from models import TelegramGroupMember, CryptoAlert
 from utils import all_same
+from . import eth
+from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -225,26 +225,27 @@ async def send_price_alert(message: Message) -> None:
 
         coin_stats = get_coin_stats(symbol=crypto)
 
+        alert = await CryptoAlert.create(symbol=crypto, sign=sign, price=price)
+
         asyncio.create_task(
-            priceAlertCallback(context=[crypto, sign, price], delay=15))
-        response = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
-        response += f"the current price of {crypto} is ${float(coin_stats['price'])}"
+            price_alert_callback(alert=alert, delay=15))
+        reply = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
+        reply += f"the current price of {crypto} is ${float(coin_stats['price'])}"
     else:
-        response = "⚠️ Please provide a crypto code and a price value: /alert [COIN] [<,>] [PRICE]"
-    await message.reply(text=response)
+        reply = "⚠️ Please provide a crypto code and a price value: /alert [COIN] [<,>] [PRICE]"
+    await message.reply(text=reply)
 
 
-async def priceAlertCallback(context: list, delay: int) -> None:
+async def price_alert_callback(alert: CryptoAlert, delay: int) -> None:
     """Repetitive task that continues monitoring market for alerted coin mark price until alert is displayed
 
     Args:
-        message (Message): Message to reply to
-        context (list): Alert context
+        alert (CryptoAlert): CryptoAlert model
         delay (int): Interval of time to wait in seconds
     """
-    crypto = context[0]
-    sign = context[1]
-    price = context[2]
+    crypto = alert.symbol
+    sign = alert.sign
+    price = alert.price
 
     send = False
     dip = False
@@ -263,12 +264,14 @@ async def priceAlertCallback(context: list, delay: int) -> None:
                 send = True
 
         if send:
+            price = '${:,}'.format(price)
+            spot_price = '${:,}'.format(spot_price)
             if dip:
-                response = f":( {crypto} has dipped below {'${:,}'.format(price)} and is currently at {'${:,}'.format(spot_price)}."
-
+                response = f":( {crypto} has dipped below {price} and is currently at {spot_price}."
             else:
-                response = f"👋 {crypto} has surpassed {'${:,}'.format(price)} and has just reached {'${:,}'.format(spot_price)}!"
+                response = f"👋 {crypto} has surpassed {price} and has just reached {spot_price}!"
             await send_message(channel_id=TELEGRAM_CHAT_ID, text=response)
+            await alert.delete()
 
         await asyncio.sleep(delay)
 
