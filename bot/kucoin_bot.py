@@ -33,7 +33,8 @@ async def kucoin_bot():
                         order = active_orders[symbol]
 
                         entries = list(map(Decimal, order['entry'].split('-')))
-                        entry = f"{min(entries)}-{max(entries)}" if len(entries) > 1 else entries[0]
+                        entry = f"{min(entries)}-{max(entries)}" if len(
+                            entries) > 1 else entries[0]
                         side = "SHORT" if data["side"] == "sell" else "LONG"
 
                         if side == order["side"]:
