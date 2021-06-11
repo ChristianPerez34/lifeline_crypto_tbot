@@ -1,7 +1,10 @@
+import re
 from decimal import Decimal
 
+import pandas as pd
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
+from playwright.async_api import async_playwright
 from uniswap import Uniswap
 from uniswap.exceptions import InsufficientBalance
 from web3 import Web3
@@ -15,7 +18,6 @@ PANCAKESWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
     "0x10ED43C718714eb63d5aA57B78B54704E256024E")
 BNB_ADDRESS = "0x0000000000000000000000000000000000000000"
 BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
-BSCSCAN_API_URL = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
 MAX_SLIPPAGE = 0.15
 
 GAS = 250000
@@ -25,9 +27,56 @@ GAS_PRICE = Web3.toWei("10", "gwei")
 class BinanceSmartChain:
     def __init__(self):
         self.web3 = Web3(Web3.HTTPProvider(BINANCE_SMART_CHAIN_URL))
+        self.api_url = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
 
     def get_account_balance(self, address: str) -> Decimal:
         return self.web3.fromWei(self.web3.eth.get_balance(address), "ether")
+
+    # def get_contract_abi(self, token):
+    #     return requests.get(self.api_url.format(address=token, api_key=BSCSCAN_API_KEY)).json()['results']
+    #
+    # def get_token_decimals(self, token):
+    #     abi = self.get_contract_abi(token=token)
+    #     contract = self.web3.eth.contract(address=token, abi=abi)
+    #     return contract.functions.decimals.call()
+
+    async def get_token_price(self, address):
+        async with async_playwright() as p:
+            # for browser_type in [p.chromium, p.firefox, p.webkit]:
+            browser = await p.chromium.launch()
+            context = await browser.new_context()
+            page = await context.new_page()
+            await page.goto(f"https://poocoin.app/tokens/{address}")
+            await page.is_visible(
+                "body > div > div.flex-1.flex.flex-col.overflow-hidden > main > div > div > div > div > div.row-span-1.col-span-12.text-white.justify-between.flex.flex-col.lg\:flex-row.lg\:items-center > div.flex.flex-row.mr-4.w-full.flex-wrap.sm\:px-0.px-2 > div.my-1.flex.flex-row.space-x-3.sm\:space-x-6.mr-6.mb-3.md\:mb-0 > span:nth-child(2) > h4")
+            content = await page.content()
+            await browser.close()
+
+    async def get_account_token_holdings(self, address):
+        account_holdings = {}
+
+        async with async_playwright() as p:
+            # for browser_type in [p.chromium, p.firefox, p.webkit]:
+            browser = await p.chromium.launch()
+            context = await browser.new_context()
+            page = await context.new_page()
+            await page.goto(f"https://bscscan.com/tokenholdings?a={address}")
+            await page.is_visible("#RecordsFound")
+            content = await page.content()
+            await browser.close()
+        df = pd.read_html(content, flavor="bs4")[0]
+        df.append(pd.read_html(content, flavor="bs4", attrs={"id": "tbl2"})[0]["Token Name"])
+
+        for row in df.itertuples():
+            address = ''.join(re.findall(r'(0x\w+)', row[2]))
+            account_holdings.update({
+                row.Symbol: {
+                    'quantity': row.Quantity,
+                    "price": row[5].split(" ")[0],
+                    "address": address
+                }
+            })
+        return account_holdings
 
 
 class PancakeSwap(BinanceSmartChain):
@@ -43,8 +92,10 @@ class PancakeSwap(BinanceSmartChain):
             web3=self.web3,
             factory_contract_addr=PANCAKESWAP_FACTORY_ADDRESS,
             router_contract_addr=PANCAKESWAP_ROUTER_ADDRESS,
-            max_slippage=MAX_SLIPPAGE,
         )
+
+    def get_token_balance(self, token) -> int:
+        return self.pancake_swap.get_token_balance(token)
 
     def swap_tokens(self, token: str, amount_to_spend: Decimal,
                     side: str) -> str:
@@ -70,7 +121,7 @@ class PancakeSwap(BinanceSmartChain):
                                                      self.address))
                 else:
                     balance = self.web3.fromWei(
-                        self.pancake_swap.get_token_balance(token), "ether")
+                        self.get_token_balance(token), "ether")
                     amount_to_spend = self.web3.toWei(
                         balance * amount_to_spend, "ether")
                     txn_hash = self.web3.toHex(

@@ -20,8 +20,6 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
-from . import eth
-from . import logger
 from api.bsc import BinanceSmartChain
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
@@ -40,6 +38,8 @@ from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
 from utils import all_same
+from . import eth
+from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -810,6 +810,10 @@ async def send_balance(message: Message):
     user = await TelegramGroupMember.get(id=user_id)
 
     balance = bsc.get_account_balance(address=user.bsc_address)
+    account_holdings = await bsc.get_account_token_holdings(address=user.bsc_address)
+    for k, v in account_holdings:
+        if k[v]['price'] in ("$0.00", "-"):
+            amount_usd = bsc.get
     price = get_coin_stats(symbol="BNB")["price"]
 
     balance = (balance * Decimal(price)).quantize(Decimal("0.01"))
