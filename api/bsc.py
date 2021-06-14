@@ -32,36 +32,15 @@ class BinanceSmartChain:
     def get_account_balance(self, address: str) -> Decimal:
         return self.web3.fromWei(self.web3.eth.get_balance(address), "ether")
 
-    # def get_contract_abi(self, token):
-    #     return requests.get(self.api_url.format(address=token, api_key=BSCSCAN_API_KEY)).json()['results']
-    #
-    # def get_token_decimals(self, token):
-    #     abi = self.get_contract_abi(token=token)
-    #     contract = self.web3.eth.contract(address=token, abi=abi)
-    #     return contract.functions.decimals.call()
-
-    async def get_token_price(self, address):
-        async with async_playwright() as p:
-            # for browser_type in [p.chromium, p.firefox, p.webkit]:
-            browser = await p.chromium.launch()
-            context = await browser.new_context()
-            page = await context.new_page()
-            await page.goto(f"https://poocoin.app/tokens/{address}")
-            await page.is_visible(
-                "body > div > div.flex-1.flex.flex-col.overflow-hidden > main > div > div > div > div > div.row-span-1.col-span-12.text-white.justify-between.flex.flex-col.lg\:flex-row.lg\:items-center > div.flex.flex-row.mr-4.w-full.flex-wrap.sm\:px-0.px-2 > div.my-1.flex.flex-row.space-x-3.sm\:space-x-6.mr-6.mb-3.md\:mb-0 > span:nth-child(2) > h4")
-            content = await page.content()
-            await browser.close()
-
     async def get_account_token_holdings(self, address):
         account_holdings = {}
 
         async with async_playwright() as p:
-            # for browser_type in [p.chromium, p.firefox, p.webkit]:
             browser = await p.chromium.launch()
             context = await browser.new_context()
             page = await context.new_page()
             await page.goto(f"https://bscscan.com/tokenholdings?a={address}")
-            await page.is_visible("#RecordsFound")
+            await page.wait_for_selector(selector="#RecordsFound")
             content = await page.content()
             await browser.close()
         df = pd.read_html(content, flavor="bs4")[0]
@@ -73,7 +52,8 @@ class BinanceSmartChain:
                 row.Symbol: {
                     'quantity': row.Quantity,
                     "price": row[5].split(" ")[0],
-                    "address": address
+                    "address": address,
+                    "usd_amount": row[8]
                 }
             })
         return account_holdings

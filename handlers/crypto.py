@@ -808,15 +808,13 @@ async def send_balance(message: Message):
     user_id = message.from_user.id
     bsc = BinanceSmartChain()
     user = await TelegramGroupMember.get(id=user_id)
-
-    balance = bsc.get_account_balance(address=user.bsc_address)
+    reply = f"Account Balance 💲"
     account_holdings = await bsc.get_account_token_holdings(address=user.bsc_address)
-    for k, v in account_holdings:
-        if k[v]['price'] in ("$0.00", "-"):
-            amount_usd = bsc.get
-    price = get_coin_stats(symbol="BNB")["price"]
 
-    balance = (balance * Decimal(price)).quantize(Decimal("0.01"))
+    for k in account_holdings.keys():
+        coin = account_holdings[k]
+        usd_amount = coin['usd_amount']
+        quantity = coin['quantity']
+        reply += f'\n\n{k}: {quantity} ({usd_amount})'
 
-    reply = f"Account Balance 💲\n\nBNB: ${balance}"
     await send_message(channel_id=user_id, text=reply)
