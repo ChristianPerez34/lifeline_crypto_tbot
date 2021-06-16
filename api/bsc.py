@@ -9,8 +9,7 @@ from uniswap import Uniswap
 from uniswap.exceptions import InsufficientBalance
 from web3 import Web3
 
-from config import BUY
-from config import FERNET_KEY
+from config import BUY, FERNET_KEY
 
 PANCAKE_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
     "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
