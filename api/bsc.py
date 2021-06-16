@@ -13,13 +13,15 @@ from config import BUY
 from config import FERNET_KEY
 
 PANCAKE_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
-    "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
+    "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+)
 PANCAKE_SWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
-    "0x10ED43C718714eb63d5aA57B78B54704E256024E")
+    "0x10ED43C718714eb63d5aA57B78B54704E256024E"
+)
 CONTRACT_ADDRESSES = {
     "BNB": "0x0000000000000000000000000000000000000000",
     "WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-    "BUSD": "0xe9e7cea3dedca5984780bafc599bd69add087d56"
+    "BUSD": "0xe9e7cea3dedca5984780bafc599bd69add087d56",
 }
 BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
 
@@ -47,20 +49,22 @@ class BinanceSmartChain:
             content = await page.content()
             await browser.close()
         df = pd.read_html(content, flavor="bs4")[0]
-        df.append(pd.read_html(content, flavor="bs4",
-                               attrs={"id": "tbl2"})[0]["Token Name"])
+        df.append(
+            pd.read_html(content, flavor="bs4", attrs={"id": "tbl2"})[0]["Token Name"]
+        )
 
         for row in df.itertuples():
-            address = ''.join(re.findall(
-                r'(0x\w+)', row[2])).replace("0xCoin", "")
-            account_holdings.update({
-                row.Symbol: {
-                    'quantity': row.Quantity,
-                    "price": row[5].split(" ")[0],
-                    "address": address,
-                    "usd_amount": row[8]
+            address = "".join(re.findall(r"(0x\w+)", row[2])).replace("0xCoin", "")
+            account_holdings.update(
+                {
+                    row.Symbol: {
+                        "quantity": row.Quantity,
+                        "price": row[5].split(" ")[0],
+                        "address": address,
+                        "usd_amount": row[8],
+                    }
                 }
-            })
+            )
         return account_holdings
 
 
@@ -85,8 +89,7 @@ class PancakeSwap(BinanceSmartChain):
     def get_token_balance(self, token) -> int:
         return self.pancake_swap.get_token_balance(token)
 
-    def swap_tokens(self, token: str, amount_to_spend: Decimal,
-                    side: str) -> str:
+    def swap_tokens(self, token: str, amount_to_spend: Decimal, side: str) -> str:
         """
         Swaps crypto coins on PancakeSwap
         Args:
@@ -104,17 +107,26 @@ class PancakeSwap(BinanceSmartChain):
                 if side == BUY:
                     amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
                     txn_hash = self.web3.toHex(
-                        self.pancake_swap.make_trade(CONTRACT_ADDRESSES["BNB"], token,
-                                                     amount_to_spend,
-                                                     self.address))
+                        self.pancake_swap.make_trade(
+                            CONTRACT_ADDRESSES["BNB"],
+                            token,
+                            amount_to_spend,
+                            self.address,
+                        )
+                    )
                 else:
-                    balance = self.web3.fromWei(
-                        self.get_token_balance(token), "ether")
+                    balance = self.web3.fromWei(self.get_token_balance(token), "ether")
                     amount_to_spend = self.web3.toWei(
-                        balance * amount_to_spend, "ether")
+                        balance * amount_to_spend, "ether"
+                    )
                     txn_hash = self.web3.toHex(
                         self.pancake_swap.make_trade_output(
-                            token, CONTRACT_ADDRESSES["BNB"], amount_to_spend, self.address))
+                            token,
+                            CONTRACT_ADDRESSES["BNB"],
+                            amount_to_spend,
+                            self.address,
+                        )
+                    )
 
                 txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
@@ -127,7 +139,8 @@ class PancakeSwap(BinanceSmartChain):
         return reply
 
     def get_token_price(self, address):
-        busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES['BUSD'])
+        busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BUSD"])
         token_per_busd = Decimal(
-            self.pancake_swap.get_price_input(busd, address, 10 ** 18))
+            self.pancake_swap.get_price_input(busd, address, 10 ** 18)
+        )
         return token_per_busd

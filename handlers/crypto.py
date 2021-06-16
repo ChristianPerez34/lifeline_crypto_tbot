@@ -135,10 +135,12 @@ async def send_coin(message: Message) -> None:
 
             if "website" in coin_stats:
                 reply += f"{coin_stats['website']}\n\n"
-            reply += (f"Price\n{price}\n\n"
-                      f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                      f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                      f"Market Cap\n{market_cap}")
+            reply += (
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+                f"Market Cap\n{market_cap}"
+            )
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -150,10 +152,12 @@ async def send_gas(message: Message) -> None:
     """
     logger.info("ETH gas price command executed")
     gas_price = eth.get_gas_oracle()
-    reply = ("ETH Gas Prices ⛽️\n"
-             f"Slow: {gas_price['SafeGasPrice']}\n"
-             f"Average: {gas_price['ProposeGasPrice']}\n"
-             f"Fast: {gas_price['FastGasPrice']}\n")
+    reply = (
+        "ETH Gas Prices ⛽️\n"
+        f"Slow: {gas_price['SafeGasPrice']}\n"
+        f"Average: {gas_price['ProposeGasPrice']}\n"
+        f"Fast: {gas_price['FastGasPrice']}\n"
+    )
     await message.reply(text=reply)
 
 
@@ -181,10 +185,12 @@ async def send_coin_address(message: Message) -> None:
 
         if "website" in coin_stats:
             reply += f"{coin_stats['website']}\n\n"
-        reply += (f"Price\n{price}\n\n"
-                  f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                  f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                  f"Market Cap\n{market_cap}")
+        reply += (
+            f"Price\n{price}\n\n"
+            f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+            f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+            f"Market Cap\n{market_cap}"
+        )
     await message.reply(text=reply)
 
 
@@ -197,15 +203,20 @@ async def send_trending(message: Message) -> None:
     logger.info("Retrieving trending addresses from CoinGecko")
     coin_gecko = CoinGecko()
     coin_market_cap = CoinMarketCap()
-    coin_gecko_trending_coins = "\n".join([
-        f"{coin['item']['name']} ({coin['item']['symbol']})"
-        for coin in coin_gecko.get_trending_coins()
-    ])
+    coin_gecko_trending_coins = "\n".join(
+        [
+            f"{coin['item']['name']} ({coin['item']['symbol']})"
+            for coin in coin_gecko.get_trending_coins()
+        ]
+    )
     coin_market_cap_trending_coins = "\n".join(
-        await coin_market_cap.get_trending_coins())
+        await coin_market_cap.get_trending_coins()
+    )
 
-    reply = (f"Trending 🔥\n\nCoinGecko\n\n{coin_gecko_trending_coins}\n\n"
-             f"CoinMarketCap\n\n{coin_market_cap_trending_coins}")
+    reply = (
+        f"Trending 🔥\n\nCoinGecko\n\n{coin_gecko_trending_coins}\n\n"
+        f"CoinMarketCap\n\n{coin_market_cap_trending_coins}"
+    )
     await message.reply(text=reply)
 
 
@@ -287,8 +298,8 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-                "https://www.coingecko.com/en/coins/recently_added",
-                headers=HEADERS) as response:
+            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+        ) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
 
             for row in df.itertuples():
@@ -305,8 +316,9 @@ async def send_latest_listings(message: Message) -> None:
         count = 5
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
-        async with session.get("https://coinmarketcap.com/new/",
-                               headers=HEADERS) as response:
+        async with session.get(
+            "https://coinmarketcap.com/new/", headers=HEADERS
+        ) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
                 if count == 0:
@@ -325,25 +337,28 @@ async def send_restart_kucoin_bot(message: Message) -> None:
     take_profit, stop_loss = "", ""
     user = message.from_user
     administrators = [
-        admin.user for admin in await bot.get_chat_administrators(
-            chat_id=TELEGRAM_CHAT_ID)
+        admin.user
+        for admin in await bot.get_chat_administrators(chat_id=TELEGRAM_CHAT_ID)
     ]
 
     if user in administrators:
         logger.info(f"User {user.username} is admin. Restarting KuCoin Bot")
         user = await TelegramGroupMember.get(id=user.id)
 
-        if (user.kucoin_api_key and user.kucoin_api_secret
-                and user.kucoin_api_passphrase):
+        if (
+            user.kucoin_api_key
+            and user.kucoin_api_secret
+            and user.kucoin_api_passphrase
+        ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
-            api_secret = fernet.decrypt(
-                user.kucoin_api_secret.encode()).decode()
+            api_secret = fernet.decrypt(user.kucoin_api_secret.encode()).decode()
             api_passphrase = fernet.decrypt(
-                user.kucoin_api_passphrase.encode()).decode()
-            kucoin_api = KucoinApi(api_key=api_key,
-                                   api_secret=api_secret,
-                                   api_passphrase=api_passphrase)
+                user.kucoin_api_passphrase.encode()
+            ).decode()
+            kucoin_api = KucoinApi(
+                api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase
+            )
             orders = [order for order in kucoin_api.get_open_stop_order()]
 
             for position in kucoin_api.get_all_position():
@@ -356,8 +371,10 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     for position_order in position_orders:
                         stop_price = position_order["stopPrice"]
 
-                        if (position_order["stopPriceType"] == "TP"
-                                and position_order["stop"] == "up"):
+                        if (
+                            position_order["stopPriceType"] == "TP"
+                            and position_order["stop"] == "up"
+                        ):
                             take_profit = stop_price
                         else:
                             stop_loss = stop_price
@@ -366,18 +383,22 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     entry = position["avgEntryPrice"]
                     mark_price = position["markPrice"]
                     unrealized_pnl = position["unrealisedPnl"]
-                    side = ("LONG" if
-                            (entry < mark_price and unrealized_pnl > 0) or
-                            (entry > mark_price and unrealized_pnl < 0) else
-                            "SHORT")
-                    active_orders.update({
-                        symbol: {
-                            "entry": entry,
-                            "side": side,
-                            "take_profit": take_profit,
-                            "stop_loss": stop_loss,
+                    side = (
+                        "LONG"
+                        if (entry < mark_price and unrealized_pnl > 0)
+                        or (entry > mark_price and unrealized_pnl < 0)
+                        else "SHORT"
+                    )
+                    active_orders.update(
+                        {
+                            symbol: {
+                                "entry": entry,
+                                "side": side,
+                                "take_profit": take_profit,
+                                "stop_loss": stop_loss,
+                            }
                         }
-                    })
+                    )
             asyncio.create_task(kucoin_bot())
             reply = f"Restarted KuCoin Bot 🤖"
         else:
@@ -406,11 +427,12 @@ async def send_buy_coin(message: Message) -> None:
     else:
         user = await TelegramGroupMember.get(id=telegram_user.id)
         if user:
-            pancake_swap = PancakeSwap(address=user.bsc_address,
-                                       key=user.bsc_private_key)
-            reply = pancake_swap.swap_tokens(token=args[0],
-                                             amount_to_spend=Decimal(args[1]),
-                                             side=BUY)
+            pancake_swap = PancakeSwap(
+                address=user.bsc_address, key=user.bsc_private_key
+            )
+            reply = pancake_swap.swap_tokens(
+                token=args[0], amount_to_spend=Decimal(args[1]), side=BUY
+            )
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
 
@@ -436,12 +458,12 @@ async def send_sell_coin(message: Message) -> None:
             percentage = float(args[1])
             if 0 < percentage < 101:
                 percentage_to_sell = Decimal(args[1]) / 100
-                pancake_swap = PancakeSwap(address=user.bsc_address,
-                                           key=user.bsc_private_key)
+                pancake_swap = PancakeSwap(
+                    address=user.bsc_address, key=user.bsc_private_key
+                )
                 reply = pancake_swap.swap_tokens(
-                    token=args[0],
-                    amount_to_spend=percentage_to_sell,
-                    side=BUY)
+                    token=args[0], amount_to_spend=percentage_to_sell, side=BUY
+                )
             else:
                 reply = "⚠ Sorry, incorrect percentage value. Choose a value between 1 and 100 inclusive"
         else:
@@ -480,8 +502,7 @@ async def send_chart(message: Message):
             reply = text(
                 f"Can't compare *{symbol}* to itself. Will default base coin to USD"
             )
-            await message.reply(text=emojize(reply),
-                                parse_mode=ParseMode.MARKDOWN)
+            await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
             reply = ""
             base_coin = "USD"
 
@@ -492,13 +513,11 @@ async def send_chart(message: Message):
 
         logger.info("Creating chart layout")
         # Volume
-        df_volume = DataFrame(market["total_volumes"],
-                              columns=["DateTime", "Volume"])
-        df_volume["DateTime"] = pd.to_datetime(df_volume["DateTime"],
-                                               unit="ms")
-        volume = go.Scatter(x=df_volume.get("DateTime"),
-                            y=df_volume.get("Volume"),
-                            name="Volume")
+        df_volume = DataFrame(market["total_volumes"], columns=["DateTime", "Volume"])
+        df_volume["DateTime"] = pd.to_datetime(df_volume["DateTime"], unit="ms")
+        volume = go.Scatter(
+            x=df_volume.get("DateTime"), y=df_volume.get("Volume"), name="Volume"
+        )
 
         # Price
         df_price = DataFrame(market["prices"], columns=["DateTime", "Price"])
@@ -538,25 +557,21 @@ async def send_chart(message: Message):
                 ticksuffix=f"  ",
             ),
             title=dict(text=symbol, font=dict(size=26)),
-            legend=dict(orientation="h",
-                        yanchor="top",
-                        xanchor="center",
-                        y=1.05,
-                        x=0.45),
-            shapes=[{
-                "type": "line",
-                "xref": "paper",
-                "yref": "y2",
-                "x0": 0,
-                "x1": 1,
-                "y0": market["prices"][len(market["prices"]) - 1][1],
-                "y1": market["prices"][len(market["prices"]) - 1][1],
-                "line": {
-                    "color": "rgb(50, 171, 96)",
-                    "width": 1,
-                    "dash": "dot"
-                },
-            }],
+            legend=dict(
+                orientation="h", yanchor="top", xanchor="center", y=1.05, x=0.45
+            ),
+            shapes=[
+                {
+                    "type": "line",
+                    "xref": "paper",
+                    "yref": "y2",
+                    "x0": 0,
+                    "x1": 1,
+                    "y0": market["prices"][len(market["prices"]) - 1][1],
+                    "y1": market["prices"][len(market["prices"]) - 1][1],
+                    "line": {"color": "rgb(50, 171, 96)", "width": 1, "dash": "dot"},
+                }
+            ],
         )
 
         fig = go.Figure(data=[price, volume], layout=layout)
@@ -568,7 +583,8 @@ async def send_chart(message: Message):
         logger.info("Exporting chart as image")
         await message.reply_photo(
             photo=BufferedReader(
-                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+            ),
             parse_mode=ParseMode.MARKDOWN,
         )
 
@@ -587,7 +603,8 @@ async def send_candle_chart(message: Message):
         reply = text(
             f"⚠️ Please provide a valid crypto symbol and time followed by desired timeframe letter:\n"
             f" m - Minute\n h - Hour\n d - Day\n \n{bold('/candle')} {italic('SYMBOL')} "
-            f"{italic('NUMBER')} {italic('LETTER')}")
+            f"{italic('NUMBER')} {italic('LETTER')}"
+        )
     else:
 
         base_coin = "USD"
@@ -603,8 +620,7 @@ async def send_candle_chart(message: Message):
             reply = text(
                 f"Can't compare *{symbol}* to itself. Will default base coin to USD"
             )
-            await message.reply(text=emojize(reply),
-                                parse_mode=ParseMode.MARKDOWN)
+            await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
             reply = ""
             base_coin = "USD"
 
@@ -622,16 +638,20 @@ async def send_candle_chart(message: Message):
         logger.info("Searching for coin historical data for candle chart")
         if resolution == "MINUTE":
             ohlcv = CryptoCompare().get_historical_ohlcv_minute(
-                symbol, base_coin, time_frame)
+                symbol, base_coin, time_frame
+            )
         elif resolution == "HOUR":
             ohlcv = CryptoCompare().get_historical_ohlcv_hourly(
-                symbol, base_coin, time_frame)
+                symbol, base_coin, time_frame
+            )
         elif resolution == "DAY":
             ohlcv = CryptoCompare().get_historical_ohlcv_daily(
-                symbol, base_coin, time_frame)
+                symbol, base_coin, time_frame
+            )
         else:
             ohlcv = CryptoCompare().get_historical_ohlcv_hourly(
-                symbol, base_coin, time_frame)
+                symbol, base_coin, time_frame
+            )
 
         if ohlcv["Response"] == "Error":
             if ohlcv["Message"] == "limit is larger than max value.":
@@ -656,9 +676,9 @@ async def send_candle_chart(message: Message):
 
                 reply = text(
                     f"{symbol} not found on CryptoCompare. Initiated lookup on CoinPaprika."
-                    f" Data may not be as complete as CoinGecko or CMC")
-                await message.reply(text=emojize(reply),
-                                    parse_mode=ParseMode.MARKDOWN)
+                    f" Data may not be as complete as CoinGecko or CMC"
+                )
+                await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
                 reply = ""
 
                 cp_ohlc = CoinPaprika().get_list_coins()
@@ -708,31 +728,38 @@ async def send_candle_chart(message: Message):
                     tick_format = "0.2f"
 
             fig = fif.create_candlestick(
-                open_, high, low, close, pd.to_datetime(time_, unit="s"))
+                open_, high, low, close, pd.to_datetime(time_, unit="s")
+            )
 
-            fig["layout"]["yaxis"].update(tickformat=tick_format,
-                                          tickprefix="   ",
-                                          ticksuffix=f"  ")
+            fig["layout"]["yaxis"].update(
+                tickformat=tick_format, tickprefix="   ", ticksuffix=f"  "
+            )
 
             fig["layout"].update(
                 title=dict(text=symbol, font=dict(size=26)),
-                yaxis=dict(title=dict(text=base_coin, font=dict(size=18)), ),
+                yaxis=dict(
+                    title=dict(text=base_coin, font=dict(size=18)),
+                ),
             )
 
-            fig["layout"].update(shapes=[{
-                "type": "line",
-                "xref": "paper",
-                "yref": "y",
-                "x0": 0,
-                "x1": 1,
-                "y0": close[len(close) - 1],
-                "y1": close[len(close) - 1],
-                "line": {
-                    "color": "rgb(50, 171, 96)",
-                    "width": 1,
-                    "dash": "dot",
-                },
-            }])
+            fig["layout"].update(
+                shapes=[
+                    {
+                        "type": "line",
+                        "xref": "paper",
+                        "yref": "y",
+                        "x0": 0,
+                        "x1": 1,
+                        "y0": close[len(close) - 1],
+                        "y1": close[len(close) - 1],
+                        "line": {
+                            "color": "rgb(50, 171, 96)",
+                            "width": 1,
+                            "dash": "dot",
+                        },
+                    }
+                ]
+            )
 
             fig["layout"].update(
                 paper_bgcolor="rgb(233,233,233)",
@@ -749,7 +776,8 @@ async def send_candle_chart(message: Message):
         logger.info("Exporting chart as image")
         await message.reply_photo(
             photo=BufferedReader(
-                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+            ),
             parse_mode=ParseMode.MARKDOWN,
         )
 
@@ -770,11 +798,10 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
         fernet = Fernet(FERNET_KEY)
         api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
         api_secret = fernet.decrypt(user.kucoin_api_secret.encode()).decode()
-        api_passphrase = fernet.decrypt(
-            user.kucoin_api_passphrase.encode()).decode()
-        kucoin_api = KucoinApi(api_key=api_key,
-                               api_secret=api_secret,
-                               api_passphrase=api_passphrase)
+        api_passphrase = fernet.decrypt(user.kucoin_api_passphrase.encode()).decode()
+        kucoin_api = KucoinApi(
+            api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase
+        )
         logger.info("Retrieving user balance")
         balance = kucoin_api.get_balance()
 
@@ -788,10 +815,9 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
         try:
             ticker = kucoin_api.get_ticker(symbol=symbol)
             size = (ten_percent_port / Decimal(ticker["price"])) * leverage
-            kucoin_api.create_market_order(symbol=symbol,
-                                           side=side,
-                                           size=int(size),
-                                           lever=str(leverage))
+            kucoin_api.create_market_order(
+                symbol=symbol, side=side, size=int(size), lever=str(leverage)
+            )
             reply = f"@{username} successfully followed signal"
         except Exception as e:
             logger.exception(e)
@@ -812,19 +838,21 @@ async def send_balance(message: Message):
 
     for k in account_holdings.keys():
         coin = account_holdings[k]
-        usd_amount = coin['usd_amount']
-        quantity = Decimal(coin['quantity'])
+        usd_amount = coin["usd_amount"]
+        quantity = Decimal(coin["quantity"])
 
-        if coin['price'] in ("-", "$0.00"):
-            address = bsc.web3.toChecksumAddress(coin['address'])
+        if coin["price"] in ("-", "$0.00"):
+            address = bsc.web3.toChecksumAddress(coin["address"])
             pancake_swap = PancakeSwap(
-                address=user.bsc_address, key=user.bsc_private_key)
+                address=user.bsc_address, key=user.bsc_private_key
+            )
             token = pancake_swap.get_token(address=address)
             token_price = pancake_swap.get_token_price(address=address)
-            price = (quantity * Decimal(10 **
-                                        (18 - (token.decimals % 18)))) / token_price
+            price = (
+                quantity * Decimal(10 ** (18 - (token.decimals % 18)))
+            ) / token_price
             usd_amount = f"${price.quantize(Decimal('0.01'))}"
 
-        reply += f'\n\n{k}: {quantity} ({usd_amount})'
+        reply += f"\n\n{k}: {quantity} ({usd_amount})"
 
     await send_message(channel_id=user_id, text=reply)
