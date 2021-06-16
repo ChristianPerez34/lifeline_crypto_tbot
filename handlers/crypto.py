@@ -1,7 +1,8 @@
 import asyncio
 import time
 from decimal import Decimal
-from io import BytesIO, BufferedReader
+from io import BufferedReader
+from io import BytesIO
 
 import aiohttp
 import dateutil.parser as dau
@@ -19,6 +20,8 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
+from . import eth
+from . import logger
 from api.bsc import BinanceSmartChain
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
@@ -37,8 +40,6 @@ from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
 from utils import all_same
-from . import eth
-from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -465,8 +466,7 @@ async def send_chart(message: Message):
     if len(args) != 2:
         reply = text(
             f"⚠️ Please provide a valid crypto symbol and amount of days: "
-            f"\n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}"
-        )
+            f"\n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}")
     else:
 
         if "-" in args[0]:
@@ -707,7 +707,8 @@ async def send_candle_chart(message: Message):
                     margin_l = 125
                     tick_format = "0.2f"
 
-            fig = fif.create_candlestick(open_, high, low, close, pd.to_datetime(time_, unit="s"))
+            fig = fif.create_candlestick(open_, high, low, close,
+                                         pd.to_datetime(time_, unit="s"))
 
             fig["layout"]["yaxis"].update(tickformat=tick_format,
                                           tickprefix="   ",
@@ -807,21 +808,24 @@ async def send_balance(message: Message):
     bsc = BinanceSmartChain()
     user = await TelegramGroupMember.get(id=user_id)
     reply = f"Account Balance 💲"
-    account_holdings = await bsc.get_account_token_holdings(address=user.bsc_address)
+    account_holdings = await bsc.get_account_token_holdings(
+        address=user.bsc_address)
 
     for k in account_holdings.keys():
         coin = account_holdings[k]
-        usd_amount = coin['usd_amount']
-        quantity = Decimal(coin['quantity'])
+        usd_amount = coin["usd_amount"]
+        quantity = Decimal(coin["quantity"])
 
-        if coin['price'] in ("-", "$0.00"):
-            address = bsc.web3.toChecksumAddress(coin['address'])
-            pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
+        if coin["price"] in ("-", "$0.00"):
+            address = bsc.web3.toChecksumAddress(coin["address"])
+            pancake_swap = PancakeSwap(address=user.bsc_address,
+                                       key=user.bsc_private_key)
             token = pancake_swap.get_token(address=address)
             token_price = pancake_swap.get_token_price(address=address)
-            price = (quantity * Decimal(10 ** (18 - (token.decimals % 18)))) / token_price
+            price = (quantity *
+                     Decimal(10**(18 - (token.decimals % 18)))) / token_price
             usd_amount = f"${price.quantize(Decimal('0.01'))}"
 
-        reply += f'\n\n{k}: {quantity} ({usd_amount})'
+        reply += f"\n\n{k}: {quantity} ({usd_amount})"
 
     await send_message(channel_id=user_id, text=reply)
