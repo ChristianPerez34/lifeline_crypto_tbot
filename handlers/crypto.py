@@ -707,7 +707,8 @@ async def send_candle_chart(message: Message):
                     margin_l = 125
                     tick_format = "0.2f"
 
-            fig = fif.create_candlestick(open_, high, low, close, pd.to_datetime(time_, unit="s"))
+            fig = fif.create_candlestick(
+                open_, high, low, close, pd.to_datetime(time_, unit="s"))
 
             fig["layout"]["yaxis"].update(tickformat=tick_format,
                                           tickprefix="   ",
@@ -816,10 +817,12 @@ async def send_balance(message: Message):
 
         if coin['price'] in ("-", "$0.00"):
             address = bsc.web3.toChecksumAddress(coin['address'])
-            pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
+            pancake_swap = PancakeSwap(
+                address=user.bsc_address, key=user.bsc_private_key)
             token = pancake_swap.get_token(address=address)
             token_price = pancake_swap.get_token_price(address=address)
-            price = (quantity * Decimal(10 ** (18 - (token.decimals % 18)))) / token_price
+            price = (quantity * Decimal(10 **
+                                        (18 - (token.decimals % 18)))) / token_price
             usd_amount = f"${price.quantize(Decimal('0.01'))}"
 
         reply += f'\n\n{k}: {quantity} ({usd_amount})'

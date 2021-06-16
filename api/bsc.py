@@ -47,10 +47,12 @@ class BinanceSmartChain:
             content = await page.content()
             await browser.close()
         df = pd.read_html(content, flavor="bs4")[0]
-        df.append(pd.read_html(content, flavor="bs4", attrs={"id": "tbl2"})[0]["Token Name"])
+        df.append(pd.read_html(content, flavor="bs4",
+                               attrs={"id": "tbl2"})[0]["Token Name"])
 
         for row in df.itertuples():
-            address = ''.join(re.findall(r'(0x\w+)', row[2])).replace("0xCoin", "")
+            address = ''.join(re.findall(
+                r'(0x\w+)', row[2])).replace("0xCoin", "")
             account_holdings.update({
                 row.Symbol: {
                     'quantity': row.Quantity,
@@ -126,5 +128,6 @@ class PancakeSwap(BinanceSmartChain):
 
     def get_token_price(self, address):
         busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES['BUSD'])
-        token_per_busd = Decimal(self.pancake_swap.get_price_input(busd, address, 10 ** 18))
+        token_per_busd = Decimal(
+            self.pancake_swap.get_price_input(busd, address, 10 ** 18))
         return token_per_busd
