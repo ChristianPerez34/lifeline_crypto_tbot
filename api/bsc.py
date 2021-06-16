@@ -16,7 +16,10 @@ PANCAKESWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
     "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
 PANCAKESWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
     "0x10ED43C718714eb63d5aA57B78B54704E256024E")
-BNB_ADDRESS = "0x0000000000000000000000000000000000000000"
+CONTRACT_ADDRESSES = {
+    "BNB": "0x0000000000000000000000000000000000000000",
+    "WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+}
 BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
 MAX_SLIPPAGE = 0.15
 
@@ -96,7 +99,7 @@ class PancakeSwap(BinanceSmartChain):
                 if side == BUY:
                     amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
                     txn_hash = self.web3.toHex(
-                        self.pancake_swap.make_trade(BNB_ADDRESS, token,
+                        self.pancake_swap.make_trade(CONTRACT_ADDRESSES["BNB"], token,
                                                      amount_to_spend,
                                                      self.address))
                 else:
@@ -106,7 +109,7 @@ class PancakeSwap(BinanceSmartChain):
                         balance * amount_to_spend, "ether")
                     txn_hash = self.web3.toHex(
                         self.pancake_swap.make_trade_output(
-                            token, BNB_ADDRESS, amount_to_spend, self.address))
+                            token, CONTRACT_ADDRESSES["BNB"], amount_to_spend, self.address))
 
                 txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
@@ -117,3 +120,7 @@ class PancakeSwap(BinanceSmartChain):
         else:
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
         return reply
+
+    def get_lp_address(self, address: str):
+        pair = self.pancake_swap.factory_contract.functions.getPair(address, CONTRACT_ADDRESSES["WBNB"]).call()
+        return None if pair == CONTRACT_ADDRESSES["BNB"] else self.web3.toChecksumAddress(pair)
