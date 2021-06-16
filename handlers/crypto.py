@@ -1,8 +1,7 @@
 import asyncio
-import io
 import time
 from decimal import Decimal
-from io import BytesIO
+from io import BytesIO, BufferedReader
 
 import aiohttp
 import dateutil.parser as dau
@@ -43,7 +42,7 @@ from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
-    """Retrieves coinstats from connected services crypto services
+    """Retrieves coin stats from connected services crypto services
 
     Args:
         symbol (str): Cryptocurrency symbol of coin to lookup
@@ -51,13 +50,13 @@ def get_coin_stats(symbol: str) -> dict:
     Returns:
         dict: Cryptocurrency coin statistics
     """
-    # Search Coingecko API first
+    # Search CoinGecko API first
     logger.info(f"Getting coin stats for {symbol}")
-    coingecko = CoinGecko()
+    coin_gecko = CoinGecko()
     coin_market_cap = CoinMarketCap()
     try:
-        coin_id = coingecko.get_coin_id(symbol=symbol)
-        data = coingecko.coin_lookup(ids=coin_id)
+        coin_id = coin_gecko.get_coin_id(symbol=symbol)
+        data = coin_gecko.coin_lookup(ids=coin_id)
         market_data = data["market_data"]
         coin_stats = {
             "slug": data["name"],
@@ -70,7 +69,7 @@ def get_coin_stats(symbol: str) -> dict:
         }
     except IndexError:
         logger.info(
-            f"{symbol} not found in Coingecko. Initiated lookup on CoinMarketCap."
+            f"{symbol} not found in CoinGecko. Initiated lookup on CoinMarketCap."
         )
         data = coin_market_cap.coin_lookup(symbol)
         # crypto_cache[symbol] = data["slug"]
@@ -94,10 +93,10 @@ def get_coin_stats_by_address(address: str) -> dict:
     Returns:
         dict: Coin statistics
     """
-    # Search Coingecko API first
+    # Search CoinGecko API first
     logger.info(f"Getting coin stats for {address}")
-    coingecko = CoinGecko()
-    data = coingecko.coin_lookup(ids=address, is_address=True)
+    coin_gecko = CoinGecko()
+    data = coin_gecko.coin_lookup(ids=address, is_address=True)
     market_data = data["market_data"]
     slug = data["name"]
     return {
@@ -196,16 +195,16 @@ async def send_trending(message: Message) -> None:
         message (Message): Message to reply to
     """
     logger.info("Retrieving trending addresses from CoinGecko")
-    coingecko = CoinGecko()
+    coin_gecko = CoinGecko()
     coin_market_cap = CoinMarketCap()
-    coingecko_trending_coins = "\n".join([
+    coin_gecko_trending_coins = "\n".join([
         f"{coin['item']['name']} ({coin['item']['symbol']})"
-        for coin in coingecko.get_trending_coins()
+        for coin in coin_gecko.get_trending_coins()
     ])
     coin_market_cap_trending_coins = "\n".join(
         await coin_market_cap.get_trending_coins())
 
-    reply = (f"Trending 🔥\n\nCoingecko\n\n{coingecko_trending_coins}\n\n"
+    reply = (f"Trending 🔥\n\nCoinGecko\n\n{coin_gecko_trending_coins}\n\n"
              f"CoinMarketCap\n\n{coin_market_cap_trending_coins}")
     await message.reply(text=reply)
 
@@ -458,14 +457,15 @@ async def send_chart(message: Message):
         message (Message): Message to reply to
     """
     logger.info("Searching for coin market data for chart")
-    coingecko = CoinGecko()
+    coin_gecko = CoinGecko()
     args = message.get_args().split()
     base_coin = "USD"
     reply = ""
 
     if len(args) != 2:
         reply = text(
-            f"⚠️ Please provide a valid crypto symbol and amount of days: \n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}"
+            f"⚠️ Please provide a valid crypto symbol and amount of days: "
+            f"\n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}"
         )
     else:
 
@@ -487,8 +487,8 @@ async def send_chart(message: Message):
 
         time_frame = int(args[1])
 
-        coin_id = coingecko.get_coin_id(symbol)
-        market = coingecko.coin_market_lookup(coin_id, time_frame, base_coin)
+        coin_id = coin_gecko.get_coin_id(symbol)
+        market = coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
 
         logger.info("Creating chart layout")
         # Volume
@@ -508,20 +508,20 @@ async def send_chart(message: Message):
             y=df_price.get("Price"),
             yaxis="y2",
             name="Price",
-            line=dict(color=("rgb(22, 96, 167)"), width=2),
+            line=dict(color="rgb(22, 96, 167)", width=2),
         )
 
         margin_l = 140
-        tickformat = "0.8f"
+        tick_format = "0.8f"
 
         max_value = df_price["Price"].max()
         if max_value > 0.9:
             if max_value > 999:
                 margin_l = 110
-                tickformat = "0,.0f"
+                tick_format = "0,.0f"
             else:
                 margin_l = 115
-                tickformat = "0.2f"
+                tick_format = "0.2f"
 
         layout = go.Layout(
             paper_bgcolor="rgb(233,233,233)",
@@ -560,21 +560,21 @@ async def send_chart(message: Message):
         )
 
         fig = go.Figure(data=[price, volume], layout=layout)
-        fig["layout"]["yaxis2"].update(tickformat=tickformat)
+        fig["layout"]["yaxis2"].update(tickformat=tick_format)
 
     if reply:
         await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
     else:
         logger.info("Exporting chart as image")
         await message.reply_photo(
-            photo=io.BufferedReader(
+            photo=BufferedReader(
                 BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
             parse_mode=ParseMode.MARKDOWN,
         )
 
 
-async def send_candlechart(message: Message):
-    """Replies to command with coin candlechart for given crypto symbol and amount of time
+async def send_candle_chart(message: Message):
+    """Replies to command with coin candle chart for given crypto symbol and amount of time
 
     Args:
         message (Message): Message to reply to
@@ -619,7 +619,7 @@ async def send_candlechart(message: Message):
                 resolution = "HOUR"
             else:
                 resolution = "DAY"
-        logger.info("Searching for coin historical data for candlechart")
+        logger.info("Searching for coin historical data for candle chart")
         if resolution == "MINUTE":
             ohlcv = CryptoCompare().get_historical_ohlcv_minute(
                 symbol, base_coin, time_frame)
@@ -646,13 +646,13 @@ async def send_candlechart(message: Message):
             ohlcv = ohlcv["Data"]
 
             if ohlcv:
-                o = [value["open"] for value in ohlcv]
-                h = [value["high"] for value in ohlcv]
-                l = [value["low"] for value in ohlcv]
-                c = [value["close"] for value in ohlcv]
-                t = [value["time"] for value in ohlcv]
+                open_ = [value["open"] for value in ohlcv]
+                high = [value["high"] for value in ohlcv]
+                low = [value["low"] for value in ohlcv]
+                close = [value["close"] for value in ohlcv]
+                time_ = [value["time"] for value in ohlcv]
 
-            if not ohlcv or all_same(o, h, l, c):
+            if not ohlcv or all_same(open_, high, low, close):
 
                 reply = text(
                     f"{symbol} not found on CryptoCompare. Initiated lookup on CoinPaprika."
@@ -663,8 +663,8 @@ async def send_candlechart(message: Message):
 
                 cp_ohlc = CoinPaprika().get_list_coins()
 
-                for c in cp_ohlc:
-                    if c["symbol"] == symbol:
+                for close in cp_ohlc:
+                    if close["symbol"] == symbol:
 
                         # Current datetime in seconds
                         t_now = time.time()
@@ -674,7 +674,7 @@ async def send_candlechart(message: Message):
                         t_start = t_now - int(time_frame)
 
                         ohlcv = CoinPaprika().get_historical_ohlc(
-                            c["id"],
+                            close["id"],
                             int(t_start),
                             end=int(t_now),
                             quote=base_coin.lower(),
@@ -682,36 +682,34 @@ async def send_candlechart(message: Message):
                         )
 
                         if ohlcv:
-                            cp_api = True
                             break
                         else:
                             return
 
-                o = [value["open"] for value in ohlcv]
-                h = [value["high"] for value in ohlcv]
-                l = [value["low"] for value in ohlcv]
-                c = [value["close"] for value in ohlcv]
-                t = [
+                open_ = [value["open"] for value in ohlcv]
+                high = [value["high"] for value in ohlcv]
+                low = [value["low"] for value in ohlcv]
+                close = [value["close"] for value in ohlcv]
+                time_ = [
                     time.mktime(dau.parse(value["time_close"]).timetuple())
                     for value in ohlcv
                 ]
 
             margin_l = 140
-            tickformat = "0.8f"
+            tick_format = "0.8f"
 
-            max_value = max(h)
+            max_value = max(high)
             if max_value > 0.9:
                 if max_value > 999:
                     margin_l = 120
-                    tickformat = "0,.0f"
+                    tick_format = "0,.0f"
                 else:
                     margin_l = 125
-                    tickformat = "0.2f"
+                    tick_format = "0.2f"
 
-            fig = fif.create_candlestick(o, h, l, c, pd.to_datetime(t,
-                                                                    unit="s"))
+            fig = fif.create_candlestick(open_, high, low, close, pd.to_datetime(time_, unit="s"))
 
-            fig["layout"]["yaxis"].update(tickformat=tickformat,
+            fig["layout"]["yaxis"].update(tickformat=tick_format,
                                           tickprefix="   ",
                                           ticksuffix=f"  ")
 
@@ -726,8 +724,8 @@ async def send_candlechart(message: Message):
                 "yref": "y",
                 "x0": 0,
                 "x1": 1,
-                "y0": c[len(c) - 1],
-                "y1": c[len(c) - 1],
+                "y0": close[len(close) - 1],
+                "y1": close[len(close) - 1],
                 "line": {
                     "color": "rgb(50, 171, 96)",
                     "width": 1,
@@ -749,7 +747,7 @@ async def send_candlechart(message: Message):
     else:
         logger.info("Exporting chart as image")
         await message.reply_photo(
-            photo=io.BufferedReader(
+            photo=BufferedReader(
                 BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
             parse_mode=ParseMode.MARKDOWN,
         )
@@ -814,7 +812,16 @@ async def send_balance(message: Message):
     for k in account_holdings.keys():
         coin = account_holdings[k]
         usd_amount = coin['usd_amount']
-        quantity = coin['quantity']
+        quantity = Decimal(coin['quantity'])
+
+        if coin['price'] in ("-", "$0.00"):
+            address = bsc.web3.toChecksumAddress(coin['address'])
+            pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
+            token = pancake_swap.get_token(address=address)
+            token_price = pancake_swap.get_token_price(address=address)
+            price = (quantity * Decimal(10 ** (18 - (token.decimals % 18)))) / token_price
+            usd_amount = f"${price.quantize(Decimal('0.01'))}"
+
         reply += f'\n\n{k}: {quantity} ({usd_amount})'
 
     await send_message(channel_id=user_id, text=reply)

@@ -12,7 +12,7 @@ from handlers.crypto import kucoin_inline_query_handler
 from handlers.crypto import price_alert_callback
 from handlers.crypto import send_balance
 from handlers.crypto import send_buy_coin
-from handlers.crypto import send_candlechart
+from handlers.crypto import send_candle_chart
 from handlers.crypto import send_chart
 from handlers.crypto import send_coin
 from handlers.crypto import send_coin_address
@@ -64,7 +64,7 @@ def setup_handlers(dp: Dispatcher) -> None:
     dp.register_message_handler(send_coin_address, commands=["coin_address"])
     dp.register_message_handler(send_trending, commands=["trending"])
     dp.register_message_handler(send_chart, commands=["chart"])
-    dp.register_message_handler(send_candlechart, commands=["candle"])
+    dp.register_message_handler(send_candle_chart, commands=["candle"])
     dp.register_message_handler(send_price_alert, commands=["alert"])
     dp.register_message_handler(send_latest_listings,
                                 commands=["latest_listings"])
