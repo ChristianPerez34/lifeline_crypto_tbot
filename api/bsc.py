@@ -1,16 +1,16 @@
-import re
 from decimal import Decimal
 
-import pandas as pd
+import aiohttp
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
-from playwright.async_api import async_playwright
 from uniswap import Uniswap
 from uniswap.exceptions import InsufficientBalance
 from web3 import Web3
 
+from config import BSCSCAN_API_KEY
 from config import BUY
 from config import FERNET_KEY
+from config import HEADERS
 
 PANCAKE_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
     "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
@@ -33,33 +33,28 @@ class BinanceSmartChain:
     def get_account_balance(self, address: str) -> Decimal:
         return self.web3.fromWei(self.web3.eth.get_balance(address), "ether")
 
-    @staticmethod
-    async def get_account_token_holdings(address):
-        account_holdings = {}
+    async def get_account_token_holdings(self, address):
+        account_holdings = {
+            "BNB": {
+                "address":
+                self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BNB"]),
+                "decimals": 18,
+            }
+        }
+        url = f"https://api.bscscan.com/api?module=account&action=tokentx&address={address}&sort=desc&apikey={BSCSCAN_API_KEY}"
 
-        async with async_playwright() as p:
-            url = f"https://bscscan.com/tokenholdings?a={address}"
-            browser = await p.chromium.launch()
-            context = await browser.new_context()
-            page = await context.new_page()
-            await page.goto(url)
-            await page.wait_for_selector(selector="#RecordsFound")
-            content = await page.content()
-            await browser.close()
-        df = pd.read_html(content, flavor="bs4")[0]
-        df.append(
-            pd.read_html(content, flavor="bs4",
-                         attrs={"id": "tbl2"})[0]["Token Name"])
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=HEADERS) as response:
+                json = await response.json()
+        bep20_transfers = json["result"]
 
-        for row in df.itertuples():
-            address = "".join(re.findall(r"(0x\w+)",
-                                         row[2])).replace("0xCoin", "")
+        for transfer in bep20_transfers:
             account_holdings.update({
-                row.Symbol: {
-                    "quantity": row.Quantity,
-                    "price": row[5].split(" ")[0],
-                    "address": address,
-                    "usd_amount": row[8],
+                transfer["tokenSymbol"]: {
+                    "address":
+                    self.web3.toChecksumAddress(transfer["contractAddress"]),
+                    "decimals":
+                    int(transfer["tokenDecimal"]),
                 }
             })
         return account_holdings
