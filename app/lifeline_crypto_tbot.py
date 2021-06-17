@@ -73,7 +73,7 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_callback_query_handler(kucoin_inline_query_handler)
     # dp.register_message_handler(send_sell_coin, commands=["sell_coin"])
     dispatcher.register_message_handler(send_greeting)
-    dispatcher.register_errors_handler(send_error),
+    dispatcher.register_errors_handler(send_error)
 
 
 if __name__ == "__main__":
