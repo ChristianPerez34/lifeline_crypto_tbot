@@ -682,8 +682,6 @@ async def send_candle_chart(message: Message):
 
                         if ohlcv:
                             break
-                        else:
-                            return
 
                 open_ = [value["open"] for value in ohlcv]
                 high = [value["high"] for value in ohlcv]
