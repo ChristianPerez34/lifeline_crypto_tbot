@@ -20,8 +20,6 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
-from . import eth
-from . import logger
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
@@ -39,6 +37,8 @@ from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
 from utils import all_same
+from . import eth
+from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -344,7 +344,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
             kucoin_api = KucoinApi(api_key=api_key,
                                    api_secret=api_secret,
                                    api_passphrase=api_passphrase)
-            orders = [order for order in kucoin_api.get_open_stop_order()]
+            orders = kucoin_api.get_open_stop_order()
 
             for position in kucoin_api.get_all_position():
                 if position["isOpen"]:

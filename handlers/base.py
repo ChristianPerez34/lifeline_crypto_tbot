@@ -4,7 +4,6 @@ from aiogram.types import InlineKeyboardButton
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.types import Message
 from aiogram.types import ParseMode
-from aiogram.utils.emoji import emojize
 from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
@@ -28,27 +27,29 @@ async def send_welcome(message: Message):
         "I'm Lifeline (Crypto)!\n\n",
         f"{bold('/help')} to display available commands\n\n",
         f"{bold('/coin')} {italic('COIN')} to display coin statistics\n\n",
-        f"{bold('/coin')}\_{bold('address')} {italic('ADDRESS')} to display coin statistics for crypto address\n\n",
+        rf"{bold('/coin')}\_{bold('address')} {italic('ADDRESS')} to display coin statistics for crypto address\n\n",
         f"{bold('/gas')} to display ETH gas prices\n\n",
         f"{bold('/trending')} to display trending coins\n\n",
         f"{bold('/alert')} {italic('COIN')} "
-        "\[< or >] ",
+        r"\[< or >] ",
         f"{italic('PRICE')} to set an alert for when the coin reaches set price\n\n",
-        f"{bold('/latest')}\_{bold('listings')} to display latest crypto listings\n\n"
-        f"{bold('/restart')}\_{bold('kucoin')} to restart KuCoin bot 🤖\n\n",
-        f"{bold('/register')} {bold('bsc')} {italic('ADDRESS')} {italic('PRIVATE')}\_{italic('KEY')} to register to "
+        rf"{bold('/latest')}\_{bold('listings')} to display latest crypto listings\n\n"
+        rf"{bold('/restart')}\_{bold('kucoin')} to restart KuCoin bot 🤖\n\n",
+        rf"{bold('/register')} {bold('bsc')} {italic('ADDRESS')} {italic('PRIVATE')}\_{italic('KEY')} to register to "
         f"use PancakeSwap bot 🤖\n\n",
-        f"{bold('/register')} {bold('kucoin')} {italic('API')}\_{italic('KEY')} {italic('API')}\_{italic('SECRET')} "
-        f"{italic('API')}\_{italic('PASSPHRASE')} to register KuCoin account and follow signals\n\n"
-        f"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on "
+        rf"{bold('/register')} {bold('kucoin')} {italic('API')}\_{italic('KEY')} {italic('API')}\_{italic('SECRET')} "
+        rf"{italic('API')}\_{italic('PASSPHRASE')} to register KuCoin account and follow signals\n\n"
+        rf"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on "
         f"PancakeSwap\n\n",
-        f"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} {italic('PERCENTAGE')}\_{italic('TO')}\_{italic('SELL')} "
-        f"to sell coins on PancakeSwap\n\n",
-        f"{bold('/chart')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('DAYS')} to display coin chart. If BaseCoin not specified, will default to USD\n\n",
-        f"{bold('/candle')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('TIME')} {italic('LETTER')} to display coin candlechart. If BaseCoin not specified, will default to USD\n\n",
+        rf"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} {italic('PERCENTAGE')}\_{italic('TO')}\_{italic('SELL')}"
+        f" to sell coins on PancakeSwap\n\n",
+        rf"{bold('/chart')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('DAYS')} to display coin "
+        "chart. If BaseCoin not specified, will default to USD\n\n",
+        rf"{bold('/candle')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('TIME')} {italic('LETTER')}"
+        " to display coin candle chart. If BaseCoin not specified, will default to USD\n\n",
         f"{bold('/balance')} to display binance smart chain balance. Responds privately.\n\n",
     )
-    await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
 async def send_greeting(message: Message):
