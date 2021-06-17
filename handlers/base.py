@@ -69,7 +69,7 @@ async def send_greeting(message: Message):
 
 
 async def send_message(channel_id: int,
-                       text: str,
+                       message: str,
                        inline: bool = False,
                        data: str = ""):
     logger.info(f"Sending message to chat id: {channel_id}")
@@ -81,9 +81,9 @@ async def send_message(channel_id: int,
             InlineKeyboardButton("Follow Signal", callback_data=data))
         await bot.send_message(
             channel_id,
-            text,
+            message,
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=keyboard_markup,
         )
     else:
-        await bot.send_message(channel_id, text, parse_mode=ParseMode.MARKDOWN)
+        await bot.send_message(channel_id, message, parse_mode=ParseMode.MARKDOWN)
