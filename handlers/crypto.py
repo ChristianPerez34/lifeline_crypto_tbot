@@ -1,7 +1,8 @@
 import asyncio
 import time
 from decimal import Decimal
-from io import BufferedReader, BytesIO
+from io import BufferedReader
+from io import BytesIO
 
 import aiohttp
 import dateutil.parser as dau
@@ -9,12 +10,18 @@ import pandas as pd
 import plotly.figure_factory as fif
 import plotly.graph_objs as go
 import plotly.io as pio
-from aiogram.types import CallbackQuery, Message, ParseMode
+from aiogram.types import CallbackQuery
+from aiogram.types import Message
+from aiogram.types import ParseMode
 from aiogram.utils.emoji import emojize
-from aiogram.utils.markdown import bold, italic, text
+from aiogram.utils.markdown import bold
+from aiogram.utils.markdown import italic
+from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
+from . import eth
+from . import logger
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
@@ -24,12 +31,14 @@ from api.kucoin import KucoinApi
 from app import bot
 from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
-from config import BUY, FERNET_KEY, HEADERS, TELEGRAM_CHAT_ID
+from config import BUY
+from config import FERNET_KEY
+from config import HEADERS
+from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
-from models import CryptoAlert, TelegramGroupMember
+from models import CryptoAlert
+from models import TelegramGroupMember
 from utils import all_same
-
-from . import eth, logger
 
 
 def get_coin_stats(symbol: str) -> dict:
