@@ -20,6 +20,8 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
+from . import eth
+from . import logger
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
@@ -37,8 +39,6 @@ from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
 from utils import all_same
-from . import eth
-from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -812,7 +812,7 @@ async def send_balance(message: Message):
         address=pancake_swap.address)
     for k in account_holdings.keys():
         coin = account_holdings[k]
-        token = coin['address']
+        token = coin["address"]
 
         # Quantity in wei used to calculate price
         quantity = pancake_swap.get_token_balance(token)
@@ -821,7 +821,7 @@ async def send_balance(message: Message):
             price = quantity / token_price
 
             # Quantity in correct format as seen in wallet
-            quantity /= Decimal(10 ** (18 - (coin['decimals'] % 18)))
+            quantity /= Decimal(10**(18 - (coin["decimals"] % 18)))
             usd_amount = f"${price.quantize(Decimal('0.01'))}"
             reply += f"\n\n{k}: {quantity} ({usd_amount})"
 

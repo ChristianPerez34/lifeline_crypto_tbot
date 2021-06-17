@@ -7,8 +7,10 @@ from uniswap import Uniswap
 from uniswap.exceptions import InsufficientBalance
 from web3 import Web3
 
-from config import BUY, BSCSCAN_API_KEY, HEADERS
+from config import BSCSCAN_API_KEY
+from config import BUY
 from config import FERNET_KEY
+from config import HEADERS
 
 PANCAKE_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
     "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
@@ -34,24 +36,25 @@ class BinanceSmartChain:
     async def get_account_token_holdings(self, address):
         account_holdings = {
             "BNB": {
-                "address": self.web3.toChecksumAddress(CONTRACT_ADDRESSES['BNB']),
-                "decimals": 18
+                "address":
+                self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BNB"]),
+                "decimals": 18,
             }
         }
         url = f"https://api.bscscan.com/api?module=account&action=tokentx&address={address}&sort=desc&apikey={BSCSCAN_API_KEY}"
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(
-                    url,
-                    headers=HEADERS) as response:
+            async with session.get(url, headers=HEADERS) as response:
                 json = await response.json()
-        bep20_transfers = json['result']
+        bep20_transfers = json["result"]
 
         for transfer in bep20_transfers:
             account_holdings.update({
-                transfer['tokenSymbol']: {
-                    "address": self.web3.toChecksumAddress(transfer['contractAddress']),
-                    "decimals": int(transfer['tokenDecimal'])
+                transfer["tokenSymbol"]: {
+                    "address":
+                    self.web3.toChecksumAddress(transfer["contractAddress"]),
+                    "decimals":
+                    int(transfer["tokenDecimal"]),
                 }
             })
         return account_holdings
@@ -129,5 +132,5 @@ class PancakeSwap(BinanceSmartChain):
     def get_token_price(self, address):
         busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BUSD"])
         token_per_busd = Decimal(
-            self.pancake_swap.get_price_input(busd, address, 10 ** 18))
+            self.pancake_swap.get_price_input(busd, address, 10**18))
         return token_per_busd
