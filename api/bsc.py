@@ -13,11 +13,9 @@ from config import FERNET_KEY
 from config import HEADERS
 
 PANCAKE_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
-    "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
-)
+    "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
 PANCAKE_SWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
-    "0x10ED43C718714eb63d5aA57B78B54704E256024E"
-)
+    "0x10ED43C718714eb63d5aA57B78B54704E256024E")
 CONTRACT_ADDRESSES = {
     "BNB": "0x0000000000000000000000000000000000000000",
     "WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
@@ -38,7 +36,8 @@ class BinanceSmartChain:
     async def get_account_token_holdings(self, address):
         account_holdings = {
             "BNB": {
-                "address": self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BNB"]),
+                "address":
+                self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BNB"]),
                 "decimals": 18,
             }
         }
@@ -50,16 +49,14 @@ class BinanceSmartChain:
         bep20_transfers = json["result"]
 
         for transfer in bep20_transfers:
-            account_holdings.update(
-                {
-                    transfer["tokenSymbol"]: {
-                        "address": self.web3.toChecksumAddress(
-                            transfer["contractAddress"]
-                        ),
-                        "decimals": int(transfer["tokenDecimal"]),
-                    }
+            account_holdings.update({
+                transfer["tokenSymbol"]: {
+                    "address":
+                    self.web3.toChecksumAddress(transfer["contractAddress"]),
+                    "decimals":
+                    int(transfer["tokenDecimal"]),
                 }
-            )
+            })
         return account_holdings
 
 
@@ -84,7 +81,8 @@ class PancakeSwap(BinanceSmartChain):
     def get_token_balance(self, token) -> int:
         return self.pancake_swap.get_token_balance(token)
 
-    def swap_tokens(self, token: str, amount_to_spend: Decimal, side: str) -> str:
+    def swap_tokens(self, token: str, amount_to_spend: Decimal,
+                    side: str) -> str:
         """
         Swaps crypto coins on PancakeSwap
         Args:
@@ -107,21 +105,19 @@ class PancakeSwap(BinanceSmartChain):
                             token,
                             amount_to_spend,
                             self.address,
-                        )
-                    )
+                        ))
                 else:
-                    balance = self.web3.fromWei(self.get_token_balance(token), "ether")
+                    balance = self.web3.fromWei(self.get_token_balance(token),
+                                                "ether")
                     amount_to_spend = self.web3.toWei(
-                        balance * amount_to_spend, "ether"
-                    )
+                        balance * amount_to_spend, "ether")
                     txn_hash = self.web3.toHex(
                         self.pancake_swap.make_trade_output(
                             token,
                             CONTRACT_ADDRESSES["BNB"],
                             amount_to_spend,
                             self.address,
-                        )
-                    )
+                        ))
 
                 txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
@@ -136,6 +132,5 @@ class PancakeSwap(BinanceSmartChain):
     def get_token_price(self, address):
         busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BUSD"])
         token_per_busd = Decimal(
-            self.pancake_swap.get_price_input(busd, address, 10 ** 18)
-        )
+            self.pancake_swap.get_price_input(busd, address, 10**18))
         return token_per_busd
