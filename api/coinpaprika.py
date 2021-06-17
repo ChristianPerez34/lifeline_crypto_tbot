@@ -3,7 +3,7 @@ import json
 import requests
 
 
-class CoinPaprika(object):
+class CoinPaprika:
 
     _base_url = "https://api.coinpaprika.com/v1/"
 

@@ -3,7 +3,7 @@ import json
 import requests
 
 
-class CryptoCompare(object):
+class CryptoCompare:
 
     _base_url = "https://min-api.cryptocompare.com/data/"
     _token = None
