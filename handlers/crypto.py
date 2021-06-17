@@ -269,7 +269,7 @@ async def price_alert_callback(alert: CryptoAlert, delay: int) -> None:
                 response = f":( {crypto} has dipped below {price} and is currently at {spot_price}."
             else:
                 response = f"👋 {crypto} has surpassed {price} and has just reached {spot_price}!"
-            await send_message(channel_id=TELEGRAM_CHAT_ID, text=response)
+            await send_message(channel_id=TELEGRAM_CHAT_ID, message=response)
             await alert.delete()
 
         await asyncio.sleep(delay)
@@ -796,7 +796,7 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
 
     else:
         reply = f"⚠️ Please register KuCoin account to follow signals"
-    await send_message(channel_id=query.message.chat.id, text=reply)
+    await send_message(channel_id=query.message.chat.id, message=reply)
 
 
 async def send_balance(message: Message):
@@ -823,4 +823,4 @@ async def send_balance(message: Message):
             usd_amount = f"${price.quantize(Decimal('0.01'))}"
             reply += f"\n\n{k}: {quantity} ({usd_amount})"
 
-    await send_message(channel_id=user_id, text=reply)
+    await send_message(channel_id=user_id, message=reply)

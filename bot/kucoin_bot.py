@@ -53,7 +53,7 @@ async def kucoin_bot():
                             active_orders.pop(symbol, None)
                     await send_message(
                         channel_id=TELEGRAM_CHAT_ID,
-                        text=message,
+                        message=message,
                         inline=inline,
                         data=data,
                     )
@@ -96,7 +96,7 @@ async def kucoin_bot():
                          f"Take Profit: {order['take_profit']}\n"
                          f"Stop Loss: {order['stop_loss']}\n"))
                     await send_message(channel_id=TELEGRAM_CHAT_ID,
-                                       text=message)
+                                       message=message)
             elif "/contract/position" in msg["topic"]:
                 data = msg["data"]
                 symbol = msg["topic"].split(":")[1][:-1]

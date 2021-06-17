@@ -73,4 +73,4 @@ async def send_register(message: Message) -> None:
         except Exception as e:
             logger.info("Failed to register user")
             logger.exception(e)
-    await send_message(channel_id=chat_id, text=text)
+    await send_message(channel_id=chat_id, message=text)
