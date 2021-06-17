@@ -548,8 +548,8 @@ async def send_chart(message: Message):
                 "yref": "y2",
                 "x0": 0,
                 "x1": 1,
-                "y0": market["prices"][len(market["prices"]) - 1][1],
-                "y1": market["prices"][len(market["prices"]) - 1][1],
+                "y0": market["prices"][-1][1],
+                "y1": market["prices"][-1][1],
                 "line": {
                     "color": "rgb(50, 171, 96)",
                     "width": 1,
@@ -722,8 +722,8 @@ async def send_candle_chart(message: Message):
                 "yref": "y",
                 "x0": 0,
                 "x1": 1,
-                "y0": close[len(close) - 1],
-                "y1": close[len(close) - 1],
+                "y0": close[-1],
+                "y1": close[-1],
                 "line": {
                     "color": "rgb(50, 171, 96)",
                     "width": 1,
