@@ -269,7 +269,7 @@ async def price_alert_callback(alert: CryptoAlert, delay: int) -> None:
                 response = f":( {crypto} has dipped below {price} and is currently at {spot_price}."
             else:
                 response = f"👋 {crypto} has surpassed {price} and has just reached {spot_price}!"
-            await send_message(channel_id=TELEGRAM_CHAT_ID, text=response)
+            await send_message(channel_id=TELEGRAM_CHAT_ID, message=response)
             await alert.delete()
 
         await asyncio.sleep(delay)
@@ -344,7 +344,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
             kucoin_api = KucoinApi(api_key=api_key,
                                    api_secret=api_secret,
                                    api_passphrase=api_passphrase)
-            orders = [order for order in kucoin_api.get_open_stop_order()]
+            orders = kucoin_api.get_open_stop_order()
 
             for position in kucoin_api.get_all_position():
                 if position["isOpen"]:
@@ -682,8 +682,6 @@ async def send_candle_chart(message: Message):
 
                         if ohlcv:
                             break
-                        else:
-                            return
 
                 open_ = [value["open"] for value in ohlcv]
                 high = [value["high"] for value in ohlcv]
@@ -798,7 +796,7 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
 
     else:
         reply = f"⚠️ Please register KuCoin account to follow signals"
-    await send_message(channel_id=query.message.chat.id, text=reply)
+    await send_message(channel_id=query.message.chat.id, message=reply)
 
 
 async def send_balance(message: Message):
@@ -825,4 +823,4 @@ async def send_balance(message: Message):
             usd_amount = f"${price.quantize(Decimal('0.01'))}"
             reply += f"\n\n{k}: {quantity} ({usd_amount})"
 
-    await send_message(channel_id=user_id, text=reply)
+    await send_message(channel_id=user_id, message=reply)

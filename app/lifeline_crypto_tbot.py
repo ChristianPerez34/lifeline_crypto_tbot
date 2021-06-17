@@ -26,11 +26,11 @@ from handlers.user import send_register
 from models import CryptoAlert
 
 
-async def on_startup(dp: Dispatcher):
+async def on_startup(dispatcher: Dispatcher):
     """Bot stratup actions
 
     Args:
-        dp (Dispatcher): Bot dispatcher
+        dispatcher (Dispatcher): Bot dispatcher
     """
     # if ENV != DEV:
     #     await bot.delete_webhook()
@@ -39,44 +39,42 @@ async def on_startup(dp: Dispatcher):
     for alert in await CryptoAlert.all():
         asyncio.create_task(price_alert_callback(alert=alert, delay=15))
 
-    setup_handlers(dp)
+    setup_handlers(dispatcher)
 
 
-async def on_shutdown(dp: Dispatcher):
-    """Disable KuCoin bot on shutdown
-
-    Args:
-        dp (Dispatcher): Bot dispatcher
-    """
+async def on_shutdown():
+    """Disable KuCoin bot on shutdown"""
     tasks = asyncio.all_tasks()
     [task.cancel() for task in tasks if task.get_name() == KUCOIN_TASK_NAME]
 
 
-def setup_handlers(dp: Dispatcher) -> None:
+def setup_handlers(dispatcher: Dispatcher) -> None:
     """Registers handlers
 
     Args:
-        dp (Dispatcher): Bot dispatcher
+        dispatcher (Dispatcher): Bot dispatcher
     """
-    dp.register_message_handler(send_welcome, commands=["start", "help"])
-    dp.register_message_handler(send_coin, commands=["coin"])
-    dp.register_message_handler(send_gas, commands=["gas"])
-    dp.register_message_handler(send_coin_address, commands=["coin_address"])
-    dp.register_message_handler(send_trending, commands=["trending"])
-    dp.register_message_handler(send_chart, commands=["chart"])
-    dp.register_message_handler(send_candle_chart, commands=["candle"])
-    dp.register_message_handler(send_price_alert, commands=["alert"])
-    dp.register_message_handler(send_latest_listings,
-                                commands=["latest_listings"])
-    dp.register_message_handler(send_restart_kucoin_bot,
-                                commands=["restart_kucoin"])
-    dp.register_message_handler(send_buy_coin, commands=["buy_coin"])
-    dp.register_message_handler(send_register, commands=["register"])
-    dp.register_message_handler(send_balance, commands=["balance"])
-    dp.register_callback_query_handler(kucoin_inline_query_handler)
+    dispatcher.register_message_handler(send_welcome,
+                                        commands=["start", "help"])
+    dispatcher.register_message_handler(send_coin, commands=["coin"])
+    dispatcher.register_message_handler(send_gas, commands=["gas"])
+    dispatcher.register_message_handler(send_coin_address,
+                                        commands=["coin_address"])
+    dispatcher.register_message_handler(send_trending, commands=["trending"])
+    dispatcher.register_message_handler(send_chart, commands=["chart"])
+    dispatcher.register_message_handler(send_candle_chart, commands=["candle"])
+    dispatcher.register_message_handler(send_price_alert, commands=["alert"])
+    dispatcher.register_message_handler(send_latest_listings,
+                                        commands=["latest_listings"])
+    dispatcher.register_message_handler(send_restart_kucoin_bot,
+                                        commands=["restart_kucoin"])
+    dispatcher.register_message_handler(send_buy_coin, commands=["buy_coin"])
+    dispatcher.register_message_handler(send_register, commands=["register"])
+    dispatcher.register_message_handler(send_balance, commands=["balance"])
+    dispatcher.register_callback_query_handler(kucoin_inline_query_handler)
     # dp.register_message_handler(send_sell_coin, commands=["sell_coin"])
-    dp.register_message_handler(send_greeting)
-    dp.register_errors_handler(send_error),
+    dispatcher.register_message_handler(send_greeting)
+    dispatcher.register_errors_handler(send_error)
 
 
 if __name__ == "__main__":
