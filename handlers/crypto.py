@@ -20,9 +20,6 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
-from . import eth
-from . import logger
-from api.bsc import BinanceSmartChain
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
@@ -40,6 +37,8 @@ from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
 from utils import all_same
+from . import eth
+from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -805,27 +804,25 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
 async def send_balance(message: Message):
     logger.info("Retrieving account balance")
     user_id = message.from_user.id
-    bsc = BinanceSmartChain()
     user = await TelegramGroupMember.get(id=user_id)
     reply = f"Account Balance 💲"
-    account_holdings = await bsc.get_account_token_holdings(
-        address=user.bsc_address)
-
+    pancake_swap = PancakeSwap(address=user.bsc_address,
+                               key=user.bsc_private_key)
+    account_holdings = await pancake_swap.get_account_token_holdings(
+        address=pancake_swap.address)
     for k in account_holdings.keys():
         coin = account_holdings[k]
-        usd_amount = coin["usd_amount"]
-        quantity = Decimal(coin["quantity"])
+        token = coin['address']
 
-        if coin["price"] in ("-", "$0.00"):
-            address = bsc.web3.toChecksumAddress(coin["address"])
-            pancake_swap = PancakeSwap(address=user.bsc_address,
-                                       key=user.bsc_private_key)
-            token = pancake_swap.get_token(address=address)
-            token_price = pancake_swap.get_token_price(address=address)
-            price = (quantity *
-                     Decimal(10**(18 - (token.decimals % 18)))) / token_price
+        # Quantity in wei used to calculate price
+        quantity = pancake_swap.get_token_balance(token)
+        if quantity > 0:
+            token_price = pancake_swap.get_token_price(address=token)
+            price = quantity / token_price
+
+            # Quantity in correct format as seen in wallet
+            quantity /= Decimal(10 ** (18 - (coin['decimals'] % 18)))
             usd_amount = f"${price.quantize(Decimal('0.01'))}"
-
-        reply += f"\n\n{k}: {quantity} ({usd_amount})"
+            reply += f"\n\n{k}: {quantity} ({usd_amount})"
 
     await send_message(channel_id=user_id, text=reply)
