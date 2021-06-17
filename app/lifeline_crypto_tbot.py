@@ -55,10 +55,12 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     Args:
         dispatcher (Dispatcher): Bot dispatcher
     """
-    dispatcher.register_message_handler(send_welcome, commands=["start", "help"])
+    dispatcher.register_message_handler(
+        send_welcome, commands=["start", "help"])
     dispatcher.register_message_handler(send_coin, commands=["coin"])
     dispatcher.register_message_handler(send_gas, commands=["gas"])
-    dispatcher.register_message_handler(send_coin_address, commands=["coin_address"])
+    dispatcher.register_message_handler(
+        send_coin_address, commands=["coin_address"])
     dispatcher.register_message_handler(send_trending, commands=["trending"])
     dispatcher.register_message_handler(send_chart, commands=["chart"])
     dispatcher.register_message_handler(send_candle_chart, commands=["candle"])
