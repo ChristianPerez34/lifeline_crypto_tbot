@@ -379,7 +379,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         }
                     })
             asyncio.create_task(kucoin_bot())
-            reply = f"Restarted KuCoin Bot 🤖"
+            reply = "Restarted KuCoin Bot 🤖"
         else:
             logger.info("User does not have a registered KuCoin account")
             reply = "⚠ Sorry, please register KuCoin account"
@@ -534,7 +534,7 @@ async def send_chart(message: Message):
                 title=dict(text=base_coin, font=dict(size=18)),
                 domain=[0.25, 1],
                 tickprefix="   ",
-                ticksuffix=f"  ",
+                ticksuffix="  ",
             ),
             title=dict(text=symbol, font=dict(size=26)),
             legend=dict(orientation="h",
@@ -709,7 +709,7 @@ async def send_candle_chart(message: Message):
 
             fig["layout"]["yaxis"].update(tickformat=tick_format,
                                           tickprefix="   ",
-                                          ticksuffix=f"  ")
+                                          ticksuffix="  ")
 
             fig["layout"].update(
                 title=dict(text=symbol, font=dict(size=26)),
@@ -792,10 +792,10 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
             reply = f"@{username} successfully followed signal"
         except Exception as e:
             logger.exception(e)
-            reply = f"⚠️ Unable to follow signal"
+            reply = "⚠️ Unable to follow signal"
 
     else:
-        reply = f"⚠️ Please register KuCoin account to follow signals"
+        reply = "⚠️ Please register KuCoin account to follow signals"
     await send_message(channel_id=query.message.chat.id, message=reply)
 
 
@@ -803,7 +803,7 @@ async def send_balance(message: Message):
     logger.info("Retrieving account balance")
     user_id = message.from_user.id
     user = await TelegramGroupMember.get(id=user_id)
-    reply = f"Account Balance 💲"
+    reply = "Account Balance 💲"
     pancake_swap = PancakeSwap(address=user.bsc_address,
                                key=user.bsc_private_key)
     account_holdings = await pancake_swap.get_account_token_holdings(
