@@ -8,8 +8,8 @@ from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 
-from app import bot
 from . import logger
+from app import bot
 
 
 # from telegram.ext.callbackcontext import CallbackContext
@@ -86,4 +86,6 @@ async def send_message(channel_id: int,
             reply_markup=keyboard_markup,
         )
     else:
-        await bot.send_message(channel_id, message, parse_mode=ParseMode.MARKDOWN)
+        await bot.send_message(channel_id,
+                               message,
+                               parse_mode=ParseMode.MARKDOWN)

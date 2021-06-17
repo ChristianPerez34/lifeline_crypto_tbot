@@ -20,6 +20,8 @@ from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
 
+from . import eth
+from . import logger
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
@@ -37,8 +39,6 @@ from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
 from utils import all_same
-from . import eth
-from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
