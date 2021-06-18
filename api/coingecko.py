@@ -1,8 +1,7 @@
 from pycoingecko import CoinGeckoAPI
 from requests.exceptions import RequestException
 
-from handlers import coingecko_coin_lookup_cache
-from handlers import logger
+from handlers import coingecko_coin_lookup_cache, logger
 
 
 class CoinGecko:
