@@ -5,6 +5,7 @@ from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import text
 from kucoin_futures.client import WsToken
 from kucoin_futures.ws_client import KucoinFuturesWsClient
+from requests.exceptions import RequestException
 
 from bot import active_orders
 from config import KUCOIN_API_KEY
@@ -103,7 +104,7 @@ async def kucoin_bot():
                 symbol = symbol.replace("XBTUSDT", "BTCUSDT")
                 if symbol in active_orders:
                     active_orders[symbol]["pnl"] = data["unrealisedPnl"]
-        except Exception as e:
+        except (RequestException, KeyError) as e:
             logger.exception(e)
 
     # is private

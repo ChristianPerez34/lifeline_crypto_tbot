@@ -19,7 +19,10 @@ from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
+from requests.exceptions import RequestException
 
+from . import eth
+from . import logger
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
@@ -32,13 +35,12 @@ from bot.kucoin_bot import kucoin_bot
 from config import BUY
 from config import FERNET_KEY
 from config import HEADERS
+from config import KUCOIN_TASK_NAME
 from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
 from utils import all_same
-from . import eth
-from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -378,7 +380,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                             "stop_loss": stop_loss,
                         }
                     })
-            asyncio.create_task(kucoin_bot())
+            asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
             reply = "Restarted KuCoin Bot 🤖"
         else:
             logger.info("User does not have a registered KuCoin account")
@@ -790,7 +792,7 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
                                            size=int(size),
                                            lever=str(leverage))
             reply = f"@{username} successfully followed signal"
-        except Exception as e:
+        except RequestException as e:
             logger.exception(e)
             reply = "⚠️ Unable to follow signal"
 
@@ -819,7 +821,7 @@ async def send_balance(message: Message):
             price = quantity / token_price
 
             # Quantity in correct format as seen in wallet
-            quantity /= Decimal(10 ** (18 - (coin["decimals"] % 18)))
+            quantity /= Decimal(10**(18 - (coin["decimals"] % 18)))
             usd_amount = f"${price.quantize(Decimal('0.01'))}"
             reply += f"\n\n{k}: {quantity} ({usd_amount})"
 
