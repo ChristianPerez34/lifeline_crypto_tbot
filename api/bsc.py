@@ -41,11 +41,13 @@ class BinanceSmartChain:
                 "decimals": 18,
             }
         }
-        url = f"https://api.bscscan.com/api?module=account&action=tokentx&address={address}&sort=desc&apikey={BSCSCAN_API_KEY}"
+        url = (
+            f"https://api.bscscan.com/api?module=account&action=tokentx&address={address}&sort=desc&"
+            f"apikey={BSCSCAN_API_KEY}")
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=HEADERS) as response:
-                json = await response.json()
+        async with aiohttp.ClientSession() as session, session.get(
+                url, headers=HEADERS) as response:
+            json = await response.json()
         bep20_transfers = json["result"]
 
         for transfer in bep20_transfers:
