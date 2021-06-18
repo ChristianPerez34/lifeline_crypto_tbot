@@ -19,6 +19,7 @@ from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
+from requests.exceptions import RequestException
 
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
@@ -790,7 +791,7 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
                                            size=int(size),
                                            lever=str(leverage))
             reply = f"@{username} successfully followed signal"
-        except Exception as e:
+        except RequestException as e:
             logger.exception(e)
             reply = "⚠️ Unable to follow signal"
 
