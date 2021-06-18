@@ -45,7 +45,9 @@ async def on_startup(dispatcher: Dispatcher):
 async def on_shutdown():
     """Disable KuCoin bot on shutdown"""
     tasks = asyncio.all_tasks()
-    [task.cancel() for task in tasks if task.get_name() == KUCOIN_TASK_NAME]
+    for task in tasks:
+        if task.get_name() == KUCOIN_TASK_NAME:
+            task.cancel()
 
 
 def setup_handlers(dispatcher: Dispatcher) -> None:
