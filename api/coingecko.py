@@ -23,11 +23,11 @@ class CoinGecko:
         try:
             data = (self.cg.get_coin_info_from_contract_address_by_id(
                 id="ethereum", contract_address=ids)
-                    if is_address else self.cg.get_coin_by_id(id=ids))
+                if is_address else self.cg.get_coin_by_id(id=ids))
         except RequestException:
             data = (self.cg.get_coin_info_from_contract_address_by_id(
                 id="binance", contract_address=ids)
-                    if is_address else self.cg.get_coin_by_id(id=ids))
+                if is_address else self.cg.get_coin_by_id(id=ids))
         return data
 
     def get_trending_coins(self) -> list:
