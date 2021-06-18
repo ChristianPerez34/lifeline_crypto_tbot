@@ -37,14 +37,16 @@ class BinanceSmartChain:
         account_holdings = {
             "BNB": {
                 "address":
-                    self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BNB"]),
+                self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BNB"]),
                 "decimals": 18,
             }
         }
-        url = f"https://api.bscscan.com/api?module=account&action=tokentx&address={address}&sort=desc&" \
-              f"apikey={BSCSCAN_API_KEY}"
+        url = (
+            f"https://api.bscscan.com/api?module=account&action=tokentx&address={address}&sort=desc&"
+            f"apikey={BSCSCAN_API_KEY}")
 
-        async with aiohttp.ClientSession() as session, session.get(url, headers=HEADERS) as response:
+        async with aiohttp.ClientSession() as session, session.get(
+                url, headers=HEADERS) as response:
             json = await response.json()
         bep20_transfers = json["result"]
 
@@ -52,9 +54,9 @@ class BinanceSmartChain:
             account_holdings.update({
                 transfer["tokenSymbol"]: {
                     "address":
-                        self.web3.toChecksumAddress(transfer["contractAddress"]),
+                    self.web3.toChecksumAddress(transfer["contractAddress"]),
                     "decimals":
-                        int(transfer["tokenDecimal"]),
+                    int(transfer["tokenDecimal"]),
                 }
             })
         return account_holdings
@@ -132,5 +134,5 @@ class PancakeSwap(BinanceSmartChain):
     def get_token_price(self, address):
         busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BUSD"])
         token_per_busd = Decimal(
-            self.pancake_swap.get_price_input(busd, address, 10 ** 18))
+            self.pancake_swap.get_price_input(busd, address, 10**18))
         return token_per_busd
