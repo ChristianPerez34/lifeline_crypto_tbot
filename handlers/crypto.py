@@ -21,6 +21,8 @@ from cryptography.fernet import Fernet
 from pandas import DataFrame
 from requests.exceptions import RequestException
 
+from . import eth
+from . import logger
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
@@ -30,16 +32,15 @@ from api.kucoin import KucoinApi
 from app import bot
 from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
-from config import BUY, KUCOIN_TASK_NAME
+from config import BUY
 from config import FERNET_KEY
 from config import HEADERS
+from config import KUCOIN_TASK_NAME
 from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
 from utils import all_same
-from . import eth
-from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:

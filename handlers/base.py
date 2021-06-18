@@ -8,8 +8,8 @@ from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 
-from app import bot
 from . import logger
+from app import bot
 
 
 # from telegram.ext.callbackcontext import CallbackContext
