@@ -21,13 +21,21 @@ class CoinGecko:
         """
         logger.info(f"Looking up price for {ids} in CoinGecko API")
         try:
-            data = (self.cg.get_coin_info_from_contract_address_by_id(
-                id="ethereum", contract_address=ids)
-                if is_address else self.cg.get_coin_by_id(id=ids))
+            data = (
+                self.cg.get_coin_info_from_contract_address_by_id(
+                    id="ethereum", contract_address=ids
+                )
+                if is_address
+                else self.cg.get_coin_by_id(id=ids)
+            )
         except RequestException:
-            data = (self.cg.get_coin_info_from_contract_address_by_id(
-                id="binance", contract_address=ids)
-                if is_address else self.cg.get_coin_by_id(id=ids))
+            data = (
+                self.cg.get_coin_info_from_contract_address_by_id(
+                    id="binance", contract_address=ids
+                )
+                if is_address
+                else self.cg.get_coin_by_id(id=ids)
+            )
         return data
 
     def get_trending_coins(self) -> list:
@@ -39,8 +47,7 @@ class CoinGecko:
         logger.info("Retrieving CoinGecko trending coins")
         return self.cg.get_search_trending()["coins"]
 
-    def coin_market_lookup(self, ids: str, time_frame: int,
-                           base_coin: str) -> dict:
+    def coin_market_lookup(self, ids: str, time_frame: int, base_coin: str) -> dict:
         """Coin lookup in CoinGecko API for Market Chart
 
         Args:
@@ -71,7 +78,8 @@ class CoinGecko:
 
         else:
             coin = [
-                coin for coin in self.cg.get_coins_list()
+                coin
+                for coin in self.cg.get_coins_list()
                 if coin["symbol"].upper() == symbol
             ][0]
             coin_id = coin["id"]
