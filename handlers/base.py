@@ -62,7 +62,7 @@ async def send_greeting(message: Message):
     for new_user_obj in message.new_chat_members:
         try:
             new_user = "@" + new_user_obj["username"]
-        except Exception:
+        except KeyError:
             new_user = new_user_obj["first_name"]
     if new_user:
         await message.reply(text=f"Welcome fellow degen, {new_user}.")

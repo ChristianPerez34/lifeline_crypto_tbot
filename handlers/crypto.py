@@ -19,6 +19,7 @@ from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
+from requests.exceptions import RequestException
 
 from . import eth
 from . import logger
@@ -34,6 +35,7 @@ from bot.kucoin_bot import kucoin_bot
 from config import BUY
 from config import FERNET_KEY
 from config import HEADERS
+from config import KUCOIN_TASK_NAME
 from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import CryptoAlert
@@ -378,7 +380,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                             "stop_loss": stop_loss,
                         }
                     })
-            asyncio.create_task(kucoin_bot())
+            asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
             reply = "Restarted KuCoin Bot 🤖"
         else:
             logger.info("User does not have a registered KuCoin account")
@@ -790,7 +792,7 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
                                            size=int(size),
                                            lever=str(leverage))
             reply = f"@{username} successfully followed signal"
-        except Exception as e:
+        except RequestException as e:
             logger.exception(e)
             reply = "⚠️ Unable to follow signal"
 

@@ -1,5 +1,6 @@
 from aiogram.types import Message
 from cryptography.fernet import Fernet
+from tortoise.exceptions import BaseORMException
 
 from app import bot
 from config import FERNET_KEY
@@ -70,7 +71,7 @@ async def send_register(message: Message) -> None:
         try:
             await TelegramGroupMember().create_or_update(data=data)
             text = f"Successfully registered @{telegram_user.username}"
-        except Exception as e:
+        except BaseORMException as e:
             logger.info("Failed to register user")
             logger.exception(e)
     await send_message(channel_id=chat_id, message=text)
