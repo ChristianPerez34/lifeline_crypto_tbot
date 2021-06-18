@@ -21,9 +21,8 @@ class CoinMarketCap:
             dict: Results of coin lookup
         """
         logger.info(f"Looking up price for {symbol} in CoinMarketCap API")
-        return self.cmc.cryptocurrency_quotes_latest(symbol=symbol, convert="usd").data[
-            symbol
-        ]
+        return self.cmc.cryptocurrency_quotes_latest(
+            symbol=symbol, convert="usd").data[symbol]
 
     @staticmethod
     async def get_trending_coins() -> list:
@@ -35,8 +34,8 @@ class CoinMarketCap:
         logger.info("Retrieving trending coins from CoinMarketCap")
         coins = []
         async with aiohttp.ClientSession() as session, session.get(
-            "https://coinmarketcap.com/trending-cryptocurrencies/", headers=HEADERS
-        ) as response:
+                "https://coinmarketcap.com/trending-cryptocurrencies/",
+                headers=HEADERS) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
 
             for row in df.itertuples():
