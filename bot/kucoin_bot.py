@@ -34,25 +34,19 @@ async def kucoin_bot():
                         order = active_orders[symbol]
 
                         entries = list(map(Decimal, order["entry"].split("-")))
-                        entry = (
-                            f"{min(entries)}-{max(entries)}"
-                            if len(entries) > 1
-                            else entries[0]
-                        )
+                        entry = (f"{min(entries)}-{max(entries)}"
+                                 if len(entries) > 1 else entries[0])
                         side = "SHORT" if data["side"] == "sell" else "LONG"
 
                         if side == order["side"]:
                             message = text(
-                                (
-                                    f"Futures Contract ⏳\n\n"
-                                    f"Coin: {bold(symbol)}\n"
-                                    f"LONG/SHORT: {bold(side)}\n"
-                                    f"Entry: {entry}\n"
-                                    f"Leverage: {bold('10')}-{bold('20x')}\n"
-                                    f"Take Profit: {bold('At Your Discretion')}\n"
-                                    f"Stop Loss: {bold('At Your Discretion')}\n"
-                                )
-                            )
+                                (f"Futures Contract ⏳\n\n"
+                                 f"Coin: {bold(symbol)}\n"
+                                 f"LONG/SHORT: {bold(side)}\n"
+                                 f"Entry: {entry}\n"
+                                 f"Leverage: {bold('10')}-{bold('20x')}\n"
+                                 f"Take Profit: {bold('At Your Discretion')}\n"
+                                 f"Stop Loss: {bold('At Your Discretion')}\n"))
                             inline = True
                             data = f"{symbol};{side};"
                         else:
@@ -72,12 +66,12 @@ async def kucoin_bot():
                     entry = data["matchPrice"]
                     if symbol in active_orders:
                         active_orders[symbol][
-                            "entry"
-                        ] = f"{active_orders[symbol]['entry']}-{entry}"
+                            "entry"] = f"{active_orders[symbol]['entry']}-{entry}"
                     else:
                         active_orders[symbol] = {
                             "entry": entry,
-                            "side": "SHORT" if data["side"] == "sell" else "LONG",
+                            "side":
+                            "SHORT" if data["side"] == "sell" else "LONG",
                             "take_profit": "",
                             "stop_loss": "",
                             "pnl": "",
@@ -89,22 +83,21 @@ async def kucoin_bot():
                     symbol = symbol.replace("XBTUSDT", "BTCUSDT")
                     order = active_orders[symbol]
                     stop_price = data["stopPrice"]
-                    if data["stop"] == "up" and order["take_profit"] != stop_price:
+                    if data["stop"] == "up" and order[
+                            "take_profit"] != stop_price:
                         order["take_profit"] = stop_price
                     else:
                         order["stop_loss"] = stop_price
                     message = text(
-                        (
-                            f"Futures Contract ⏳\n\nPosition Update ❗️❗️❗️\n\n"
-                            f"Coin: {bold(symbol)}\n"
-                            f"LONG/SHORT: {order['side']}\n"
-                            f"Entry: {order['entry']}\n"
-                            f"Leverage: 10-20x\n"
-                            f"Take Profit: {order['take_profit']}\n"
-                            f"Stop Loss: {order['stop_loss']}\n"
-                        )
-                    )
-                    await send_message(channel_id=TELEGRAM_CHAT_ID, message=message)
+                        (f"Futures Contract ⏳\n\nPosition Update ❗️❗️❗️\n\n"
+                         f"Coin: {bold(symbol)}\n"
+                         f"LONG/SHORT: {order['side']}\n"
+                         f"Entry: {order['entry']}\n"
+                         f"Leverage: 10-20x\n"
+                         f"Take Profit: {order['take_profit']}\n"
+                         f"Stop Loss: {order['stop_loss']}\n"))
+                    await send_message(channel_id=TELEGRAM_CHAT_ID,
+                                       message=message)
             elif "/contract/position" in msg["topic"]:
                 data = msg["data"]
                 symbol = msg["topic"].split(":")[1][:-1]
@@ -123,7 +116,10 @@ async def kucoin_bot():
         url="",
     )
     loop = asyncio.get_event_loop()
-    ws_client = await KucoinFuturesWsClient.create(loop, client, deal_msg, private=True)
+    ws_client = await KucoinFuturesWsClient.create(loop,
+                                                   client,
+                                                   deal_msg,
+                                                   private=True)
 
     await ws_client.subscribe("/contractMarket/tradeOrders")
     await ws_client.subscribe("/contractMarket/advancedOrders")
