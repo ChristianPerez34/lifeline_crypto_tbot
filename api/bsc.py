@@ -75,6 +75,7 @@ class PancakeSwap(BinanceSmartChain):
             web3=self.web3,
             factory_contract_addr=PANCAKE_SWAP_FACTORY_ADDRESS,
             router_contract_addr=PANCAKE_SWAP_ROUTER_ADDRESS,
+            default_slippage=0.1
         )
 
     def get_token(self, address):
