@@ -176,11 +176,7 @@ async def send_coin_address(message: Message) -> None:
     """
     logger.info("Searching for coin by contract address")
     args = message.get_args().split()
-    if len(args) != 1:
-        reply = text(
-            f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"
-        )
-    else:
+    try:
         coin = Coin(address=args[0])
         address = coin.address
         coin_stats = get_coin_stats_by_address(address=address)
@@ -197,6 +193,13 @@ async def send_coin_address(message: Message) -> None:
                   f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
                   f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
                   f"Market Cap\n{market_cap}")
+    except IndexError as e:
+        logger.exception(e)
+        reply = f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"
+    except ValueError as e:
+        logger.exception(e)
+        reply = f"⚠️ Could not find coin"
+
     await message.reply(text=reply)
 
 
@@ -831,7 +834,7 @@ async def send_balance(message: Message):
             price = quantity / token_price
 
             # Quantity in correct format as seen in wallet
-            quantity /= Decimal(10**(18 - (coin["decimals"] % 18)))
+            quantity /= Decimal(10 ** (18 - (coin["decimals"] % 18)))
             usd_amount = f"${price.quantize(Decimal('0.01'))}"
             reply += f"\n\n{k}: {quantity} ({usd_amount})"
 
