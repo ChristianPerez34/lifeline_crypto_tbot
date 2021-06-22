@@ -1074,7 +1074,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.2,<4"
-content-hash = "b695e8050f1ed4a63d911341a743b60c33837f2105ca2d4dc71fd9db41e637b0"
+content-hash = "3bc6c9092fc3107282c3ee9ed6f85ac06e7487913d768a26359570a92f7981d0"
 
 [metadata.files]
 aerich = [

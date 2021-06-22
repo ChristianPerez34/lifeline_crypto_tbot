@@ -27,6 +27,7 @@ plotly = "^4.14.3"
 psutil = "^5.8.0"
 kaleido = "^0.2.1"
 aerich = "^0.5.3"
+pydantic = "^1.8.2"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b0"

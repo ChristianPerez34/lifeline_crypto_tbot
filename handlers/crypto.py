@@ -19,10 +19,9 @@ from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
+from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException
 
-from . import eth
-from . import logger
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
@@ -40,7 +39,10 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
+from schemas import Coin
 from utils import all_same
+from . import eth
+from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -122,10 +124,9 @@ async def send_coin(message: Message) -> None:
     logger.info("Crypto command executed")
     reply = "Failed to get provided coin data"
     args = message.get_args().split()
-    if len(args) != 1:
-        reply = f"⚠️ Please provide a crypto code: \n{bold('/coin')} {italic('COIN')}"
-    else:
-        symbol = args[0].upper()
+    try:
+        coin = Coin(symbol=args[0].upper())
+        symbol = coin.symbol
         coin_stats = get_coin_stats(symbol=symbol)
         if coin_stats:
             price = "${:,}".format(float(coin_stats["price"]))
@@ -141,6 +142,14 @@ async def send_coin(message: Message) -> None:
                       f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
                       f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
                       f"Market Cap\n{market_cap}")
+    except IndexError as e:
+        logger.exception(e)
+        reply = f"⚠️ Please provide a crypto code: \n{bold('/coin')} {italic('COIN')}"
+    except ValidationError as e:
+        logger.exception(e)
+        error_message = e.args[0][0].exc
+        reply = f"⚠️ {error_message}"
+
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -172,7 +181,8 @@ async def send_coin_address(message: Message) -> None:
             f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"
         )
     else:
-        address = args[0]
+        coin = Coin(address=args[0])
+        address = coin.address
         coin_stats = get_coin_stats_by_address(address=address)
         price = "${:,}".format(float(coin_stats["price"]))
         market_cap = "${:,}".format(float(coin_stats["market_cap"]))
