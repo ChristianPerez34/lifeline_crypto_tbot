@@ -39,7 +39,7 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
-from schemas import Coin
+from schemas import Coin, Alert, User, TradeCoin
 from utils import all_same
 from . import eth
 from . import logger
@@ -233,20 +233,26 @@ async def send_price_alert(message: Message) -> None:
     logger.info("Setting a new price alert")
     args = message.get_args().split()
 
-    if len(args) > 2:
-        crypto = args[0].upper()
-        sign = args[1]
-        price = args[2]
+    try:
+        alert = Alert(symbol=args[0].upper(), sign=args[1], price=args[2])
+        crypto = alert.symbol
+        sign = alert.sign
+        price = alert.price
 
         coin_stats = get_coin_stats(symbol=crypto)
 
-        alert = await CryptoAlert.create(symbol=crypto, sign=sign, price=price)
+        crypto_alert = await CryptoAlert.create(symbol=crypto, sign=sign, price=price)
 
-        asyncio.create_task(price_alert_callback(alert=alert, delay=15))
+        asyncio.create_task(price_alert_callback(alert=crypto_alert, delay=15))
         reply = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
         reply += f"the current price of {crypto} is ${float(coin_stats['price'])}"
-    else:
+    except IndexError as e:
+        logger.exception(e)
         reply = "⚠️ Please provide a crypto code and a price value: /alert [COIN] [<,>] [PRICE]"
+    except ValidationError as e:
+        logger.exception(e)
+        error_message = e.args[0][0].exc
+        reply = f"⚠️ {error_message}"
     await message.reply(text=reply)
 
 
@@ -346,7 +352,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
 
     if user in administrators:
         logger.info(f"User {user.username} is admin. Restarting KuCoin Bot")
-        user = await TelegramGroupMember.get(id=user.id)
+        user = User.from_orm(await TelegramGroupMember.get(id=user.id))
 
         if (user.kucoin_api_key and user.kucoin_api_secret
                 and user.kucoin_api_passphrase):
@@ -416,18 +422,24 @@ async def send_buy_coin(message: Message) -> None:
     telegram_user = message.from_user
     args = message.get_args().split()
 
-    if len(args) != 2:
-        reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /buy_coin [ADDRESS] [AMOUNT]"
-    else:
-        user = await TelegramGroupMember.get(id=telegram_user.id)
+    try:
+        user = User.from_orm(await TelegramGroupMember.get(id=telegram_user.id))
         if user:
+            trade = TradeCoin(address=args[0], amount=args[1], side=BUY)
             pancake_swap = PancakeSwap(address=user.bsc_address,
                                        key=user.bsc_private_key)
-            reply = pancake_swap.swap_tokens(token=args[0],
-                                             amount_to_spend=Decimal(args[1]),
-                                             side=BUY)
+            reply = pancake_swap.swap_tokens(token=trade.address,
+                                             amount_to_spend=trade.amount,
+                                             side=trade.side)
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
+    except IndexError as e:
+        logger.exception(e)
+        reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /buy_coin [ADDRESS] [AMOUNT]"
+    except ValidationError as e:
+        logger.exception(e)
+        error_message = e.args[0][0].exc
+        reply = f"⚠️ {error_message}"
 
     await message.reply(text=reply)
 
