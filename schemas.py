@@ -28,7 +28,8 @@ class Coin(BaseModel):
 
     @validator('symbol')
     def symbol_is_alphanumeric(cls, value: str):
-        assert value.isalnum(), f'{value} is not a valid symbol'
+        if not value.isalnum():
+            raise ValueError(f'{value} is not a valid symbol')
         return value
 
 

@@ -198,7 +198,7 @@ async def send_coin_address(message: Message) -> None:
         reply = f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"
     except ValueError as e:
         logger.exception(e)
-        reply = f"⚠️ Could not find coin"
+        reply = "⚠️ Could not find coin"
 
     await message.reply(text=reply)
 
