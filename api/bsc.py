@@ -5,6 +5,8 @@ from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
 from uniswap import Uniswap
 from uniswap.exceptions import InsufficientBalance
+from uniswap.token import ERC20Token
+from uniswap.types import AddressLike
 from web3 import Web3
 
 from config import BSCSCAN_API_KEY
@@ -31,28 +33,28 @@ class BinanceSmartChain:
         self.api_url = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
         self.min_pool_size_bnb = 25
 
-    def get_account_balance(self, address: str) -> Decimal:
+    def get_account_balance(self, address: AddressLike) -> Decimal:
         """
         Retrieves account balance of wallet address in BNB
         Args:
-            address (str): Wallet address of user
+            address (AddressLike): Wallet address of user
 
         Returns (Decimal): Account balance in BNB
 
         """
-        logger.info("Getting account balance for address: {address}", address=address)
+        logger.info("Getting account balance for address: %s", address)
         return self.web3.fromWei(self.web3.eth.get_balance(address), "ether")
 
-    async def get_account_token_holdings(self, address: str) -> dict:
+    async def get_account_token_holdings(self, address: AddressLike) -> dict:
         """
         Retrieves account holding for wallet address
         Args:
-            address (str): Wallet address of user
+            address (AddressLike): Wallet address of user
 
         Returns (dict): User account holdings
 
         """
-        logger.info("Gathering account holdings for {address}", address=address)
+        logger.info("Gathering account holdings for %s", address)
         account_holdings = {
             "BNB": {
                 "address":
@@ -97,10 +99,28 @@ class PancakeSwap(BinanceSmartChain):
             default_slippage=0.1
         )
 
-    def get_token(self, address):
+    def get_token(self, address: AddressLike) -> ERC20Token:
+        """
+        Retrieves metadata from the BEP20 contract of a given token, like its name, symbol, and decimals.
+        Args:
+            address (AddressLike): Contract address of a given token
+
+        Returns:
+
+        """
+        logger.info("Retrieving metadata for token: %s", address)
         return self.pancake_swap.get_token(address=address)
 
-    def get_token_balance(self, token) -> int:
+    def get_token_balance(self, token: AddressLike) -> int:
+        """
+        Retrieves amount of specified tokens user owns
+        Args:
+            token (AddressLike): Contract address of token
+
+        Returns: Amount in wei of tokens user owns
+
+        """
+        logger.info("Retrieving token balance for %s", token)
         return self.pancake_swap.get_token_balance(token)
 
     def swap_tokens(self, token: str, amount_to_spend: Decimal,
@@ -115,7 +135,7 @@ class PancakeSwap(BinanceSmartChain):
         Returns: Reply to message
 
         """
-
+        logger.info("Swapping tokens")
         if self.web3.isConnected():
             token = self.web3.toChecksumAddress(token)
             try:
@@ -143,15 +163,26 @@ class PancakeSwap(BinanceSmartChain):
 
                 txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
-            except InsufficientBalance:
+            except InsufficientBalance as e:
+                logger.exception(e)
                 reply = (
                     "⚠️ Insufficient balance. Top up you BNB balance and try again. "
                 )
         else:
+            logger.info("Unable to connect to Binance Smart Chain")
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
         return reply
 
-    def get_token_price(self, address):
+    def get_token_price(self, address: AddressLike) -> Decimal:
+        """
+        Gets token price in BUSD
+        Args:
+            address (AddressLike): Contract Address of coin
+
+        Returns (Decimal): Token price in BUSD
+
+        """
+        logger.info("Retrieving token price in BUSD for %s", address)
         busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BUSD"])
         token_per_busd = Decimal(
             self.pancake_swap.get_price_input(busd, address, 10 ** 18))
