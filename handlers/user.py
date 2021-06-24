@@ -1,5 +1,6 @@
 from aiogram.types import Message
 from cryptography.fernet import Fernet
+from pydantic import ValidationError
 from tortoise.exceptions import BaseORMException
 
 from app import bot
@@ -8,6 +9,7 @@ from config import RegisterTypes
 from handlers import logger
 from handlers.base import send_message
 from models import TelegramGroupMember
+from schemas import User
 
 
 async def send_register(message: Message) -> None:
@@ -43,6 +45,7 @@ async def send_register(message: Message) -> None:
                 "bsc_private_key":
                 fernet.encrypt(private_key.encode()).decode(),
             })
+            exclude = {'kucoin_api_key', 'kucoin_api_secret', 'kucoin_api_passphrase'}
     elif register_type == RegisterTypes.KUCOIN.value:
         if len(args) != 4:
             is_error = True
@@ -53,14 +56,16 @@ async def send_register(message: Message) -> None:
             api_key, api_secret, api_passphrase = tuple(args[1:])
             data.update({
                 "id":
-                telegram_user.id,
+                    telegram_user.id,
                 "kucoin_api_key":
-                fernet.encrypt(api_key.encode()).decode(),
+                    fernet.encrypt(api_key.encode()).decode(),
                 "kucoin_api_secret":
-                fernet.encrypt(api_secret.encode()).decode(),
+                    fernet.encrypt(api_secret.encode()).decode(),
                 "kucoin_api_passphrase":
-                fernet.encrypt(api_passphrase.encode()).decode(),
+                    fernet.encrypt(api_passphrase.encode()).decode(),
             })
+            exclude = {'bsc_address', 'bsc_private_key'}
+
     else:
         is_error = True
         text = (
@@ -69,9 +74,14 @@ async def send_register(message: Message) -> None:
 
     if not is_error:
         try:
-            await TelegramGroupMember().create_or_update(data=data)
+            user = User(**data)
+            await TelegramGroupMember().create_or_update(data=user.dict(exclude=exclude))
             text = f"Successfully registered @{telegram_user.username}"
         except BaseORMException as e:
             logger.info("Failed to register user")
             logger.exception(e)
+        except ValidationError as e:
+            logger.exception(e)
+            error_message = e.args[0][0].exc
+            text = f"⚠️ {error_message}"
     await send_message(channel_id=chat_id, message=text)

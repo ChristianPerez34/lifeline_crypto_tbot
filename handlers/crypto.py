@@ -19,10 +19,9 @@ from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 from cryptography.fernet import Fernet
 from pandas import DataFrame
+from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException
 
-from . import eth
-from . import logger
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
@@ -32,7 +31,7 @@ from api.kucoin import KucoinApi
 from app import bot
 from bot import active_orders
 from bot.kucoin_bot import kucoin_bot
-from config import BUY
+from config import BUY, SELL
 from config import FERNET_KEY
 from config import HEADERS
 from config import KUCOIN_TASK_NAME
@@ -40,7 +39,10 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message
 from models import CryptoAlert
 from models import TelegramGroupMember
+from schemas import Coin, Alert, User, TradeCoin, Chart, CandleChart
 from utils import all_same
+from . import eth
+from . import logger
 
 
 def get_coin_stats(symbol: str) -> dict:
@@ -122,10 +124,9 @@ async def send_coin(message: Message) -> None:
     logger.info("Crypto command executed")
     reply = "Failed to get provided coin data"
     args = message.get_args().split()
-    if len(args) != 1:
-        reply = f"⚠️ Please provide a crypto code: \n{bold('/coin')} {italic('COIN')}"
-    else:
-        symbol = args[0].upper()
+    try:
+        coin = Coin(symbol=args[0].upper())
+        symbol = coin.symbol
         coin_stats = get_coin_stats(symbol=symbol)
         if coin_stats:
             price = "${:,}".format(float(coin_stats["price"]))
@@ -141,6 +142,14 @@ async def send_coin(message: Message) -> None:
                       f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
                       f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
                       f"Market Cap\n{market_cap}")
+    except IndexError as e:
+        logger.exception(e)
+        reply = f"⚠️ Please provide a crypto code: \n{bold('/coin')} {italic('COIN')}"
+    except ValidationError as e:
+        logger.exception(e)
+        error_message = e.args[0][0].exc
+        reply = f"⚠️ {error_message}"
+
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -167,12 +176,9 @@ async def send_coin_address(message: Message) -> None:
     """
     logger.info("Searching for coin by contract address")
     args = message.get_args().split()
-    if len(args) != 1:
-        reply = text(
-            f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"
-        )
-    else:
-        address = args[0]
+    try:
+        coin = Coin(address=args[0])
+        address = coin.address
         coin_stats = get_coin_stats_by_address(address=address)
         price = "${:,}".format(float(coin_stats["price"]))
         market_cap = "${:,}".format(float(coin_stats["market_cap"]))
@@ -187,6 +193,13 @@ async def send_coin_address(message: Message) -> None:
                   f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
                   f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
                   f"Market Cap\n{market_cap}")
+    except IndexError as e:
+        logger.exception(e)
+        reply = f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"
+    except ValueError as e:
+        logger.exception(e)
+        reply = "⚠️ Could not find coin"
+
     await message.reply(text=reply)
 
 
@@ -220,20 +233,26 @@ async def send_price_alert(message: Message) -> None:
     logger.info("Setting a new price alert")
     args = message.get_args().split()
 
-    if len(args) > 2:
-        crypto = args[0].upper()
-        sign = args[1]
-        price = args[2]
+    try:
+        alert = Alert(symbol=args[0].upper(), sign=args[1], price=args[2])
+        crypto = alert.symbol
+        sign = alert.sign
+        price = alert.price
 
         coin_stats = get_coin_stats(symbol=crypto)
 
-        alert = await CryptoAlert.create(symbol=crypto, sign=sign, price=price)
+        crypto_alert = await CryptoAlert.create(symbol=crypto, sign=sign, price=price)
 
-        asyncio.create_task(price_alert_callback(alert=alert, delay=15))
+        asyncio.create_task(price_alert_callback(alert=crypto_alert, delay=15))
         reply = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
         reply += f"the current price of {crypto} is ${float(coin_stats['price'])}"
-    else:
+    except IndexError as e:
+        logger.exception(e)
         reply = "⚠️ Please provide a crypto code and a price value: /alert [COIN] [<,>] [PRICE]"
+    except ValidationError as e:
+        logger.exception(e)
+        error_message = e.args[0][0].exc
+        reply = f"⚠️ {error_message}"
     await message.reply(text=reply)
 
 
@@ -333,7 +352,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
 
     if user in administrators:
         logger.info(f"User {user.username} is admin. Restarting KuCoin Bot")
-        user = await TelegramGroupMember.get(id=user.id)
+        user = User.from_orm(await TelegramGroupMember.get(id=user.id))
 
         if (user.kucoin_api_key and user.kucoin_api_secret
                 and user.kucoin_api_passphrase):
@@ -403,18 +422,24 @@ async def send_buy_coin(message: Message) -> None:
     telegram_user = message.from_user
     args = message.get_args().split()
 
-    if len(args) != 2:
-        reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /buy_coin [ADDRESS] [AMOUNT]"
-    else:
-        user = await TelegramGroupMember.get(id=telegram_user.id)
+    try:
+        user = User.from_orm(await TelegramGroupMember.get(id=telegram_user.id))
         if user:
+            trade = TradeCoin(address=args[0], amount=args[1], side=BUY)
             pancake_swap = PancakeSwap(address=user.bsc_address,
                                        key=user.bsc_private_key)
-            reply = pancake_swap.swap_tokens(token=args[0],
-                                             amount_to_spend=Decimal(args[1]),
-                                             side=BUY)
+            reply = pancake_swap.swap_tokens(token=trade.address,
+                                             amount_to_spend=trade.amount,
+                                             side=trade.side)
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
+    except IndexError as e:
+        logger.exception(e)
+        reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /buy_coin [ADDRESS] [AMOUNT]"
+    except ValidationError as e:
+        logger.exception(e)
+        error_message = e.args[0][0].exc
+        reply = f"⚠️ {error_message}"
 
     await message.reply(text=reply)
 
@@ -430,24 +455,30 @@ async def send_sell_coin(message: Message) -> None:
     telegram_user = message.from_user
     args = message.get_args().split()
 
-    if len(args) != 2:
-        reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /sell_coin [ADDRESS] [AMOUNT]"
-    else:
-        user = await TelegramGroupMember.get(id=telegram_user.id)
+    try:
+        user = User.from_orm(await TelegramGroupMember.get(id=telegram_user.id))
         if user:
+            trade = TradeCoin(address=args[0], amount=args[1], side=SELL)
             percentage = float(args[1])
             if 0 < percentage < 101:
-                percentage_to_sell = Decimal(args[1]) / 100
+                percentage_to_sell = trade.amount / 100
                 pancake_swap = PancakeSwap(address=user.bsc_address,
                                            key=user.bsc_private_key)
                 reply = pancake_swap.swap_tokens(
-                    token=args[0],
+                    token=trade.address,
                     amount_to_spend=percentage_to_sell,
-                    side=BUY)
+                    side=trade.side)
             else:
                 reply = "⚠ Sorry, incorrect percentage value. Choose a value between 1 and 100 inclusive"
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
+    except IndexError as e:
+        logger.exception(e)
+        reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /sell_coin [ADDRESS] [AMOUNT]"
+    except ValidationError as e:
+        logger.exception(e)
+        error_message = e.args[0][0].exc
+        reply = f"⚠️ {error_message}"
 
     await message.reply(text=reply)
 
@@ -464,29 +495,12 @@ async def send_chart(message: Message):
     base_coin = "USD"
     reply = ""
 
-    if len(args) != 2:
-        reply = text(
-            f"⚠️ Please provide a valid crypto symbol and amount of days: "
-            f"\n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}")
-    else:
-
-        if "-" in args[0]:
-            pair = args[0].split("-", 1)
-            base_coin = pair[1].upper()
-            symbol = pair[0].upper()
-        else:
-            symbol = args[0].upper()
-
-        if symbol == base_coin:
-            reply = text(
-                f"Can't compare *{symbol}* to itself. Will default base coin to USD"
-            )
-            await message.reply(text=emojize(reply),
-                                parse_mode=ParseMode.MARKDOWN)
-            reply = ""
-            base_coin = "USD"
-
-        time_frame = int(args[1])
+    try:
+        chart = Chart(ticker=args[0], time_frame=args[1])
+        pair = chart.ticker.split('-')
+        symbol = pair[0]
+        base_coin = pair[1]
+        time_frame = chart.time_frame
 
         coin_id = coin_gecko.get_coin_id(symbol)
         market = coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
@@ -562,6 +576,15 @@ async def send_chart(message: Message):
 
         fig = go.Figure(data=[price, volume], layout=layout)
         fig["layout"]["yaxis2"].update(tickformat=tick_format)
+    except IndexError as e:
+        logger.exception(e)
+        reply = text(
+            f"⚠️ Please provide a valid crypto symbol and amount of days: "
+            f"\n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}")
+    except ValidationError as e:
+        logger.exception(e)
+        error_message = e.args[0][0].exc
+        reply = f"⚠️ {error_message}"
 
     if reply:
         await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
@@ -584,42 +607,14 @@ async def send_candle_chart(message: Message):
     args = message.get_args().split()
     reply = ""
 
-    if len(args) != 3:
-        reply = text(
-            f"⚠️ Please provide a valid crypto symbol and time followed by desired timeframe letter:\n"
-            f" m - Minute\n h - Hour\n d - Day\n \n{bold('/candle')} {italic('SYMBOL')} "
-            f"{italic('NUMBER')} {italic('LETTER')}")
-    else:
+    try:
+        candle_chart = CandleChart(ticker=args[0], time_frame=args[1], resolution=args[2])
+        pair = candle_chart.ticker.split('-')
+        symbol, base_coin = pair[0], pair[1]
 
-        base_coin = "USD"
+        time_frame = candle_chart.time_frame
+        resolution = candle_chart.resolution
 
-        if "-" in args[0]:
-            pair = args[0].split("-", 1)
-            base_coin = pair[1].upper()
-            symbol = pair[0].upper()
-        else:
-            symbol = args[0].upper()
-
-        if symbol == base_coin:
-            reply = text(
-                f"Can't compare *{symbol}* to itself. Will default base coin to USD"
-            )
-            await message.reply(text=emojize(reply),
-                                parse_mode=ParseMode.MARKDOWN)
-            reply = ""
-            base_coin = "USD"
-
-        time_frame = args[1]
-        res = args[2].lower()
-
-        # Time frame
-        if len(args) > 1:
-            if res == "m":
-                resolution = "MINUTE"
-            elif res == "h":
-                resolution = "HOUR"
-            else:
-                resolution = "DAY"
         logger.info("Searching for coin historical data for candle chart")
         if resolution == "MINUTE":
             ohlcv = CryptoCompare().get_historical_ohlcv_minute(
@@ -741,6 +736,16 @@ async def send_candle_chart(message: Message):
                 height=600,
                 margin=go.layout.Margin(l=margin_l, r=50, b=85, t=100, pad=4),
             )
+    except IndexError as e:
+        logger.exception(e)
+        reply = text(
+            f"⚠️ Please provide a valid crypto symbol and time followed by desired timeframe letter:\n"
+            f" m - Minute\n h - Hour\n d - Day\n \n{bold('/candle')} {italic('SYMBOL')} "
+            f"{italic('NUMBER')} {italic('LETTER')}")
+    except ValidationError as e:
+        logger.exception(e)
+        error_message = e.args[0][0].exc
+        reply = f"⚠️ {error_message}"
 
     if reply:
         await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
@@ -764,7 +769,7 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
     user = query.from_user
     username = user.username
     logger.info(f"{username} following KuCoin signal")
-    user = await TelegramGroupMember.get(id=user.id)
+    user = User.from_orm(await TelegramGroupMember.get(id=user.id))
     if user.kucoin_api_key and user.kucoin_api_secret and user.kucoin_api_passphrase:
         fernet = Fernet(FERNET_KEY)
         api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -804,7 +809,7 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
 async def send_balance(message: Message):
     logger.info("Retrieving account balance")
     user_id = message.from_user.id
-    user = await TelegramGroupMember.get(id=user_id)
+    user = User.from_orm(await TelegramGroupMember.get(id=user_id))
     reply = "Account Balance 💲"
     pancake_swap = PancakeSwap(address=user.bsc_address,
                                key=user.bsc_private_key)
@@ -821,7 +826,7 @@ async def send_balance(message: Message):
             price = quantity / token_price
 
             # Quantity in correct format as seen in wallet
-            quantity /= Decimal(10**(18 - (coin["decimals"] % 18)))
+            quantity /= Decimal(10 ** (18 - (coin["decimals"] % 18)))
             usd_amount = f"${price.quantize(Decimal('0.01'))}"
             reply += f"\n\n{k}: {quantity} ({usd_amount})"
 

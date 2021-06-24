@@ -27,9 +27,12 @@ plotly = "^4.14.3"
 psutil = "^5.8.0"
 kaleido = "^0.2.1"
 aerich = "^0.5.3"
+pydantic = "^1.8.2"
+toml = "^0.10.2"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b0"
+yapf = "^0.31.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
