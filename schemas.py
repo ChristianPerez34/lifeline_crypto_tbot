@@ -47,11 +47,11 @@ class Alert(Coin):
 
 class User(BaseModel):
     id: int
-    bsc_address: str
-    bsc_private_key: str
-    kucoin_api_key: str
-    kucoin_api_secret: str
-    kucoin_api_passphrase: str
+    bsc_address: str = ''
+    bsc_private_key: str = ''
+    kucoin_api_key: str = ''
+    kucoin_api_secret: str = ''
+    kucoin_api_passphrase: str = ''
 
     _validate_address = validator('bsc_address', allow_reuse=True)(is_valid_address)
 
