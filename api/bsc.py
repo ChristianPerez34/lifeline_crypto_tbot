@@ -11,6 +11,7 @@ from config import BSCSCAN_API_KEY
 from config import BUY
 from config import FERNET_KEY
 from config import HEADERS
+from handlers import logger
 
 PANCAKE_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
     "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73")
@@ -31,13 +32,31 @@ class BinanceSmartChain:
         self.min_pool_size_bnb = 25
 
     def get_account_balance(self, address: str) -> Decimal:
+        """
+        Retrieves account balance of wallet address in BNB
+        Args:
+            address (str): Wallet address of user
+
+        Returns (Decimal): Account balance in BNB
+
+        """
+        logger.info("Getting account balance for address: {address}", address=address)
         return self.web3.fromWei(self.web3.eth.get_balance(address), "ether")
 
-    async def get_account_token_holdings(self, address):
+    async def get_account_token_holdings(self, address: str) -> dict:
+        """
+        Retrieves account holding for wallet address
+        Args:
+            address (str): Wallet address of user
+
+        Returns (dict): User account holdings
+
+        """
+        logger.info("Gathering account holdings for {address}", address=address)
         account_holdings = {
             "BNB": {
                 "address":
-                self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BNB"]),
+                    self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BNB"]),
                 "decimals": 18,
             }
         }
@@ -54,9 +73,9 @@ class BinanceSmartChain:
             account_holdings.update({
                 transfer["tokenSymbol"]: {
                     "address":
-                    self.web3.toChecksumAddress(transfer["contractAddress"]),
+                        self.web3.toChecksumAddress(transfer["contractAddress"]),
                     "decimals":
-                    int(transfer["tokenDecimal"]),
+                        int(transfer["tokenDecimal"]),
                 }
             })
         return account_holdings
@@ -135,5 +154,5 @@ class PancakeSwap(BinanceSmartChain):
     def get_token_price(self, address):
         busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BUSD"])
         token_per_busd = Decimal(
-            self.pancake_swap.get_price_input(busd, address, 10**18))
+            self.pancake_swap.get_price_input(busd, address, 10 ** 18))
         return token_per_busd
