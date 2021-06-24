@@ -1,6 +1,6 @@
 import asyncio
 
-from aiogram import Dispatcher
+from aiogram import Dispatcher, types
 from aiogram import executor
 
 from app import dp
@@ -75,7 +75,7 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_message_handler(send_balance, commands=["balance"])
     dispatcher.register_callback_query_handler(kucoin_inline_query_handler)
     # dp.register_message_handler(send_sell_coin, commands=["sell_coin"])
-    dispatcher.register_message_handler(send_greeting)
+    dispatcher.register_message_handler(send_greeting, content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
     dispatcher.register_errors_handler(send_error)
 
 
