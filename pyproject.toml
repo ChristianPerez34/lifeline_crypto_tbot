@@ -37,8 +37,3 @@ yapf = "^0.31.0"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[yapf]
-based_on_style = google
-spaces_before_comment = 4
-split_before_logical_operator = true
