@@ -85,7 +85,7 @@ class Chart(Coin):
 
         if not ticker:
             raise ValueError("Expected a coin symbol with optional base (defaults to USD). Ex: BTC or BTC-USD")
-        elif "-" not in ticker:
+        if "-" not in ticker:
             ticker = f"{ticker}-USD"
         else:
             symbols = ticker.split('-')
