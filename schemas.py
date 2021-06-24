@@ -1,8 +1,9 @@
 import re
 from decimal import Decimal
+from numbers import Real
 
 from pydantic import BaseModel
-from pydantic.class_validators import validator
+from pydantic.class_validators import validator, root_validator
 
 from config import BUY, SELL
 
@@ -13,9 +14,10 @@ def is_valid_address(value: str):
     return value
 
 
-def is_positive_number(value: Decimal):
+def is_positive_number(value: Real):
     if value < Decimal(0):
         raise ValueError("Expected a positive value")
+    return value
 
 
 class Coin(BaseModel):
@@ -68,3 +70,39 @@ class TradeCoin(Coin):
         if value not in (BUY, SELL):
             raise ValueError(f"Expected side to be either '{BUY}' or '{SELL}'")
         return value
+
+
+class Chart(Coin):
+    time_frame: int
+    ticker: str
+
+    _validate_time_frame = validator('time_frame', allow_reuse=True)(is_positive_number)
+
+    @root_validator
+    def check_ticker(cls, values):
+        """Check order id"""
+        ticker = values.get('ticker', '').upper()
+
+        if not ticker:
+            raise ValueError("Expected a coin symbol with optional base (defaults to USD). Ex: BTC or BTC-USD")
+        elif "-" not in ticker:
+            ticker = f"{ticker}-USD"
+        else:
+            symbols = ticker.split('-')
+            if symbols[0] == symbols[1]:
+                raise ValueError(f"Can't compare *{symbols[0]}* to itself.")
+
+        values['ticker'] = ticker
+        return values
+
+
+class CandleChart(Chart):
+    resolution: str
+
+    @validator('resolution')
+    def validate_resolution(cls, value: str):
+        resolutions = {'m': 'MINUTE', 'h': 'HOUR', 'd': "DAY"}
+        value = value.lower()
+        if value not in ('m', 'h', 'd'):
+            raise ValueError("Expected resolution in 'm', 'h', or 'd'")
+        return resolutions[value]
