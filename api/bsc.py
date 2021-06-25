@@ -86,7 +86,7 @@ class BinanceSmartChain:
 class PancakeSwap(BinanceSmartChain):
     def __init__(self, address: str, key: str):
         super(PancakeSwap, self).__init__()
-        self.address = address
+        self.address = self.web3.toChecksumAddress(address)
         self.key = key
         self.fernet = Fernet(FERNET_KEY)
         self.pancake_swap = Uniswap(

@@ -55,7 +55,7 @@ def get_coin_stats(symbol: str) -> dict:
         dict: Cryptocurrency coin statistics
     """
     # Search CoinGecko API first
-    logger.info(f"Getting coin stats for {symbol}")
+    logger.info("Getting coin stats for %s", symbol)
     coin_gecko = CoinGecko()
     coin_market_cap = CoinMarketCap()
     try:
@@ -73,10 +73,9 @@ def get_coin_stats(symbol: str) -> dict:
         }
     except IndexError:
         logger.info(
-            f"{symbol} not found in CoinGecko. Initiated lookup on CoinMarketCap."
+            "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.", symbol
         )
         data = coin_market_cap.coin_lookup(symbol)
-        # crypto_cache[symbol] = data["slug"]
         quote = data["quote"]["USD"]
         coin_stats = {
             "slug": data["name"],
@@ -98,7 +97,7 @@ def get_coin_stats_by_address(address: str) -> dict:
         dict: Coin statistics
     """
     # Search CoinGecko API first
-    logger.info(f"Getting coin stats for {address}")
+    logger.info(f"Getting coin stats for %s", address)
     coin_gecko = CoinGecko()
     data = coin_gecko.coin_lookup(ids=address, is_address=True)
     market_data = data["market_data"]
@@ -351,7 +350,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
     ]
 
     if user in administrators:
-        logger.info(f"User {user.username} is admin. Restarting KuCoin Bot")
+        logger.info("User %s is admin. Restarting KuCoin Bot", user.username)
         user = User.from_orm(await TelegramGroupMember.get(id=user.id))
 
         if (user.kucoin_api_key and user.kucoin_api_secret
@@ -492,7 +491,6 @@ async def send_chart(message: Message):
     logger.info("Searching for coin market data for chart")
     coin_gecko = CoinGecko()
     args = message.get_args().split()
-    base_coin = "USD"
     reply = ""
 
     try:
@@ -603,7 +601,7 @@ async def send_candle_chart(message: Message):
     Args:
         message (Message): Message to reply to
     """
-
+    logger.info("Executing candle chart command")
     args = message.get_args().split()
     reply = ""
 
@@ -815,6 +813,7 @@ async def send_balance(message: Message):
                                key=user.bsc_private_key)
     account_holdings = await pancake_swap.get_account_token_holdings(
         address=pancake_swap.address)
+
     for k in account_holdings.keys():
         coin = account_holdings[k]
         token = coin["address"]
