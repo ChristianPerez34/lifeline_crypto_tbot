@@ -19,7 +19,7 @@ class CoinGecko:
         Returns:
             dict: Data from CoinGecko API
         """
-        logger.info(f"Looking up price for {ids} in CoinGecko API")
+        logger.info("Looking up price for %s in CoinGecko API", ids)
         try:
             data = (self.cg.get_coin_info_from_contract_address_by_id(
                 id="ethereum", contract_address=ids)
@@ -33,7 +33,7 @@ class CoinGecko:
     def get_trending_coins(self) -> list:
         """
         Gets trending coins
-        Returns: Trending coins
+        Returns (list): Trending coins
 
         """
         logger.info("Retrieving CoinGecko trending coins")
@@ -51,12 +51,11 @@ class CoinGecko:
         Returns:
             dict: Data from CoinGecko API
         """
-        logger.info(f"Looking up chart data for {ids} in CoinGecko API")
-
+        logger.info(f"Looking up chart data for %s in CoinGecko API", ids)
         return self.cg.get_coin_market_chart_by_id(ids, base_coin, time_frame)
 
     def get_coin_id(self, symbol: str) -> str:
-        """Retrieves coinstats from connected services crypto services
+        """Retrieves coin stats from connected services crypto services
 
         Args:
             symbol (str): Cryptocurrency symbol of coin to lookup
@@ -64,11 +63,10 @@ class CoinGecko:
         Returns:
             str: coin id of the cryptocurrency
         """
-        logger.info(f"Getting coin ID for {symbol}")
+        logger.info(f"Getting coin ID for %s", symbol)
 
         if symbol in coingecko_coin_lookup_cache.keys():
             coin_id = coingecko_coin_lookup_cache[symbol]
-
         else:
             coin = [
                 coin for coin in self.cg.get_coins_list()

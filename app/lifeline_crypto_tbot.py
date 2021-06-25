@@ -27,14 +27,11 @@ from models import CryptoAlert
 
 
 async def on_startup(dispatcher: Dispatcher):
-    """Bot stratup actions
+    """Bot startup actions
 
     Args:
         dispatcher (Dispatcher): Bot dispatcher
     """
-    # if ENV != DEV:
-    #     await bot.delete_webhook()
-    #     await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
     await init_database()
     for alert in await CryptoAlert.all():
         asyncio.create_task(price_alert_callback(alert=alert, delay=15))
@@ -42,9 +39,10 @@ async def on_startup(dispatcher: Dispatcher):
     setup_handlers(dispatcher)
 
 
-async def on_shutdown():
+async def on_shutdown(_):
     """Disable KuCoin bot on shutdown"""
     tasks = asyncio.all_tasks()
+
     for task in tasks:
         if task.get_name() == KUCOIN_TASK_NAME:
             task.cancel()
@@ -80,18 +78,7 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
 
 
 if __name__ == "__main__":
-    # if ENV == DEV:
     executor.start_polling(dp,
                            skip_updates=True,
                            on_startup=on_startup,
                            on_shutdown=on_shutdown)
-    # else:
-    #     executor.start_webhook(
-    #         dispatcher=dp,
-    #         webhook_path=WEBHOOK_PATH,
-    #         on_startup=on_startup,
-    #         on_shutdown=on_shutdown,
-    #         skip_updates=True,
-    #         host=WEBAPP_HOST,
-    #         port=WEBAPP_PORT,
-    #     )
