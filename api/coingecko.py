@@ -51,7 +51,7 @@ class CoinGecko:
         Returns:
             dict: Data from CoinGecko API
         """
-        logger.info(f"Looking up chart data for %s in CoinGecko API", ids)
+        logger.info("Looking up chart data for %s in CoinGecko API", ids)
         return self.cg.get_coin_market_chart_by_id(ids, base_coin, time_frame)
 
     def get_coin_id(self, symbol: str) -> str:
@@ -63,7 +63,7 @@ class CoinGecko:
         Returns:
             str: coin id of the cryptocurrency
         """
-        logger.info(f"Getting coin ID for %s", symbol)
+        logger.info("Getting coin ID for %s", symbol)
 
         if symbol in coingecko_coin_lookup_cache.keys():
             coin_id = coingecko_coin_lookup_cache[symbol]

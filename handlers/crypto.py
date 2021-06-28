@@ -97,7 +97,7 @@ def get_coin_stats_by_address(address: str) -> dict:
         dict: Coin statistics
     """
     # Search CoinGecko API first
-    logger.info(f"Getting coin stats for %s", address)
+    logger.info("Getting coin stats for %s", address)
     coin_gecko = CoinGecko()
     data = coin_gecko.coin_lookup(ids=address, is_address=True)
     market_data = data["market_data"]
@@ -766,7 +766,7 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
     await query.answer(text="")
     user = query.from_user
     username = user.username
-    logger.info(f"{username} following KuCoin signal")
+    logger.info("%s following KuCoin signal", username)
     user = User.from_orm(await TelegramGroupMember.get(id=user.id))
     if user.kucoin_api_key and user.kucoin_api_secret and user.kucoin_api_passphrase:
         fernet = Fernet(FERNET_KEY)
