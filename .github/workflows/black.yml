@@ -34,6 +34,3 @@ jobs:
     - name: Reformat code with black
       run: |
         black .
-    - name: Test with pytest
-      run: |
-        pytest
