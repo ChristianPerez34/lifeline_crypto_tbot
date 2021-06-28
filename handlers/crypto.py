@@ -21,6 +21,7 @@ from cryptography.fernet import Fernet
 from pandas import DataFrame
 from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException
+from web3.exceptions import ContractLogicError
 
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
@@ -821,12 +822,15 @@ async def send_balance(message: Message):
         # Quantity in wei used to calculate price
         quantity = pancake_swap.get_token_balance(token)
         if quantity > 0:
-            token_price = pancake_swap.get_token_price(address=token)
-            price = quantity / token_price
+            try:
+                token_price = pancake_swap.get_token_price(address=token)
+                price = quantity / token_price
 
-            # Quantity in correct format as seen in wallet
-            quantity /= Decimal(10 ** (18 - (coin["decimals"] % 18)))
-            usd_amount = f"${price.quantize(Decimal('0.01'))}"
-            reply += f"\n\n{k}: {quantity} ({usd_amount})"
+                # Quantity in correct format as seen in wallet
+                quantity /= Decimal(10 ** (18 - (coin["decimals"] % 18)))
+                usd_amount = f"${price.quantize(Decimal('0.01'))}"
+                reply += f"\n\n{k}: {quantity} ({usd_amount})"
+            except ContractLogicError as e:
+                logger.exception(e)
 
     await send_message(channel_id=user_id, message=reply)
