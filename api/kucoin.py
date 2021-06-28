@@ -8,6 +8,7 @@ from handlers import logger
 
 
 class KucoinApi:
+
     def __init__(self, api_key: str, api_secret: str, api_passphrase: str):
         self.trade_client = Trade(key=api_key,
                                   secret=api_secret,
@@ -29,7 +30,8 @@ class KucoinApi:
 
         """
         logger.info("Retrieving KuCoin Futures balance")
-        account_overview = self.user_client.get_account_overview(currency="USDT")
+        account_overview = self.user_client.get_account_overview(
+            currency="USDT")
         return Decimal(account_overview["availableBalance"])
 
     def create_market_order(self,

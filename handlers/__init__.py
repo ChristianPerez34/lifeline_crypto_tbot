@@ -17,8 +17,7 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler(log_file, mode='w+'),
         logging.StreamHandler()
-    ]
-)
+    ])
 
 logger = logging.getLogger(__name__)
 coingecko_coin_lookup_cache = LRU(5)

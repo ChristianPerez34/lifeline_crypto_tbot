@@ -40,13 +40,15 @@ async def send_register(message: Message) -> None:
             address, private_key = tuple(args[1:])
             data.update({
                 "id":
-                telegram_user.id,
+                    telegram_user.id,
                 "bsc_address":
-                address,
+                    address,
                 "bsc_private_key":
-                fernet.encrypt(private_key.encode()).decode(),
+                    fernet.encrypt(private_key.encode()).decode(),
             })
-            exclude = {'kucoin_api_key', 'kucoin_api_secret', 'kucoin_api_passphrase'}
+            exclude = {
+                'kucoin_api_key', 'kucoin_api_secret', 'kucoin_api_passphrase'
+            }
     elif register_type == RegisterTypes.KUCOIN.value:
         if len(args) != 4:
             is_error = True
@@ -76,7 +78,8 @@ async def send_register(message: Message) -> None:
     if not is_error:
         try:
             user = User(**data)
-            await TelegramGroupMember().create_or_update(data=user.dict(exclude=exclude))
+            await TelegramGroupMember().create_or_update(data=user.dict(
+                exclude=exclude))
             text = f"Successfully registered @{telegram_user.username}"
         except BaseORMException as e:
             logger.info("Failed to register user")
