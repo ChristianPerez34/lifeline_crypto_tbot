@@ -77,8 +77,7 @@ class BinanceSmartChain:
             account_holdings.update({
                 transfer["tokenSymbol"]: {
                     "address":
-                        self.web3.toChecksumAddress(transfer["contractAddress"]
-                                                   ),
+                        self.web3.toChecksumAddress(transfer["contractAddress"]),
                     "decimals":
                         int(transfer["tokenDecimal"]),
                 }
