@@ -8,6 +8,7 @@ from handlers import logger
 
 
 class CoinMarketCap:
+
     def __init__(self):
         self.cmc = CoinMarketCapAPI(COIN_MARKET_CAP_API_KEY)
 
@@ -21,8 +22,8 @@ class CoinMarketCap:
             dict: Results of coin lookup
         """
         logger.info("Looking up price for %s in CoinMarketCap API", symbol)
-        return self.cmc.cryptocurrency_quotes_latest(
-            symbol=symbol, convert="usd").data[symbol]
+        return self.cmc.cryptocurrency_quotes_latest(symbol=symbol,
+                                                     convert="usd").data[symbol]
 
     @staticmethod
     async def get_trending_coins() -> list:

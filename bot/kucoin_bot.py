@@ -17,6 +17,7 @@ from handlers.base import send_message
 
 
 async def kucoin_bot():
+
     async def deal_msg(msg):
         try:
             if msg["topic"] == "/contractMarket/tradeOrders":
@@ -69,12 +70,16 @@ async def kucoin_bot():
                             "entry"] = f"{active_orders[symbol]['entry']}-{entry}"
                     else:
                         active_orders[symbol] = {
-                            "entry": entry,
+                            "entry":
+                                entry,
                             "side":
-                            "SHORT" if data["side"] == "sell" else "LONG",
-                            "take_profit": "",
-                            "stop_loss": "",
-                            "pnl": "",
+                                "SHORT" if data["side"] == "sell" else "LONG",
+                            "take_profit":
+                                "",
+                            "stop_loss":
+                                "",
+                            "pnl":
+                                "",
                         }
             elif msg["topic"] == "/contractMarket/advancedOrders":
                 data = msg["data"]

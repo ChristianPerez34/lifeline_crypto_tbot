@@ -6,6 +6,7 @@ from handlers import logger
 
 
 class CoinGecko:
+
     def __init__(self):
         self.cg = CoinGeckoAPI()
 

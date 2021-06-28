@@ -28,6 +28,7 @@ BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
 
 
 class BinanceSmartChain:
+
     def __init__(self):
         self.web3 = Web3(Web3.HTTPProvider(BINANCE_SMART_CHAIN_URL))
         self.api_url = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
@@ -59,7 +60,8 @@ class BinanceSmartChain:
             "BNB": {
                 "address":
                     self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BNB"]),
-                "decimals": 18,
+                "decimals":
+                    18,
             }
         }
         url = (
@@ -84,6 +86,7 @@ class BinanceSmartChain:
 
 
 class PancakeSwap(BinanceSmartChain):
+
     def __init__(self, address: str, key: str):
         super(PancakeSwap, self).__init__()
         self.address = self.web3.toChecksumAddress(address)
@@ -96,8 +99,7 @@ class PancakeSwap(BinanceSmartChain):
             web3=self.web3,
             factory_contract_addr=PANCAKE_SWAP_FACTORY_ADDRESS,
             router_contract_addr=PANCAKE_SWAP_ROUTER_ADDRESS,
-            default_slippage=0.1
-        )
+            default_slippage=0.1)
 
     def get_token(self, address: AddressLike) -> ERC20Token:
         """
@@ -151,8 +153,8 @@ class PancakeSwap(BinanceSmartChain):
                 else:
                     balance = self.web3.fromWei(self.get_token_balance(token),
                                                 "ether")
-                    amount_to_spend = self.web3.toWei(
-                        balance * amount_to_spend, "ether")
+                    amount_to_spend = self.web3.toWei(balance * amount_to_spend,
+                                                      "ether")
                     txn_hash = self.web3.toHex(
                         self.pancake_swap.make_trade_output(
                             token,
@@ -185,5 +187,5 @@ class PancakeSwap(BinanceSmartChain):
         logger.info("Retrieving token price in BUSD for %s", address)
         busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BUSD"])
         token_per_busd = Decimal(
-            self.pancake_swap.get_price_input(busd, address, 10 ** 18))
+            self.pancake_swap.get_price_input(busd, address, 10**18))
         return token_per_busd

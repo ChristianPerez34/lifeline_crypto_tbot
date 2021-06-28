@@ -21,6 +21,7 @@ from cryptography.fernet import Fernet
 from pandas import DataFrame
 from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException
+from web3.exceptions import ContractLogicError
 
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
@@ -73,8 +74,8 @@ def get_coin_stats(symbol: str) -> dict:
         }
     except IndexError:
         logger.info(
-            "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.", symbol
-        )
+            "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.",
+            symbol)
         data = coin_market_cap.coin_lookup(symbol)
         quote = data["quote"]["USD"]
         coin_stats = {
@@ -240,7 +241,9 @@ async def send_price_alert(message: Message) -> None:
 
         coin_stats = get_coin_stats(symbol=crypto)
 
-        crypto_alert = await CryptoAlert.create(symbol=crypto, sign=sign, price=price)
+        crypto_alert = await CryptoAlert.create(symbol=crypto,
+                                                sign=sign,
+                                                price=price)
 
         asyncio.create_task(price_alert_callback(alert=crypto_alert, delay=15))
         reply = f"⏳ I will send you a message when the price of {crypto} reaches ${price}, \n"
@@ -345,16 +348,16 @@ async def send_restart_kucoin_bot(message: Message) -> None:
     take_profit, stop_loss = "", ""
     user = message.from_user
     administrators = [
-        admin.user for admin in await bot.get_chat_administrators(
-            chat_id=TELEGRAM_CHAT_ID)
+        admin.user
+        for admin in await bot.get_chat_administrators(chat_id=TELEGRAM_CHAT_ID)
     ]
 
     if user in administrators:
         logger.info("User %s is admin. Restarting KuCoin Bot", user.username)
         user = User.from_orm(await TelegramGroupMember.get(id=user.id))
 
-        if (user.kucoin_api_key and user.kucoin_api_secret
-                and user.kucoin_api_passphrase):
+        if (user.kucoin_api_key and user.kucoin_api_secret and
+                user.kucoin_api_passphrase):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
             api_secret = fernet.decrypt(
@@ -376,8 +379,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     for position_order in position_orders:
                         stop_price = position_order["stopPrice"]
 
-                        if (position_order["stopPriceType"] == "TP"
-                                and position_order["stop"] == "up"):
+                        if (position_order["stopPriceType"] == "TP" and
+                                position_order["stop"] == "up"):
                             take_profit = stop_price
                         else:
                             stop_loss = stop_price
@@ -507,8 +510,7 @@ async def send_chart(message: Message):
         # Volume
         df_volume = DataFrame(market["total_volumes"],
                               columns=["DateTime", "Volume"])
-        df_volume["DateTime"] = pd.to_datetime(df_volume["DateTime"],
-                                               unit="ms")
+        df_volume["DateTime"] = pd.to_datetime(df_volume["DateTime"], unit="ms")
         volume = go.Scatter(x=df_volume.get("DateTime"),
                             y=df_volume.get("Volume"),
                             name="Volume")
@@ -606,7 +608,9 @@ async def send_candle_chart(message: Message):
     reply = ""
 
     try:
-        candle_chart = CandleChart(ticker=args[0], time_frame=args[1], resolution=args[2])
+        candle_chart = CandleChart(ticker=args[0],
+                                   time_frame=args[1],
+                                   resolution=args[2])
         pair = candle_chart.ticker.split('-')
         symbol, base_coin = pair[0], pair[1]
 
@@ -708,7 +712,7 @@ async def send_candle_chart(message: Message):
 
             fig["layout"].update(
                 title=dict(text=symbol, font=dict(size=26)),
-                yaxis=dict(title=dict(text=base_coin, font=dict(size=18)), ),
+                yaxis=dict(title=dict(text=base_coin, font=dict(size=18)),),
             )
 
             fig["layout"].update(shapes=[{
@@ -821,12 +825,15 @@ async def send_balance(message: Message):
         # Quantity in wei used to calculate price
         quantity = pancake_swap.get_token_balance(token)
         if quantity > 0:
-            token_price = pancake_swap.get_token_price(address=token)
-            price = quantity / token_price
+            try:
+                token_price = pancake_swap.get_token_price(address=token)
+                price = quantity / token_price
 
-            # Quantity in correct format as seen in wallet
-            quantity /= Decimal(10 ** (18 - (coin["decimals"] % 18)))
-            usd_amount = f"${price.quantize(Decimal('0.01'))}"
-            reply += f"\n\n{k}: {quantity} ({usd_amount})"
+                # Quantity in correct format as seen in wallet
+                quantity /= Decimal(10**(18 - (coin["decimals"] % 18)))
+                usd_amount = f"${price.quantize(Decimal('0.01'))}"
+                reply += f"\n\n{k}: {quantity} ({usd_amount})"
+            except ContractLogicError as e:
+                logger.exception(e)
 
     await send_message(channel_id=user_id, message=reply)

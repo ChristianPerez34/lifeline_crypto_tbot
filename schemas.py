@@ -54,7 +54,8 @@ class User(BaseModel):
     kucoin_api_secret: str = ''
     kucoin_api_passphrase: str = ''
 
-    _validate_address = validator('bsc_address', allow_reuse=True)(is_valid_address)
+    _validate_address = validator('bsc_address',
+                                  allow_reuse=True)(is_valid_address)
 
     class Config:
         orm_mode = True
@@ -77,7 +78,8 @@ class Chart(Coin):
     time_frame: int
     ticker: str
 
-    _validate_time_frame = validator('time_frame', allow_reuse=True)(is_positive_number)
+    _validate_time_frame = validator('time_frame',
+                                     allow_reuse=True)(is_positive_number)
 
     @root_validator
     def check_ticker(cls, values):
@@ -85,7 +87,9 @@ class Chart(Coin):
         ticker = values.get('ticker', '').upper()
 
         if not ticker:
-            raise ValueError("Expected a coin symbol with optional base (defaults to USD). Ex: BTC or BTC-USD")
+            raise ValueError(
+                "Expected a coin symbol with optional base (defaults to USD). Ex: BTC or BTC-USD"
+            )
         if "-" not in ticker:
             ticker = f"{ticker}-USD"
         else:
