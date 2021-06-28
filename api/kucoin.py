@@ -4,6 +4,8 @@ from kucoin_futures.client import Market
 from kucoin_futures.client import Trade
 from kucoin_futures.client import User
 
+from handlers import logger
+
 
 class KucoinApi:
     def __init__(self, api_key: str, api_secret: str, api_passphrase: str):
@@ -26,8 +28,8 @@ class KucoinApi:
         Returns: balance
 
         """
-        account_overview = self.user_client.get_account_overview(
-            currency="USDT")
+        logger.info("Retrieving KuCoin Futures balance")
+        account_overview = self.user_client.get_account_overview(currency="USDT")
         return Decimal(account_overview["availableBalance"])
 
     def create_market_order(self,
@@ -35,6 +37,7 @@ class KucoinApi:
                             side: str,
                             size: int,
                             lever: str = "10"):
+        logger.info("Creating a market order for %s", symbol)
         return self.trade_client.create_market_order(
             symbol=symbol,
             side="buy" if side == "LONG" else "sell",
@@ -48,6 +51,7 @@ class KucoinApi:
         Returns: List of open stop orders
 
         """
+        logger.info("Retrieving open stop orders on futures account")
         return self.trade_client.get_open_stop_order()["items"]
 
     def get_all_position(self) -> list:
@@ -56,6 +60,7 @@ class KucoinApi:
         Returns: List of all positions
 
         """
+        logger.info("Retrieving all open futures positions for account")
         positions = self.trade_client.get_all_position()
         return positions if isinstance(positions, list) else []
 
@@ -68,4 +73,5 @@ class KucoinApi:
         Returns: Real time crypto symbol data
 
         """
+        logger.info("Retrieving ticker data for %s", symbol)
         return self.market_client.get_ticker(symbol=symbol)

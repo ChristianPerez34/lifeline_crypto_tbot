@@ -29,6 +29,7 @@ async def send_register(message: Message) -> None:
     args = message.get_args().split()
     register_type = args[0].upper()
     fernet = Fernet(FERNET_KEY)
+    exclude = {}
 
     if register_type == RegisterTypes.BSC.value:
 

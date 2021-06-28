@@ -1,5 +1,3 @@
-# from lifeline_crypto_tbot import dp
-# from aiogram.bot import bot
 from aiogram.types import InlineKeyboardButton
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.types import Message
@@ -8,19 +6,17 @@ from aiogram.utils.markdown import bold
 from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 
-from . import logger
 from app import bot
+from . import logger
 
 
-# from telegram.ext.callbackcontext import CallbackContext
-# from telegram.update import Update
-async def send_welcome(message: Message):
+async def send_welcome(message: Message) -> None:
     """Send help text on how to use bot commands
 
     Args:
         message (Message): Message to reply to
     """
-    logger.info(message.chat.id)
+    logger.info("Chat ID: %s", message.chat.id)
     logger.info("Start/Help command executed")
     reply = text(
         "Hi! :smile:\n",
@@ -52,12 +48,13 @@ async def send_welcome(message: Message):
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
-async def send_greeting(message: Message):
+async def send_greeting(message: Message) -> None:
     """Greets new chat members
 
     Args:
         message (Message): Message to reply to
     """
+    logger.info("Greeting new user")
     new_user = ""
     for new_user_obj in message.new_chat_members:
         try:
@@ -71,8 +68,8 @@ async def send_greeting(message: Message):
 async def send_message(channel_id: int,
                        message: str,
                        inline: bool = False,
-                       data: str = ""):
-    logger.info(f"Sending message to chat id: {channel_id}")
+                       data: str = "") -> None:
+    logger.info("Sending message to chat id: %s", channel_id)
     keyboard_markup = InlineKeyboardMarkup()
     # default row_width is 3, so here we can omit it actually
     # kept for clearness

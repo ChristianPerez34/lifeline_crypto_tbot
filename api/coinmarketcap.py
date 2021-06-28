@@ -20,7 +20,7 @@ class CoinMarketCap:
         Returns:
             dict: Results of coin lookup
         """
-        logger.info(f"Looking up price for {symbol} in CoinMarketCap API")
+        logger.info("Looking up price for %s in CoinMarketCap API", symbol)
         return self.cmc.cryptocurrency_quotes_latest(
             symbol=symbol, convert="usd").data[symbol]
 
