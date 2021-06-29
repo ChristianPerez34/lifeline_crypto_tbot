@@ -460,18 +460,22 @@ async def send_sell_coin(message: Message) -> None:
     try:
         user = User.from_orm(await TelegramGroupMember.get(id=telegram_user.id))
         if user:
-            trade = TradeCoin(address=args[0], amount=args[1], side=SELL)
-            percentage = float(args[1])
-            if 0 < percentage < 101:
-                percentage_to_sell = trade.amount / 100
-                pancake_swap = PancakeSwap(address=user.bsc_address,
-                                           key=user.bsc_private_key)
-                reply = pancake_swap.swap_tokens(
-                    token=trade.address,
-                    amount_to_spend=percentage_to_sell,
-                    side=trade.side)
-            else:
-                reply = "⚠ Sorry, incorrect percentage value. Choose a value between 1 and 100 inclusive"
+            trade = TradeCoin(address=args[0], amount=0, side=SELL)
+            pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
+            reply = pancake_swap.swap_tokens(
+                token=trade.address,
+                side=trade.side)
+            # percentage = float(args[1])
+            # if 0 < percentage < 101:
+            #     percentage_to_sell = trade.amount / 100
+            #     pancake_swap = PancakeSwap(address=user.bsc_address,
+            #                                key=user.bsc_private_key)
+            #     reply = pancake_swap.swap_tokens(
+            #         token=trade.address,
+            #         amount_to_spend=percentage_to_sell,
+            #         side=trade.side)
+            # else:
+            #     reply = "⚠ Sorry, incorrect percentage value. Choose a value between 1 and 100 inclusive"
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
     except IndexError as e:
@@ -830,7 +834,7 @@ async def send_balance(message: Message):
                 price = quantity / token_price
 
                 # Quantity in correct format as seen in wallet
-                quantity /= Decimal(10**(18 - (coin["decimals"] % 18)))
+                quantity = pancake_swap.get_decimal_representation(quantity=quantity, decimals=coin['decimals'])
                 usd_amount = f"${price.quantize(Decimal('0.01'))}"
                 reply += f"\n\n{k}: {quantity} ({usd_amount})"
             except ContractLogicError as e:

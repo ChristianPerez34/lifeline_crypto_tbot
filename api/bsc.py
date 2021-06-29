@@ -1,4 +1,7 @@
+import json
+import time
 from decimal import Decimal
+from numbers import Real
 
 import aiohttp
 from aiogram.utils.markdown import link
@@ -8,6 +11,7 @@ from uniswap.exceptions import InsufficientBalance
 from uniswap.token import ERC20Token
 from uniswap.types import AddressLike
 from web3 import Web3
+from web3.exceptions import ContractLogicError
 
 from config import BSCSCAN_API_KEY
 from config import BUY
@@ -84,6 +88,9 @@ class BinanceSmartChain:
             })
         return account_holdings
 
+    def get_decimal_representation(self, quantity, decimals):
+        return quantity / Decimal(10 ** (18 - (decimals % 18)))
+
 
 class PancakeSwap(BinanceSmartChain):
 
@@ -99,7 +106,7 @@ class PancakeSwap(BinanceSmartChain):
             web3=self.web3,
             factory_contract_addr=PANCAKE_SWAP_FACTORY_ADDRESS,
             router_contract_addr=PANCAKE_SWAP_ROUTER_ADDRESS,
-            default_slippage=0.1)
+            default_slippage=0.15)
 
     def get_token(self, address: AddressLike) -> ERC20Token:
         """
@@ -125,8 +132,8 @@ class PancakeSwap(BinanceSmartChain):
         logger.info("Retrieving token balance for %s", token)
         return self.pancake_swap.get_token_balance(token)
 
-    def swap_tokens(self, token: str, amount_to_spend: Decimal,
-                    side: str) -> str:
+    def swap_tokens(self, token: str, amount_to_spend: Real = 0,
+                    side: str = BUY) -> str:
         """
         Swaps crypto coins on PancakeSwap
         Args:
@@ -151,24 +158,88 @@ class PancakeSwap(BinanceSmartChain):
                             self.address,
                         ))
                 else:
-                    balance = self.web3.fromWei(self.get_token_balance(token),
-                                                "ether")
-                    amount_to_spend = self.web3.toWei(balance * amount_to_spend,
-                                                      "ether")
-                    txn_hash = self.web3.toHex(
-                        self.pancake_swap.make_trade_output(
-                            token,
-                            CONTRACT_ADDRESSES["BNB"],
-                            amount_to_spend,
+                    balance = self.get_token_balance(token)
+                    with open('abi/pancakeswap_v2.abi') as pancakeswap_file, open('abi/sell.abi') as sell_file:
+                        abi = json.dumps(json.load(pancakeswap_file))
+                        sell_abi = json.dumps(json.load(sell_file))
+                    contract = self.web3.eth.contract(address=self.pancake_swap.router_address, abi=abi)
+                    token_contract = self.web3.eth.contract(address=token, abi=sell_abi)
+                    try:
+                        max_approval = int('0x000000000000000fffffffffffffffffffffffffffffffffffffffffffffffff', 16)
+                        allowance = token_contract.functions.allowance(token, self.pancake_swap.router_address).call()
+
+                        if allowance < max_approval:
+                            approve = token_contract.functions.approve(self.pancake_swap.router_address,
+                                                                       max_approval).buildTransaction({
+                                'from': self.address,
+                                'gasPrice': self.web3.toWei('5', 'gwei'),
+                                'nonce': self.web3.eth.get_transaction_count(self.address),
+                            })
+
+                            signed_txn = self.web3.eth.account.sign_transaction(approve,
+                                                                                private_key=self.fernet.decrypt(
+                                                                                    self.key.encode()).decode())
+                            self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                            logger.info("Approved token")
+                            time.sleep(1)
+                        txn = contract.functions.swapExactTokensForETH(
+                            balance, 0,
+                            [token, CONTRACT_ADDRESSES['WBNB']],
                             self.address,
-                        ))
+                            (int(time.time()) + 1000000)
+
+                        ).buildTransaction({
+                            'from': self.address,
+                            'gasPrice': self.web3.toWei('5', 'gwei'),
+                            'nonce': self.web3.eth.get_transaction_count(self.address),
+                        })
+                    except ContractLogicError as e:
+                        logger.exception(e)
+                        logger.info("Attempting sell with swapExactTokensForETHSupportingFeeOnTransferTokens function")
+                        txn = contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                            balance, 0,
+                            [token, CONTRACT_ADDRESSES['WBNB']],
+                            self.address,
+                            (int(time.time()) + 1000000)
+
+                        ).buildTransaction({
+                            'from': self.address,
+                            'gasPrice': self.web3.toWei('5', 'gwei'),
+                            'nonce': self.web3.eth.get_transaction_count(self.address),
+                        })
+
+                    signed_txn = self.web3.eth.account.sign_transaction(txn, private_key=self.fernet.decrypt(
+                        self.key.encode()).decode())
+                    txn_hash = self.web3.toHex(self.web3.eth.send_raw_transaction(signed_txn.rawTransaction))
+                    # token_metadata = self.get_token(token)
+                    # decimals = token_metadata.decimals
+                    # token_amount = int(self.get_decimal_representation(quantity=self.get_token_balance(token),
+                    #                                                    decimals=decimals) * Decimal(
+                    #     10 ** (18 - (decimals % 18)))) - 1
+                    # #
+                    # # if amount_to_spend % 10 == 0:
+                    # #     amount_to_spend -= 1
+                    # balance = self.get_token_balance(token)
+                    # amount_to_spend = self.pancake_swap.get_price_output(
+                    #     self.web3.toChecksumAddress(CONTRACT_ADDRESSES['BNB']), token, balance - int(balance * 0.01))
+                    # # predicted_output = self.pancake_swap.get_price_output(
+                    # #     self.web3.toChecksumAddress(CONTRACT_ADDRESSES['BNB']), token, amount_to_spend)
+                    # # bnb_amount = self.web3.fromWei(predicted_output, 'ether')
+                    #
+                    # txn_hash = self.web3.toHex(
+                    #     self.pancake_swap.make_trade_output(
+                    #         token,
+                    #         CONTRACT_ADDRESSES["BNB"],
+                    #         amount_to_spend,
+                    #         self.address,
+                    #     ))
 
                 txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
             except InsufficientBalance as e:
                 logger.exception(e)
                 reply = (
-                    "⚠️ Insufficient balance. Top up you BNB balance and try again. "
+                    "⚠️ Insufficient balance. Top up your token balance and try again. "
                 )
         else:
             logger.info("Unable to connect to Binance Smart Chain")
@@ -187,5 +258,5 @@ class PancakeSwap(BinanceSmartChain):
         logger.info("Retrieving token price in BUSD for %s", address)
         busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BUSD"])
         token_per_busd = Decimal(
-            self.pancake_swap.get_price_input(busd, address, 10**18))
+            self.pancake_swap.get_price_input(busd, address, 10 ** 18))
         return token_per_busd
