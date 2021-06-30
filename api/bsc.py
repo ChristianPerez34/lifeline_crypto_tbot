@@ -74,8 +74,8 @@ class BinanceSmartChain:
 
         async with aiohttp.ClientSession() as session, session.get(
                 url, headers=HEADERS) as response:
-            json = await response.json()
-        bep20_transfers = json["result"]
+            data = await response.json()
+        bep20_transfers = data["result"]
 
         for transfer in bep20_transfers:
             account_holdings.update({
@@ -88,7 +88,8 @@ class BinanceSmartChain:
             })
         return account_holdings
 
-    def get_decimal_representation(self, quantity, decimals):
+    @staticmethod
+    def get_decimal_representation(quantity, decimals):
         return quantity / Decimal(10 ** (18 - (decimals % 18)))
 
 
