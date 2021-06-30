@@ -22,13 +22,13 @@ def is_positive_number(value: Real):
 
 
 class Coin(BaseModel):
-    symbol: AddressLike = ''
+    symbol: str = ''
     address: str = ''
 
     _validate_address = validator('address', allow_reuse=True)(is_valid_address)
 
     @validator('symbol')
-    def symbol_is_alphanumeric(cls, value: AddressLike):
+    def symbol_is_alphanumeric(cls, value: str):
         if not value.isalnum():
             raise ValueError(f'{value} is not a valid symbol')
         return value
