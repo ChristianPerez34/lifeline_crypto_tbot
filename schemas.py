@@ -4,6 +4,7 @@ from numbers import Real
 
 from pydantic import BaseModel
 from pydantic.class_validators import validator, root_validator
+from uniswap.types import AddressLike
 
 from config import BUY, SELL
 
@@ -21,13 +22,13 @@ def is_positive_number(value: Real):
 
 
 class Coin(BaseModel):
-    symbol: str = ''
+    symbol: AddressLike = ''
     address: str = ''
 
     _validate_address = validator('address', allow_reuse=True)(is_valid_address)
 
     @validator('symbol')
-    def symbol_is_alphanumeric(cls, value: str):
+    def symbol_is_alphanumeric(cls, value: AddressLike):
         if not value.isalnum():
             raise ValueError(f'{value} is not a valid symbol')
         return value
