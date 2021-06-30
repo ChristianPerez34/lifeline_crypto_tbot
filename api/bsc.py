@@ -168,13 +168,16 @@ class PancakeSwap(BinanceSmartChain):
                         max_approval = int('0x000000000000000fffffffffffffffffffffffffffffffffffffffffffffffff', 16)
                         allowance = token_contract.functions.allowance(token, self.pancake_swap.router_address).call()
 
-                        if allowance < max_approval:
-                            approve = token_contract.functions.approve(self.pancake_swap.router_address,
-                                                                       max_approval).buildTransaction({
-                                'from': self.address,
-                                'gasPrice': self.web3.toWei('5', 'gwei'),
-                                'nonce': self.web3.eth.get_transaction_count(self.address),
-                            })
+                        if balance < allowance:
+                            approve = token_contract.functions.approve(
+                                self.pancake_swap.router_address,
+                                max_approval).buildTransaction(
+                                {
+                                    'from': self.address,
+                                    'gasPrice': self.web3.toWei('5', 'gwei'),
+                                    'nonce': self.web3.eth.get_transaction_count(self.address),
+                                }
+                            )
 
                             signed_txn = self.web3.eth.account.sign_transaction(approve,
                                                                                 private_key=self.fernet.decrypt(
@@ -190,7 +193,7 @@ class PancakeSwap(BinanceSmartChain):
 
                         ).buildTransaction({
                             'from': self.address,
-                            'gasPrice': self.web3.toWei('5', 'gwei'),
+                            'gasPrice': self.web3.toWei('6', 'gwei'),
                             'nonce': self.web3.eth.get_transaction_count(self.address),
                         })
                     except ContractLogicError as e:

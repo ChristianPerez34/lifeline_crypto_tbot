@@ -19,7 +19,7 @@ async def send_welcome(message: Message) -> None:
     logger.info("Chat ID: %s", message.chat.id)
     logger.info("Start/Help command executed")
     reply = text(
-        "Hi! :smile:\n",
+        "Hi! 😄\n",
         "I'm Lifeline (Crypto)!\n\n",
         f"{bold('/help')} to display available commands\n\n",
         f"{bold('/coin')} {italic('COIN')} to display coin statistics\n\n",
@@ -37,8 +37,7 @@ async def send_welcome(message: Message) -> None:
         rf"{italic('API')}\_{italic('PASSPHRASE')} to register KuCoin account and follow signals\n\n"
         rf"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on "
         f"PancakeSwap\n\n",
-        rf"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} {italic('PERCENTAGE')}\_{italic('TO')}\_{italic('SELL')}"
-        f" to sell coins on PancakeSwap\n\n",
+        rf"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} to sell coins on PancakeSwap\n\n",
         rf"{bold('/chart')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('DAYS')} to display coin "
         "chart. If BaseCoin not specified, will default to USD\n\n",
         rf"{bold('/candle')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('TIME')} {italic('LETTER')}"
