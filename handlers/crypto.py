@@ -23,7 +23,7 @@ from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException
 from web3.exceptions import ContractLogicError
 
-from api.bsc import PancakeSwap
+from api.bsc import PancakeSwap, BinanceSmartChain
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
@@ -465,22 +465,11 @@ async def send_sell_coin(message: Message) -> None:
             reply = pancake_swap.swap_tokens(
                 token=trade.address,
                 side=trade.side)
-            # percentage = float(args[1])
-            # if 0 < percentage < 101:
-            #     percentage_to_sell = trade.amount / 100
-            #     pancake_swap = PancakeSwap(address=user.bsc_address,
-            #                                key=user.bsc_private_key)
-            #     reply = pancake_swap.swap_tokens(
-            #         token=trade.address,
-            #         amount_to_spend=percentage_to_sell,
-            #         side=trade.side)
-            # else:
-            #     reply = "⚠ Sorry, incorrect percentage value. Choose a value between 1 and 100 inclusive"
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
     except IndexError as e:
         logger.exception(e)
-        reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /sell_coin [ADDRESS] [AMOUNT]"
+        reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /sell_coin [ADDRESS]"
     except ValidationError as e:
         logger.exception(e)
         error_message = e.args[0][0].exc
@@ -716,7 +705,7 @@ async def send_candle_chart(message: Message):
 
             fig["layout"].update(
                 title=dict(text=symbol, font=dict(size=26)),
-                yaxis=dict(title=dict(text=base_coin, font=dict(size=18)),),
+                yaxis=dict(title=dict(text=base_coin, font=dict(size=18)), ),
             )
 
             fig["layout"].update(shapes=[{
@@ -827,17 +816,62 @@ async def send_balance(message: Message):
         token = coin["address"]
 
         # Quantity in wei used to calculate price
-        quantity = pancake_swap.get_token_balance(token)
+        quantity = pancake_swap.get_token_balance(address=pancake_swap.address, token=token)
         if quantity > 0:
             try:
-                token_price = pancake_swap.get_token_price(address=token)
+                token_price = pancake_swap.get_token_price(token=token)
                 price = quantity / token_price
 
                 # Quantity in correct format as seen in wallet
                 quantity = pancake_swap.get_decimal_representation(quantity=quantity, decimals=coin['decimals'])
-                usd_amount = f"${price.quantize(Decimal('0.01'))}"
+                usd_amount = "${:,}".format(price.quantize(Decimal('0.01')))
                 reply += f"\n\n{k}: {quantity} ({usd_amount})"
             except ContractLogicError as e:
                 logger.exception(e)
 
     await send_message(channel_id=user_id, message=reply)
+
+
+async def send_spy(message: Message):
+    logger.info("Executing spy command")
+    counter = 0
+    user_id = message.from_user.id
+    user = User.from_orm(await TelegramGroupMember.get(id=user_id))
+    bsc = BinanceSmartChain()
+    args = message.get_args().split()
+    try:
+        coin = Coin(address=args[0])
+        reply = "👀 Super Spy 👀\n"
+        account_holdings = await bsc.get_account_token_holdings(address=coin.address)
+        pancake_swap = PancakeSwap(address=user.bsc_address,
+                                   key=user.bsc_private_key)
+        for k in account_holdings.keys():
+            if counter > 5:
+                break
+            _coin = account_holdings[k]
+            token = _coin['address']
+
+            # Quantity in wei used to calculate price
+            quantity = bsc.get_token_balance(address=coin.address, token=token)
+            if quantity > 0:
+                try:
+                    token_price = pancake_swap.get_token_price(token=token)
+                    price = quantity / token_price
+
+                    # Quantity in correct format as seen in wallet
+                    quantity = pancake_swap.get_decimal_representation(quantity=quantity, decimals=_coin['decimals'])
+                    usd_amount = "${:,}".format(price.quantize(Decimal('0.01')))
+                    reply += f"\n\n{k}: {quantity} ({usd_amount})\n{token}"
+                    counter += 1
+                except ContractLogicError as e:
+                    logger.exception(e)
+
+    except IndexError as e:
+        logger.exception(e)
+        reply = f"⚠️ Please provide a crypto code: \n{bold('/spy')} {italic('ADDRESS')}"
+    except ValidationError as e:
+        logger.exception(e)
+        error_message = e.args[0][0].exc
+        reply = f"⚠️ {error_message}"
+
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)

@@ -24,9 +24,9 @@ PANCAKE_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
 PANCAKE_SWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
     "0x10ED43C718714eb63d5aA57B78B54704E256024E")
 CONTRACT_ADDRESSES = {
-    "BNB": "0x0000000000000000000000000000000000000000",
-    "WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-    "BUSD": "0xe9e7cea3dedca5984780bafc599bd69add087d56",
+    "BNB": Web3.toChecksumAddress("0x0000000000000000000000000000000000000000"),
+    "WBNB": Web3.toChecksumAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"),
+    "BUSD": Web3.toChecksumAddress("0xe9e7cea3dedca5984780bafc599bd69add087d56"),
 }
 BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
 
@@ -37,18 +37,6 @@ class BinanceSmartChain:
         self.web3 = Web3(Web3.HTTPProvider(BINANCE_SMART_CHAIN_URL))
         self.api_url = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
         self.min_pool_size_bnb = 25
-
-    def get_account_balance(self, address: AddressLike) -> Decimal:
-        """
-        Retrieves account balance of wallet address in BNB
-        Args:
-            address (AddressLike): Wallet address of user
-
-        Returns (Decimal): Account balance in BNB
-
-        """
-        logger.info("Getting account balance for address: %s", address)
-        return self.web3.fromWei(self.web3.eth.get_balance(address), "ether")
 
     async def get_account_token_holdings(self, address: AddressLike) -> dict:
         """
@@ -92,6 +80,16 @@ class BinanceSmartChain:
     def get_decimal_representation(quantity, decimals):
         return quantity / Decimal(10 ** (18 - (decimals % 18)))
 
+    def get_token_balance(self, address: AddressLike, token: AddressLike):
+        if token == CONTRACT_ADDRESSES["BNB"]:
+            return self.web3.eth.get_balance(address)
+
+        with open('abi/sell.abi') as file:
+            abi = json.dumps(json.load(file))
+        contract = self.web3.eth.contract(address=token, abi=abi)
+        balance = contract.functions.balanceOf(address).call()
+        return balance
+
 
 class PancakeSwap(BinanceSmartChain):
 
@@ -121,18 +119,6 @@ class PancakeSwap(BinanceSmartChain):
         logger.info("Retrieving metadata for token: %s", address)
         return self.pancake_swap.get_token(address=address)
 
-    def get_token_balance(self, token: AddressLike) -> int:
-        """
-        Retrieves amount of specified tokens user owns
-        Args:
-            token (AddressLike): Contract address of token
-
-        Returns: Amount in wei of tokens user owns
-
-        """
-        logger.info("Retrieving token balance for %s", token)
-        return self.pancake_swap.get_token_balance(token)
-
     def swap_tokens(self, token: str, amount_to_spend: Real = 0,
                     side: str = BUY) -> str:
         """
@@ -159,7 +145,7 @@ class PancakeSwap(BinanceSmartChain):
                             self.address,
                         ))
                 else:
-                    balance = self.get_token_balance(token)
+                    balance = self.get_token_balance(address=self.address, token=token)
                     with open('abi/pancakeswap_v2.abi') as pancakeswap_file, open('abi/sell.abi') as sell_file:
                         abi = json.dumps(json.load(pancakeswap_file))
                         sell_abi = json.dumps(json.load(sell_file))
@@ -215,28 +201,6 @@ class PancakeSwap(BinanceSmartChain):
                     signed_txn = self.web3.eth.account.sign_transaction(txn, private_key=self.fernet.decrypt(
                         self.key.encode()).decode())
                     txn_hash = self.web3.toHex(self.web3.eth.send_raw_transaction(signed_txn.rawTransaction))
-                    # token_metadata = self.get_token(token)
-                    # decimals = token_metadata.decimals
-                    # token_amount = int(self.get_decimal_representation(quantity=self.get_token_balance(token),
-                    #                                                    decimals=decimals) * Decimal(
-                    #     10 ** (18 - (decimals % 18)))) - 1
-                    # #
-                    # # if amount_to_spend % 10 == 0:
-                    # #     amount_to_spend -= 1
-                    # balance = self.get_token_balance(token)
-                    # amount_to_spend = self.pancake_swap.get_price_output(
-                    #     self.web3.toChecksumAddress(CONTRACT_ADDRESSES['BNB']), token, balance - int(balance * 0.01))
-                    # # predicted_output = self.pancake_swap.get_price_output(
-                    # #     self.web3.toChecksumAddress(CONTRACT_ADDRESSES['BNB']), token, amount_to_spend)
-                    # # bnb_amount = self.web3.fromWei(predicted_output, 'ether')
-                    #
-                    # txn_hash = self.web3.toHex(
-                    #     self.pancake_swap.make_trade_output(
-                    #         token,
-                    #         CONTRACT_ADDRESSES["BNB"],
-                    #         amount_to_spend,
-                    #         self.address,
-                    #     ))
 
                 txn_hash_url = f"https://bscscan.com/tx/{txn_hash}"
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
@@ -250,17 +214,17 @@ class PancakeSwap(BinanceSmartChain):
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
         return reply
 
-    def get_token_price(self, address: AddressLike) -> Decimal:
+    def get_token_price(self, token: AddressLike) -> Decimal:
         """
         Gets token price in BUSD
         Args:
-            address (AddressLike): Contract Address of coin
+            token (AddressLike): Contract Address of coin
 
         Returns (Decimal): Token price in BUSD
 
         """
-        logger.info("Retrieving token price in BUSD for %s", address)
+        logger.info("Retrieving token price in BUSD for %s", token)
         busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BUSD"])
         token_per_busd = Decimal(
-            self.pancake_swap.get_price_input(busd, address, 10 ** 18))
+            self.pancake_swap.get_price_input(busd, token, 10 ** 18))
         return token_per_busd

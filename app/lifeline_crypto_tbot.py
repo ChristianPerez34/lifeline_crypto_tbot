@@ -8,7 +8,7 @@ from config import KUCOIN_TASK_NAME
 from handlers import init_database
 from handlers.base import send_greeting
 from handlers.base import send_welcome
-from handlers.crypto import kucoin_inline_query_handler, send_sell_coin
+from handlers.crypto import kucoin_inline_query_handler, send_sell_coin, send_spy
 from handlers.crypto import price_alert_callback
 from handlers.crypto import send_balance
 from handlers.crypto import send_buy_coin
@@ -73,6 +73,7 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_message_handler(send_balance, commands=["balance"])
     dispatcher.register_callback_query_handler(kucoin_inline_query_handler)
     dp.register_message_handler(send_sell_coin, commands=["sell_coin"])
+    dp.register_message_handler(send_spy, commands=['spy'])
     dispatcher.register_message_handler(
         send_greeting, content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
     dispatcher.register_errors_handler(send_error)
