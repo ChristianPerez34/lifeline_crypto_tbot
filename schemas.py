@@ -1,10 +1,12 @@
 import re
 from decimal import Decimal
 from numbers import Real
+from typing import Union
 
 from pydantic import BaseModel
 from pydantic.class_validators import validator, root_validator
 from uniswap.types import AddressLike
+from web3 import Web3
 
 from config import BUY, SELL
 
@@ -23,7 +25,7 @@ def is_positive_number(value: Real):
 
 class Coin(BaseModel):
     symbol: str = ''
-    address: str = ''
+    address: Union[str, AddressLike] = ''
 
     _validate_address = validator('address', allow_reuse=True)(is_valid_address)
 
@@ -32,6 +34,10 @@ class Coin(BaseModel):
         if not value.isalnum():
             raise ValueError(f'{value} is not a valid symbol')
         return value
+
+    @validator('address')
+    def check_address(cls, value: Union[str, AddressLike]):
+        return Web3.toChecksumAddress(value)
 
 
 class Alert(Coin):
