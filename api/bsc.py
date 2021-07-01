@@ -119,19 +119,6 @@ class PancakeSwap(BinanceSmartChain):
         logger.info("Retrieving metadata for token: %s", address)
         return self.pancake_swap.get_token(address=address)
 
-    def get_token_balance(self, token: AddressLike, **kwargs) -> int:
-        """
-        Retrieves amount of specified tokens user owns
-        Args:
-            **kwargs:
-            token (AddressLike): Contract address of token
-
-        Returns: Amount in wei of tokens user owns
-
-        """
-        logger.info("Retrieving token balance for %s", token)
-        return super(PancakeSwap, self).get_token_balance(self.address, token)
-
     def swap_tokens(self, token: str, amount_to_spend: Real = 0,
                     side: str = BUY) -> str:
         """
@@ -158,7 +145,7 @@ class PancakeSwap(BinanceSmartChain):
                             self.address,
                         ))
                 else:
-                    balance = self.get_token_balance(token, )
+                    balance = self.get_token_balance(address=self.address, token=token)
                     with open('abi/pancakeswap_v2.abi') as pancakeswap_file, open('abi/sell.abi') as sell_file:
                         abi = json.dumps(json.load(pancakeswap_file))
                         sell_abi = json.dumps(json.load(sell_file))
