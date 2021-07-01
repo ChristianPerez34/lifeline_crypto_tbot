@@ -816,7 +816,7 @@ async def send_balance(message: Message):
         token = coin["address"]
 
         # Quantity in wei used to calculate price
-        quantity = pancake_swap.get_token_balance(token)
+        quantity = pancake_swap.get_token_balance(address=pancake_swap.address, token=token)
         if quantity > 0:
             try:
                 token_price = pancake_swap.get_token_price(token=token)
