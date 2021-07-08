@@ -224,7 +224,7 @@ class PancakeSwap(BinanceSmartChain):
 
         """
         logger.info("Retrieving token price in BUSD for %s", token)
-        busd = self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BUSD"])
+        busd = CONTRACT_ADDRESSES["BUSD"]
         token_per_busd = Decimal(
             self.pancake_swap.get_price_input(busd, token, 10 ** 18))
         return token_per_busd
