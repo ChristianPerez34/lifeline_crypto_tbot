@@ -1,3 +1,4 @@
+import random
 from io import BufferedReader
 
 from aiogram.types import InlineKeyboardButton
@@ -9,6 +10,7 @@ from aiogram.utils.markdown import italic
 from aiogram.utils.markdown import text
 
 from app import bot
+from config import GREETINGS
 from . import logger
 
 
@@ -69,7 +71,8 @@ async def send_greeting(message: Message) -> None:
         except KeyError:
             new_user = new_user_obj["first_name"]
     if new_user:
-        await message.reply(text=f"Welcome fellow degen, {new_user}.")
+        greeting = random.choice(GREETINGS).format(new_user)
+        await message.reply(text=greeting)
 
 
 async def send_message(channel_id: int,
