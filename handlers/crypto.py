@@ -3,6 +3,7 @@ import time
 from decimal import Decimal
 from io import BufferedReader
 from io import BytesIO
+from itertools import chain
 
 import aiohttp
 import dateutil.parser as dau
@@ -177,22 +178,32 @@ async def send_coin_address(message: Message) -> None:
     logger.info("Searching for coin by contract address")
     args = message.get_args().split()
     try:
-        coin = Coin(address=args[0])
+        address, platform, *_ = chain(args, ['', ''])
+        coin = Coin(address=address, platform=platform)
         address = coin.address
-        coin_stats = get_coin_stats_by_address(address=address)
-        price = "${:,}".format(float(coin_stats["price"]))
-        market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-        reply = f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
+        platform = coin.platform
+        if platform == 'BSC':
+            user = User.from_orm(await TelegramGroupMember.get(id=message.from_user.id))
+            pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
+            token = pancake_swap.get_token(address=address)
+            price = "${:,}".format(1 / pancake_swap.get_token_price(token=address))
+            reply = f"{token.name} ({token.symbol})\n\n{token.address}\n\nPrice\n{price}"
+        else:
 
-        if "contract_address" in coin_stats:
-            reply += f"{coin_stats['contract_address']}\n\n"
+            coin_stats = get_coin_stats_by_address(address=address)
+            price = "${:,}".format(float(coin_stats["price"]))
+            market_cap = "${:,}".format(float(coin_stats["market_cap"]))
+            reply = f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
 
-        if "website" in coin_stats:
-            reply += f"{coin_stats['website']}\n\n"
-        reply += (f"Price\n{price}\n\n"
-                  f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                  f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                  f"Market Cap\n{market_cap}")
+            if "contract_address" in coin_stats:
+                reply += f"{coin_stats['contract_address']}\n\n"
+
+            if "website" in coin_stats:
+                reply += f"{coin_stats['website']}\n\n"
+            reply += (f"Price\n{price}\n\n"
+                      f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                      f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+                      f"Market Cap\n{market_cap}")
     except IndexError as e:
         logger.exception(e)
         reply = f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"

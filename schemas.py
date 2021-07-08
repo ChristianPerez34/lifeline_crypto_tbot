@@ -26,8 +26,7 @@ def is_positive_number(value: Real):
 class Coin(BaseModel):
     symbol: str = ''
     address: Union[str, AddressLike] = ''
-
-    _validate_address = validator('address', allow_reuse=True)(is_valid_address)
+    platform: str = ''
 
     @validator('symbol')
     def symbol_is_alphanumeric(cls, value: str):
@@ -37,7 +36,14 @@ class Coin(BaseModel):
 
     @validator('address')
     def check_address(cls, value: Union[str, AddressLike]):
-        return Web3.toChecksumAddress(value)
+        return Web3.toChecksumAddress(is_valid_address(value))
+
+    @validator('platform')
+    def check_platform(cls, value: str):
+        value = value.upper()
+        if value not in ("BSC",):
+            raise ValueError("Invalid platform")
+        return value
 
 
 class Alert(Coin):

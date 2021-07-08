@@ -958,7 +958,7 @@ python-versions = "*"
 
 [[package]]
 name = "uniswap-python"
-version = "0.5.1"
+version = "0.5.2"
 description = "An unofficial Python wrapper for the Uniswap exchange"
 category = "main"
 optional = false
@@ -1744,8 +1744,8 @@ typing-extensions = [
     {file = "typing_extensions-3.10.0.0.tar.gz", hash = "sha256:50b6f157849174217d0656f99dc82fe932884fb250826c18350e159ec6cdf342"},
 ]
 uniswap-python = [
-    {file = "uniswap-python-0.5.1.tar.gz", hash = "sha256:99907319530f9db378e0352dfdbff30a41d60867a348ecb3a1ea9b185840a8c1"},
-    {file = "uniswap_python-0.5.1-py3-none-any.whl", hash = "sha256:10afff913b97fee1a351934c87ed03b133dbc230ccc641ae580888f118ee8f9e"},
+    {file = "uniswap-python-0.5.2.tar.gz", hash = "sha256:7721db98e0dd4b3a5cdda80fdc36e6c516207349947a9a46bd91bbce3835e74a"},
+    {file = "uniswap_python-0.5.2-py3-none-any.whl", hash = "sha256:057a95a68c0cd8cde664186b04d650d966197a635af478b94a659d5bdd7b9299"},
 ]
 url-normalize = [
     {file = "url-normalize-1.4.3.tar.gz", hash = "sha256:d23d3a070ac52a67b83a1c59a0e68f8608d1cd538783b401bc9de2c0fac999b2"},
