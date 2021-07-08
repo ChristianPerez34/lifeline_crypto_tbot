@@ -7,6 +7,7 @@ from itertools import chain
 
 import aiohttp
 import dateutil.parser as dau
+import pandas
 import pandas as pd
 import plotly.figure_factory as fif
 import plotly.graph_objs as go
@@ -38,7 +39,7 @@ from config import FERNET_KEY
 from config import HEADERS
 from config import KUCOIN_TASK_NAME
 from config import TELEGRAM_CHAT_ID
-from handlers.base import send_message
+from handlers.base import send_message, send_photo
 from models import CryptoAlert
 from models import TelegramGroupMember
 from schemas import Coin, Alert, User, TradeCoin, Chart, CandleChart
@@ -818,12 +819,11 @@ async def send_balance(message: Message):
     logger.info("Retrieving account balance")
     user_id = message.from_user.id
     user = User.from_orm(await TelegramGroupMember.get(id=user_id))
-    reply = "Account Balance 💲"
     pancake_swap = PancakeSwap(address=user.bsc_address,
                                key=user.bsc_private_key)
     account_holdings = await pancake_swap.get_account_token_holdings(
         address=pancake_swap.address)
-
+    account_data_frame = pandas.DataFrame()
     for k in account_holdings.keys():
         coin = account_holdings[k]
         token = coin["address"]
@@ -838,11 +838,17 @@ async def send_balance(message: Message):
                 # Quantity in correct format as seen in wallet
                 quantity = pancake_swap.get_decimal_representation(quantity=quantity, decimals=coin['decimals'])
                 usd_amount = "${:,}".format(price.quantize(Decimal('0.01')))
-                reply += f"\n\n{k}: {quantity} ({usd_amount})"
+                data_frame = pandas.DataFrame(
+                    {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]})
+                account_data_frame = account_data_frame.append(data_frame, ignore_index=True)
             except ContractLogicError as e:
                 logger.exception(e)
-
-    await send_message(channel_id=user_id, message=reply)
+    fig = fif.create_table(account_data_frame)
+    fig.update_layout(
+        autosize=True,
+    )
+    await send_photo(chat_id=user_id, caption="Account Balance 💲", photo=BufferedReader(
+        BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))))
 
 
 async def send_spy(message: Message):
