@@ -899,10 +899,14 @@ async def send_spy(message: Message):
 
 async def send_snipe(message: Message):
     logger.info("Executing snipe command")
+    args = message.get_args().split()
     user_id = message.from_user.id
     user = User.from_orm(await TelegramGroupMember.get(id=user_id))
+    coin = Coin(address=args[0])
     pancake_swap = PancakeSwap(address=user.bsc_address,
                                key=user.bsc_private_key)
     event_filter = pancake_swap.generate_pair_created_event_filter()
-    asyncio.create_task(pancake_swap_sniper(chat_id=message.chat.id, event_filter=event_filter))
+    asyncio.create_task(
+        pancake_swap_sniper(chat_id=message.chat.id, token=coin.address, pancake_swap=pancake_swap,
+                            event_filter=event_filter))
     # await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)

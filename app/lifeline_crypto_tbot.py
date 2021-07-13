@@ -4,9 +4,9 @@ from aiogram import Dispatcher, types
 from aiogram import executor
 
 from app import dp
-from config import KUCOIN_TASK_NAME
+from config import KUCOIN_TASK_NAME, TELEGRAM_CHAT_ID
 from handlers import init_database
-from handlers.base import send_greeting
+from handlers.base import send_greeting, send_message
 from handlers.base import send_welcome
 from handlers.crypto import kucoin_inline_query_handler, send_sell_coin, send_spy, send_snipe
 from handlers.crypto import price_alert_callback
@@ -33,15 +33,19 @@ async def on_startup(dispatcher: Dispatcher):
         dispatcher (Dispatcher): Bot dispatcher
     """
     await init_database()
+
     for alert in await CryptoAlert.all():
         asyncio.create_task(price_alert_callback(alert=alert, delay=15))
-
     setup_handlers(dispatcher)
+
+    await send_message(channel_id=TELEGRAM_CHAT_ID, message="Up and running! 👾")
 
 
 async def on_shutdown(_):
     """Disable KuCoin bot on shutdown"""
     tasks = asyncio.all_tasks()
+
+    await send_message(channel_id=TELEGRAM_CHAT_ID, message="Going offline! Be right back.")
 
     for task in tasks:
         if task.get_name() == KUCOIN_TASK_NAME:
@@ -81,6 +85,9 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
 
 
 if __name__ == "__main__":
+    import os
+
+    print(os.getcwd())
     executor.start_polling(dp,
                            skip_updates=True,
                            on_startup=on_startup,
