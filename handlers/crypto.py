@@ -900,7 +900,7 @@ async def send_spy(message: Message):
 async def send_snipe(message: Message):
     logger.info("Executing snipe command")
     args = message.get_args().split()
-    address, amount, side, *_ = chain(args, ['', 0])
+    address, amount, *_ = chain(args, ['', 0])
     trade = TradeCoin(address=address, amount=amount, side=BUY)
 
     user_id = message.from_user.id
