@@ -33,6 +33,7 @@ from api.cryptocompare import CryptoCompare
 from api.kucoin import KucoinApi
 from app import bot
 from bot import active_orders
+from bot.bsc_sniper import pancake_swap_sniper
 from bot.kucoin_bot import kucoin_bot
 from config import BUY, SELL
 from config import FERNET_KEY
@@ -894,3 +895,20 @@ async def send_spy(message: Message):
         reply = f"⚠️ {error_message}"
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+
+
+async def send_snipe(message: Message):
+    logger.info("Executing snipe command")
+    args = message.get_args().split()
+    address, amount, *_ = chain(args, ['', 0])
+    trade = TradeCoin(address=address, amount=amount, side=BUY)
+
+    user_id = message.from_user.id
+    user = User.from_orm(await TelegramGroupMember.get(id=user_id))
+
+    pancake_swap = PancakeSwap(address=user.bsc_address,
+                               key=user.bsc_private_key)
+    asyncio.create_task(
+        pancake_swap_sniper(chat_id=message.chat.id, token=trade.address, amount=trade.amount,
+                            pancake_swap=pancake_swap))
+    await message.reply(text=f"🎯 Sniping {trade.address}...", parse_mode=ParseMode.MARKDOWN)

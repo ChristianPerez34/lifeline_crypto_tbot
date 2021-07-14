@@ -1,7 +1,7 @@
 import re
 from decimal import Decimal
 from numbers import Real
-from typing import Union
+from typing import Union, Optional
 
 from pydantic import BaseModel
 from pydantic.class_validators import validator, root_validator
@@ -61,11 +61,11 @@ class Alert(Coin):
 
 class User(BaseModel):
     id: int
-    bsc_address: str = ''
-    bsc_private_key: str = ''
-    kucoin_api_key: str = ''
-    kucoin_api_secret: str = ''
-    kucoin_api_passphrase: str = ''
+    bsc_address: Optional[str] = ''
+    bsc_private_key: Optional[str] = ''
+    kucoin_api_key: Optional[str] = ''
+    kucoin_api_secret: Optional[str] = ''
+    kucoin_api_passphrase: Optional[str] = ''
 
     _validate_address = validator('bsc_address',
                                   allow_reuse=True)(is_valid_address)

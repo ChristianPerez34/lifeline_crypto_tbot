@@ -80,12 +80,23 @@ class BinanceSmartChain:
     def get_decimal_representation(quantity, decimals):
         return quantity / Decimal(10 ** (18 - (decimals % 18)))
 
+    @staticmethod
+    def get_contract_abi(abi_type: str = "liquidity") -> str:
+        filename = 'abi/pancake_swap_liquidity_v2.abi'
+
+        if abi_type == 'sell':
+            filename = 'abi/sell.abi'
+        elif abi_type == 'router':
+            filename = 'abi/pancakeswap_v2.abi'
+        with open(filename) as file:
+            abi = json.dumps(json.load(file))
+        return abi
+
     def get_token_balance(self, address: AddressLike, token: AddressLike):
         if token == CONTRACT_ADDRESSES["BNB"]:
             return self.web3.eth.get_balance(address)
 
-        with open('abi/sell.abi') as file:
-            abi = json.dumps(json.load(file))
+        abi = self.get_contract_abi(abi_type='sell')
         contract = self.web3.eth.contract(address=token, abi=abi)
         balance = contract.functions.balanceOf(address).call()
         return balance
@@ -146,9 +157,8 @@ class PancakeSwap(BinanceSmartChain):
                         ))
                 else:
                     balance = self.get_token_balance(address=self.address, token=token)
-                    with open('abi/pancakeswap_v2.abi') as pancakeswap_file, open('abi/sell.abi') as sell_file:
-                        abi = json.dumps(json.load(pancakeswap_file))
-                        sell_abi = json.dumps(json.load(sell_file))
+                    abi = self.get_contract_abi(abi_type='router')
+                    sell_abi = self.get_contract_abi(abi_type='sell')
                     contract = self.web3.eth.contract(address=self.pancake_swap.router_address, abi=abi)
                     token_contract = self.web3.eth.contract(address=token, abi=sell_abi)
                     try:
@@ -228,3 +238,17 @@ class PancakeSwap(BinanceSmartChain):
         token_per_busd = Decimal(
             self.pancake_swap.get_price_input(busd, token, 10 ** 18))
         return token_per_busd
+
+    def get_token_pair_address(self, token) -> str:
+        """
+        Retrieves token pair address
+        Args:
+            token: BEP20 token
+
+        Returns: Pair address
+
+        """
+        token = self.web3.toChecksumAddress(token)
+        contract = self.pancake_swap.factory_contract
+        pair_address = contract.functions.getPair(token, CONTRACT_ADDRESSES['WBNB']).call()
+        return pair_address
