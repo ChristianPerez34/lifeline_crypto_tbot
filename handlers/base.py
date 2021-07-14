@@ -53,6 +53,8 @@ async def send_welcome(message: Message) -> None:
         " to display coin candle chart. If BaseCoin not specified, will default to USD\n\n",
         f"{bold('/balance')} to display binance smart chain balance. Responds privately.\n\n",
         f"{bold('/spy')} {italic('ADDRESS')} to display some of the accounts holdings.\n\n",
+        rf"{bold('/snipe')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to display some of the accounts "
+        f"holdings.\n\n",
     )
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 

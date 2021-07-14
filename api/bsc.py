@@ -11,7 +11,6 @@ from uniswap.exceptions import InsufficientBalance
 from uniswap.token import ERC20Token
 from uniswap.types import AddressLike
 from web3 import Web3
-from web3._utils.filters import LogFilter
 from web3.exceptions import ContractLogicError
 
 from config import BSCSCAN_API_KEY
@@ -240,13 +239,16 @@ class PancakeSwap(BinanceSmartChain):
             self.pancake_swap.get_price_input(busd, token, 10 ** 18))
         return token_per_busd
 
-    def get_token_pair_address(self, token):
+    def get_token_pair_address(self, token) -> str:
+        """
+        Retrieves token pair address
+        Args:
+            token: BEP20 token
+
+        Returns: Pair address
+
+        """
         token = self.web3.toChecksumAddress(token)
-        # with open('abi/pancakeswap_v2_factory.abi') as file:
-        #     abi = json.dumps(json.load(file))
         contract = self.pancake_swap.factory_contract
         pair_address = contract.functions.getPair(token, CONTRACT_ADDRESSES['WBNB']).call()
         return pair_address
-
-    def generate_pair_created_event_filter(self, from_block: str = 'latest') -> LogFilter:
-        return self.pancake_swap.factory_contract.events.PairCreated.createFilter(fromBlock=from_block)
