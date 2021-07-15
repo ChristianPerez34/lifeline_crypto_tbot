@@ -131,13 +131,15 @@ class PancakeSwap(BinanceSmartChain):
         return self.pancake_swap.get_token(address=address)
 
     def swap_tokens(self, token: str, amount_to_spend: Real = 0,
-                    side: str = BUY) -> str:
+                    side: str = BUY, is_snipe: bool = False) -> str:
         """
         Swaps crypto coins on PancakeSwap
         Args:
             token (str): Address of coin to buy/sell
             amount_to_spend (float): Amount in BNB expected to spend/receive. When selling will read as percentage
             side (str): Indicates if user wants to buy or sell coins
+            is_snipe (bool): Indicates if swap is for sniping. Utilizes increasingly high gas price to ensure buying
+                token as soon as possible
 
         Returns: Reply to message
 
@@ -145,21 +147,48 @@ class PancakeSwap(BinanceSmartChain):
         logger.info("Swapping tokens")
         if self.web3.isConnected():
             token = self.web3.toChecksumAddress(token)
+            wbnb = CONTRACT_ADDRESSES['WBNB']
+            nonce = self.web3.eth.get_transaction_count(self.address)
+            gas_price = self.web3.toWei('5', 'gwei') if not is_snipe else self.web3.toWei('10', 'gwei')
             try:
+                abi = self.get_contract_abi(abi_type='router')
+                contract = self.web3.eth.contract(address=self.pancake_swap.router_address, abi=abi)
+
                 if side == BUY:
                     amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
-                    txn_hash = self.web3.toHex(
-                        self.pancake_swap.make_trade(
-                            CONTRACT_ADDRESSES["BNB"],
-                            token,
-                            amount_to_spend,
+                    try:
+                        txn = contract.functions.swapExactETHForTokens(
+                            0,
+                            [wbnb, token],
                             self.address,
-                        ))
+                            (int(time.time()) + 10000)
+                        ).buildTransaction({
+                            'from': self.address,
+                            'value': amount_to_spend,
+                            'gasPrice': gas_price,
+                            'nonce': nonce,
+                        })
+                    except ContractLogicError as e:
+                        logger.exception(e)
+                        logger.info("Attempting buy with swapExactETHForTokensSupportingFeeOnTransferTokens function")
+                        txn = contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
+                            0,
+                            [wbnb, token],
+                            self.address,
+                            (int(time.time()) + 10000)
+                        ).buildTransaction({
+                            'from': self.address,
+                            'value': amount_to_spend,
+                            'gasPrice': gas_price,
+                            'nonce': nonce,
+                        })
+                    signed_txn = self.web3.eth.account.sign_transaction(txn, private_key=self.fernet.decrypt(
+                        self.key.encode()).decode())
+                    txn_token = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                    txn_hash = self.web3.toHex(txn_token)
                 else:
                     balance = self.get_token_balance(address=self.address, token=token)
-                    abi = self.get_contract_abi(abi_type='router')
                     sell_abi = self.get_contract_abi(abi_type='sell')
-                    contract = self.web3.eth.contract(address=self.pancake_swap.router_address, abi=abi)
                     token_contract = self.web3.eth.contract(address=token, abi=sell_abi)
                     try:
                         max_approval = int('0x000000000000000fffffffffffffffffffffffffffffffffffffffffffffffff', 16)
