@@ -149,7 +149,7 @@ class PancakeSwap(BinanceSmartChain):
             token = self.web3.toChecksumAddress(token)
             wbnb = CONTRACT_ADDRESSES['WBNB']
             nonce = self.web3.eth.get_transaction_count(self.address)
-            gas_price = self.web3.toWei('5', 'gwei') if not is_snipe else self.web3.toWei('10', 'gwei')
+            gas_price = self.web3.toWei('5', 'gwei') if not is_snipe else self.web3.toWei('25', 'gwei')
             try:
                 abi = self.get_contract_abi(abi_type='router')
                 contract = self.web3.eth.contract(address=self.pancake_swap.router_address, abi=abi)
