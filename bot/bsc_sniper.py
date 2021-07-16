@@ -27,8 +27,8 @@ def token_has_liquidity(token, pancake_swap) -> bool:
         contract = pancake_swap.web3.eth.contract(address=pair_address, abi=abi)
         liquidity_reserves = contract.functions.getReserves().call()
         has_liquidity = max(liquidity_reserves[:2]) > 0
-    except BadFunctionCallOutput as e:
-        logger.exception(e)
+    except BadFunctionCallOutput:
+        logger.exception("Supported LP does not exist for this token.")
     return has_liquidity
 
 
