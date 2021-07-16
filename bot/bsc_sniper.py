@@ -2,9 +2,11 @@ import asyncio
 from decimal import Decimal
 
 from uniswap.types import AddressLike
+from web3.exceptions import BadFunctionCallOutput
 
 from api.bsc import PancakeSwap
 from config import BUY
+from handlers import logger
 from handlers.base import send_message
 
 
@@ -18,11 +20,16 @@ def token_has_liquidity(token, pancake_swap) -> bool:
     Returns: Boolean indicating token has liquidity
 
     """
-    pair_address = pancake_swap.get_token_pair_address(token=token)
-    abi = pancake_swap.get_contract_abi(abi_type='liquidity')
-    contract = pancake_swap.web3.eth.contract(address=pair_address, abi=abi)
-    liquidity_reserves = contract.functions.getReserves().call()
-    return max(liquidity_reserves[:2]) > 0
+    has_liquidity = False
+    try:
+        pair_address = pancake_swap.get_token_pair_address(token=token)
+        abi = pancake_swap.get_contract_abi(abi_type='liquidity')
+        contract = pancake_swap.web3.eth.contract(address=pair_address, abi=abi)
+        liquidity_reserves = contract.functions.getReserves().call()
+        has_liquidity = max(liquidity_reserves[:2]) > 0
+    except BadFunctionCallOutput as e:
+        logger.exception(e)
+    return has_liquidity
 
 
 async def pancake_swap_sniper(chat_id: int, token: AddressLike, amount: Decimal, pancake_swap: PancakeSwap) -> None:
