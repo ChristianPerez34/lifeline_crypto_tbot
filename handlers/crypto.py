@@ -859,6 +859,7 @@ async def send_spy(message: Message):
     user = User.from_orm(await TelegramGroupMember.get(id=user_id))
     bsc = BinanceSmartChain()
     args = message.get_args().split()
+    account_data_frame = pandas.DataFrame()
     try:
         coin = Coin(address=args[0])
         reply = "👀 Super Spy 👀\n"
@@ -881,7 +882,8 @@ async def send_spy(message: Message):
                     # Quantity in correct format as seen in wallet
                     quantity = pancake_swap.get_decimal_representation(quantity=quantity, decimals=_coin['decimals'])
                     usd_amount = "${:,}".format(price.quantize(Decimal('0.01')))
-                    reply += f"\n\n{k}: {quantity} ({usd_amount})\n{token}"
+                    data_frame = pandas.DataFrame({"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]})
+                    account_data_frame = account_data_frame.append(data_frame, ignore_index=True)
                     counter += 1
                 except ContractLogicError as e:
                     logger.exception(e)
@@ -894,7 +896,12 @@ async def send_spy(message: Message):
         error_message = e.args[0][0].exc
         reply = f"⚠️ {error_message}"
 
-    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+    fig = fif.create_table(account_data_frame)
+    fig.update_layout(
+        autosize=True,
+    )
+    await send_photo(chat_id=message.chat.id, caption="👀 Super Spy 👀", photo=BufferedReader(
+        BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))))
 
 
 async def send_snipe(message: Message):
