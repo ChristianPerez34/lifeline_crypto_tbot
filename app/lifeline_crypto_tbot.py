@@ -14,10 +14,10 @@ from handlers.crypto import send_balance
 from handlers.crypto import send_buy_coin
 from handlers.crypto import send_candle_chart
 from handlers.crypto import send_chart
-from handlers.crypto import send_coin
 from handlers.crypto import send_coin_address
 from handlers.crypto import send_gas
 from handlers.crypto import send_latest_listings
+from handlers.crypto import send_price
 from handlers.crypto import send_price_alert
 from handlers.crypto import send_restart_kucoin_bot
 from handlers.crypto import send_trending
@@ -60,7 +60,7 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     """
     dispatcher.register_message_handler(send_welcome,
                                         commands=["start", "help"])
-    dispatcher.register_message_handler(send_coin, commands=["coin"])
+    dispatcher.register_message_handler(send_price, commands=["price"])
     dispatcher.register_message_handler(send_gas, commands=["gas"])
     dispatcher.register_message_handler(send_coin_address,
                                         commands=["coin_address"])

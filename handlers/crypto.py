@@ -118,7 +118,7 @@ def get_coin_stats_by_address(address: str) -> dict:
     }
 
 
-async def send_coin(message: Message) -> None:
+async def send_price(message: Message) -> None:
     """Replies to command with crypto coin statistics for specified coin
 
     Args:
@@ -147,7 +147,7 @@ async def send_coin(message: Message) -> None:
                       f"Market Cap\n{market_cap}")
     except IndexError as e:
         logger.exception(e)
-        reply = f"⚠️ Please provide a crypto code: \n{bold('/coin')} {italic('COIN')}"
+        reply = f"⚠️ Please provide a crypto code: \n{bold('/price')} {italic('COIN')}"
     except ValidationError as e:
         logger.exception(e)
         error_message = e.args[0][0].exc

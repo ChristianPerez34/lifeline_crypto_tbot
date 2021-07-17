@@ -26,7 +26,7 @@ async def send_welcome(message: Message) -> None:
         "Hi! 😄\n",
         "I'm Lifeline (Crypto)!\n\n",
         f"{bold('/help')} to display available commands\n\n",
-        f"{bold('/coin')} {italic('COIN')} to display coin statistics\n\n",
+        f"{bold('/price')} {italic('COIN')} to display coin statistics\n\n",
         rf"{bold('/coin')}\_{bold('address')} {italic('ADDRESS')} {italic('PLATFORM')} to display coin statistics for "
         f"crypto address. {italic('PLATFORM')} is optional\n\n",
         f"{bold('/gas')} to display ETH gas prices\n\n",
