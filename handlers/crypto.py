@@ -862,7 +862,6 @@ async def send_spy(message: Message):
     account_data_frame = pandas.DataFrame()
     try:
         coin = Coin(address=args[0])
-        reply = "👀 Super Spy 👀\n"
         account_holdings = await bsc.get_account_token_holdings(address=coin.address)
         pancake_swap = PancakeSwap(address=user.bsc_address,
                                    key=user.bsc_private_key)
@@ -890,11 +889,8 @@ async def send_spy(message: Message):
 
     except IndexError as e:
         logger.exception(e)
-        reply = f"⚠️ Please provide a crypto code: \n{bold('/spy')} {italic('ADDRESS')}"
     except ValidationError as e:
         logger.exception(e)
-        error_message = e.args[0][0].exc
-        reply = f"⚠️ {error_message}"
 
     fig = fif.create_table(account_data_frame)
     fig.update_layout(
