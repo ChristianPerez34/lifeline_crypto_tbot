@@ -859,9 +859,9 @@ async def send_spy(message: Message):
     user = User.from_orm(await TelegramGroupMember.get(id=user_id))
     bsc = BinanceSmartChain()
     args = message.get_args().split()
+    account_data_frame = pandas.DataFrame()
     try:
         coin = Coin(address=args[0])
-        reply = "👀 Super Spy 👀\n"
         account_holdings = await bsc.get_account_token_holdings(address=coin.address)
         pancake_swap = PancakeSwap(address=user.bsc_address,
                                    key=user.bsc_private_key)
@@ -881,20 +881,23 @@ async def send_spy(message: Message):
                     # Quantity in correct format as seen in wallet
                     quantity = pancake_swap.get_decimal_representation(quantity=quantity, decimals=_coin['decimals'])
                     usd_amount = "${:,}".format(price.quantize(Decimal('0.01')))
-                    reply += f"\n\n{k}: {quantity} ({usd_amount})\n{token}"
+                    data_frame = pandas.DataFrame({"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]})
+                    account_data_frame = account_data_frame.append(data_frame, ignore_index=True)
                     counter += 1
                 except ContractLogicError as e:
                     logger.exception(e)
 
     except IndexError as e:
         logger.exception(e)
-        reply = f"⚠️ Please provide a crypto code: \n{bold('/spy')} {italic('ADDRESS')}"
     except ValidationError as e:
         logger.exception(e)
-        error_message = e.args[0][0].exc
-        reply = f"⚠️ {error_message}"
 
-    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+    fig = fif.create_table(account_data_frame)
+    fig.update_layout(
+        autosize=True,
+    )
+    await send_photo(chat_id=message.chat.id, caption="👀 Super Spy 👀", photo=BufferedReader(
+        BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))))
 
 
 async def send_snipe(message: Message):
