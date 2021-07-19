@@ -20,6 +20,7 @@ def token_has_liquidity(token, pancake_swap) -> bool:
     Returns: Boolean indicating token has liquidity
 
     """
+    logger.info("Verifying %s has liquidity")
     has_liquidity = False
     try:
         pair_address = pancake_swap.get_token_pair_address(token=token)
