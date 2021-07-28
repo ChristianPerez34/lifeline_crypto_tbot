@@ -264,9 +264,7 @@ class PancakeSwap(BinanceSmartChain):
         """
         logger.info("Retrieving token price in BUSD for %s", token)
         busd = CONTRACT_ADDRESSES["BUSD"]
-        token_per_busd = Decimal(
-            self.pancake_swap.get_price_input(busd, token, 10 ** 18))
-        return token_per_busd
+        return Decimal(self.pancake_swap.get_price_input(busd, token, 10 ** 18))
 
     def get_token_pair_address(self, token) -> str:
         """

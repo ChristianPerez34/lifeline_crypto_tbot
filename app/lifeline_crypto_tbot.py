@@ -2,6 +2,7 @@ import asyncio
 
 from aiogram import Dispatcher, types
 from aiogram import executor
+from pony import orm
 
 from app import dp
 from config import KUCOIN_TASK_NAME, TELEGRAM_CHAT_ID
@@ -34,8 +35,9 @@ async def on_startup(dispatcher: Dispatcher):
     """
     await init_database()
 
-    for alert in await CryptoAlert.all():
-        asyncio.create_task(price_alert_callback(alert=alert, delay=15))
+    with orm.db_session:
+        for alert in CryptoAlert.select():
+            asyncio.create_task(price_alert_callback(alert=alert, delay=15))
     setup_handlers(dispatcher)
 
     await send_message(channel_id=TELEGRAM_CHAT_ID, message="Up and running! 👾")

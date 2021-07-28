@@ -185,8 +185,8 @@ async def send_coin_address(message: Message) -> None:
         address = coin.address
         platform = coin.platform
         if platform == 'BSC':
-            user = User.from_orm(await TelegramGroupMember.get(id=message.from_user.id))
-            pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
+            user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=message.from_user.id))
+            pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
             token = pancake_swap.get_token(address=address)
             price = "${:,}".format(1 / pancake_swap.get_token_price(token=address))
             reply = f"{token.name} ({token.symbol})\n\n{token.address}\n\nPrice\n{price}"
@@ -225,10 +225,11 @@ async def send_trending(message: Message) -> None:
     logger.info("Retrieving trending addresses from CoinGecko")
     coin_gecko = CoinGecko()
     coin_market_cap = CoinMarketCap()
-    coin_gecko_trending_coins = "\n".join([
+    coin_gecko_trending_coins = "\n".join(
         f"{coin['item']['name']} ({coin['item']['symbol']})"
         for coin in coin_gecko.get_trending_coins()
-    ])
+    )
+
     coin_market_cap_trending_coins = "\n".join(
         await coin_market_cap.get_trending_coins())
 
@@ -296,9 +297,8 @@ async def price_alert_callback(alert: CryptoAlert, delay: int) -> None:
             if float(price) >= float(spot_price):
                 send = True
                 dip = True
-        else:
-            if float(price) <= float(spot_price):
-                send = True
+        elif float(price) <= float(spot_price):
+            send = True
 
         if send:
             price = "${:,}".format(price)
@@ -632,13 +632,9 @@ async def send_candle_chart(message: Message):
         elif resolution == "HOUR":
             ohlcv = CryptoCompare().get_historical_ohlcv_hourly(
                 symbol, base_coin, time_frame)
-        elif resolution == "DAY":
+        else:
             ohlcv = CryptoCompare().get_historical_ohlcv_daily(
                 symbol, base_coin, time_frame)
-        else:
-            ohlcv = CryptoCompare().get_historical_ohlcv_hourly(
-                symbol, base_coin, time_frame)
-
         if ohlcv["Response"] == "Error":
             if ohlcv["Message"] == "limit is larger than max value.":
                 reply = text(
@@ -819,6 +815,8 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
 async def send_balance(message: Message):
     logger.info("Retrieving account balance")
     user_id = message.from_user.id
+    a = await TelegramGroupMember.get(id=user_id).prefetch_related("bsc")
+    await a.fetch_related("bsc")
     user = User.from_orm(await TelegramGroupMember.get(id=user_id))
     pancake_swap = PancakeSwap(address=user.bsc_address,
                                key=user.bsc_private_key)
@@ -856,7 +854,7 @@ async def send_spy(message: Message):
     logger.info("Executing spy command")
     counter = 0
     user_id = message.from_user.id
-    user = User.from_orm(await TelegramGroupMember.get(id=user_id))
+    user = User.from_orm(await TelegramGroupMember.get(id=user_id).prefetch_related("bsc"))
     bsc = BinanceSmartChain()
     args = message.get_args().split()
     account_data_frame = pandas.DataFrame()
@@ -887,11 +885,8 @@ async def send_spy(message: Message):
                 except ContractLogicError as e:
                     logger.exception(e)
 
-    except IndexError as e:
+    except (IndexError, ValidationError) as e:
         logger.exception(e)
-    except ValidationError as e:
-        logger.exception(e)
-
     fig = fif.create_table(account_data_frame)
     fig.update_layout(
         autosize=True,
