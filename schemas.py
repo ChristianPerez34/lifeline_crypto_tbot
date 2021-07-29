@@ -47,7 +47,9 @@ class Coin(BaseModel):
         return value
 
 
-class Alert(Coin):
+class TokenAlert(BaseModel):
+    id: Optional[int]
+    symbol: str = ''
     sign: str = ''
     price: Decimal = 0.0
 
@@ -55,10 +57,12 @@ class Alert(Coin):
 
     @validator('sign')
     def is_valid_sign(cls, value: str):
-        if value not in ("<", ">"):
-            raise ValueError("Expected a '<' or '>' sign")
-        return value
+        if value in {"<", ">"}:
+            return value
+        raise ValueError("Expected a '<' or '>' sign")
 
+    class Config:
+        orm_mode = True
 
 class BinanceChain(BaseModel):
     id: Optional[int]

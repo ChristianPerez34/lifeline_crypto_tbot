@@ -15,10 +15,12 @@ class TelegramGroupMember(db.Entity):
 
     @staticmethod
     def get_or_none(primary_key: int) -> db.Entity:
-        try:
-            return TelegramGroupMember[primary_key]
-        except orm.ObjectNotFound:
-            return None
+        with orm.db_session:
+            try:
+                return orm.select(member for member in TelegramGroupMember if member.id == primary_key).prefetch(
+                    BinanceChain).first()
+            except orm.ObjectNotFound:
+                return None
 
     @orm.db_session
     def create_or_update(self, data: dict) -> db.Entity:
@@ -48,3 +50,17 @@ class CryptoAlert(db.Entity):
     symbol = orm.Required(str)
     sign = orm.Required(str)
     price = orm.Required(Decimal, 36, 18)
+
+    @staticmethod
+    def create(data: dict) -> db.Entity:
+        with orm.db_session:
+            return CryptoAlert(**data)
+
+    @staticmethod
+    def all() -> list:
+        with orm.db_session:
+            return list(CryptoAlert.select())
+
+    @orm.db_session
+    def remove(self) -> None:
+        CryptoAlert[self.id].delete()

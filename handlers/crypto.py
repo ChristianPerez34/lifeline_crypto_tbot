@@ -43,7 +43,7 @@ from config import TELEGRAM_CHAT_ID
 from handlers.base import send_message, send_photo
 from models import CryptoAlert
 from models import TelegramGroupMember
-from schemas import Coin, Alert, User, TradeCoin, Chart, CandleChart
+from schemas import Coin, TokenAlert, User, TradeCoin, Chart, CandleChart
 from utils import all_same
 from . import eth
 from . import logger
@@ -248,16 +248,13 @@ async def send_price_alert(message: Message) -> None:
     args = message.get_args().split()
 
     try:
-        alert = Alert(symbol=args[0].upper(), sign=args[1], price=args[2].replace(",", ""))
+        alert = TokenAlert(symbol=args[0].upper(), sign=args[1], price=args[2].replace(",", ""))
         crypto = alert.symbol
-        sign = alert.sign
         price = alert.price
 
         coin_stats = get_coin_stats(symbol=crypto)
 
-        crypto_alert = await CryptoAlert.create(symbol=crypto,
-                                                sign=sign,
-                                                price=price)
+        crypto_alert = CryptoAlert.create(data=alert.dict())
 
         asyncio.create_task(price_alert_callback(alert=crypto_alert, delay=15))
         target_price = "${:,}".format(price.quantize(Decimal('0.01')))
@@ -301,14 +298,17 @@ async def price_alert_callback(alert: CryptoAlert, delay: int) -> None:
             send = True
 
         if send:
+
             price = "${:,}".format(price)
             spot_price = "${:,}".format(spot_price)
+
             if dip:
                 response = f":( {crypto} has dipped below {price} and is currently at {spot_price}."
             else:
                 response = f"👋 {crypto} has surpassed {price} and has just reached {spot_price}!"
+
+            alert.remove()
             await send_message(channel_id=TELEGRAM_CHAT_ID, message=response)
-            await alert.delete()
 
         await asyncio.sleep(delay)
 
@@ -369,7 +369,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
 
     if user in administrators:
         logger.info("User %s is admin. Restarting KuCoin Bot", user.username)
-        user = User.from_orm(await TelegramGroupMember.get(id=user.id))
+        user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (user.kucoin_api_key and user.kucoin_api_secret and
                 user.kucoin_api_passphrase):
@@ -440,11 +440,11 @@ async def send_buy_coin(message: Message) -> None:
     args = message.get_args().split()
 
     try:
-        user = User.from_orm(await TelegramGroupMember.get(id=telegram_user.id))
+        user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=telegram_user.id))
         if user:
             trade = TradeCoin(address=args[0], amount=args[1], side=BUY)
-            pancake_swap = PancakeSwap(address=user.bsc_address,
-                                       key=user.bsc_private_key)
+            pancake_swap = PancakeSwap(address=user.bsc.address,
+                                       key=user.bsc.private_key)
             reply = pancake_swap.swap_tokens(token=trade.address,
                                              amount_to_spend=trade.amount,
                                              side=trade.side)
@@ -473,10 +473,10 @@ async def send_sell_coin(message: Message) -> None:
     args = message.get_args().split()
 
     try:
-        user = User.from_orm(await TelegramGroupMember.get(id=telegram_user.id))
+        user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=telegram_user.id))
         if user:
             trade = TradeCoin(address=args[0], amount=0, side=SELL)
-            pancake_swap = PancakeSwap(address=user.bsc_address, key=user.bsc_private_key)
+            pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
             reply = pancake_swap.swap_tokens(
                 token=trade.address,
                 side=trade.side)
@@ -815,11 +815,9 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
 async def send_balance(message: Message):
     logger.info("Retrieving account balance")
     user_id = message.from_user.id
-    a = await TelegramGroupMember.get(id=user_id).prefetch_related("bsc")
-    await a.fetch_related("bsc")
-    user = User.from_orm(await TelegramGroupMember.get(id=user_id))
-    pancake_swap = PancakeSwap(address=user.bsc_address,
-                               key=user.bsc_private_key)
+    user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
+    pancake_swap = PancakeSwap(address=user.bsc.address,
+                               key=user.bsc.private_key)
     account_holdings = await pancake_swap.get_account_token_holdings(
         address=pancake_swap.address)
     account_data_frame = pandas.DataFrame()
@@ -854,15 +852,15 @@ async def send_spy(message: Message):
     logger.info("Executing spy command")
     counter = 0
     user_id = message.from_user.id
-    user = User.from_orm(await TelegramGroupMember.get(id=user_id).prefetch_related("bsc"))
+    user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
     bsc = BinanceSmartChain()
     args = message.get_args().split()
     account_data_frame = pandas.DataFrame()
     try:
         coin = Coin(address=args[0])
         account_holdings = await bsc.get_account_token_holdings(address=coin.address)
-        pancake_swap = PancakeSwap(address=user.bsc_address,
-                                   key=user.bsc_private_key)
+        pancake_swap = PancakeSwap(address=user.bsc.address,
+                                   key=user.bsc.private_key)
         for k in account_holdings.keys():
             if counter > 5:
                 break
@@ -902,10 +900,10 @@ async def send_snipe(message: Message):
     trade = TradeCoin(address=address, amount=amount, side=BUY)
 
     user_id = message.from_user.id
-    user = User.from_orm(await TelegramGroupMember.get(id=user_id))
+    user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
 
-    pancake_swap = PancakeSwap(address=user.bsc_address,
-                               key=user.bsc_private_key)
+    pancake_swap = PancakeSwap(address=user.bsc.address,
+                               key=user.bsc.private_key)
     asyncio.create_task(
         pancake_swap_sniper(chat_id=message.chat.id, token=trade.address, amount=trade.amount,
                             pancake_swap=pancake_swap))
