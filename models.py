@@ -1,30 +1,66 @@
-from tortoise import fields
-from tortoise.models import MODEL
-from tortoise.models import Model
+from decimal import Decimal
+
+from pony import orm
+
+db = orm.Database()
 
 
-class TelegramGroupMember(Model):
-    id = fields.IntField(pk=True)
-    bsc_address = fields.TextField(null=True)
-    bsc_private_key = fields.TextField(null=True)
-    kucoin_api_key = fields.TextField(null=True)
-    kucoin_api_secret = fields.TextField(null=True)
-    kucoin_api_passphrase = fields.TextField(null=True)
+class TelegramGroupMember(db.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    kucoin_api_key = orm.Optional(str)
+    kucoin_api_secret = orm.Optional(str)
+    kucoin_api_passphrase = orm.Optional(str)
 
-    async def create_or_update(self, data: dict) -> MODEL:
-        _id = data.get("id", None)
-        member = await self.get_or_none(id=_id)
+    bsc = orm.Optional(lambda: BinanceChain)
+
+    @staticmethod
+    def get_or_none(primary_key: int) -> db.Entity:
+        with orm.db_session:
+            try:
+                return orm.select(member for member in TelegramGroupMember if member.id == primary_key).prefetch(
+                    BinanceChain).first()
+            except orm.ObjectNotFound:
+                return None
+
+    @orm.db_session
+    def create_or_update(self, data: dict) -> db.Entity:
+        _id = data.get("id")
+        member = self.get_or_none(primary_key=_id)
 
         if member:
-            member = await member.update_from_dict(data=data)
-            await member.save()
+            bsc_data = data.pop("bsc")
+            bsc = BinanceChain(**bsc_data)
+            data['bsc'] = bsc
+            member.set(**data)
         else:
-            member = await self.create(**data)
+            member = TelegramGroupMember(**data)
         return member
 
 
-class CryptoAlert(Model):
-    id = fields.IntField(pk=True)
-    symbol = fields.TextField(null=False)
-    sign = fields.TextField(null=False)
-    price = fields.DecimalField(null=False, decimal_places=18, max_digits=36)
+class BinanceChain(db.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    address = orm.Required(str)
+    private_key = orm.Required(str)
+
+    telegram_group_member = orm.Required(lambda: TelegramGroupMember)
+
+
+class CryptoAlert(db.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    symbol = orm.Required(str)
+    sign = orm.Required(str)
+    price = orm.Required(Decimal, 36, 18)
+
+    @staticmethod
+    def create(data: dict) -> db.Entity:
+        with orm.db_session:
+            return CryptoAlert(**data)
+
+    @staticmethod
+    def all() -> list:
+        with orm.db_session:
+            return list(CryptoAlert.select())
+
+    @orm.db_session
+    def remove(self) -> None:
+        CryptoAlert[self.id].delete()

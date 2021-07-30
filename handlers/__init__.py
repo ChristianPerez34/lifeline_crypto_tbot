@@ -4,11 +4,11 @@ from pathlib import Path
 
 from etherscan import Etherscan
 from lru import LRU
-from tortoise import Tortoise
 
-from config import DB_CONFIG
-
+from config import DB_USER, DB_PASSWORD, DB_HOST, DB_NAME
 # Enable logging
+from models import db
+
 log_file = str(Path.home().joinpath('logs/lifeline_crypto_tbot.log'))
 
 logging.basicConfig(
@@ -26,6 +26,5 @@ eth = Etherscan(os.getenv("ETHERSCAN_API_KEY"))
 
 
 async def init_database():
-    await Tortoise.init(modules={"models": ["models"]}, config=DB_CONFIG)
-    # Generate the schema
-    await Tortoise.generate_schemas()
+    db.bind(provider='postgres', user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+    db.generate_mapping(create_tables=True)

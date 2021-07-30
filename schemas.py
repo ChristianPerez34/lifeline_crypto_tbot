@@ -9,6 +9,7 @@ from uniswap.types import AddressLike
 from web3 import Web3
 
 from config import BUY, SELL
+from models import TelegramGroupMember
 
 
 def is_valid_address(value: str):
@@ -46,7 +47,9 @@ class Coin(BaseModel):
         return value
 
 
-class Alert(Coin):
+class TokenAlert(BaseModel):
+    id: Optional[int]
+    symbol: str = ''
     sign: str = ''
     price: Decimal = 0.0
 
@@ -54,21 +57,39 @@ class Alert(Coin):
 
     @validator('sign')
     def is_valid_sign(cls, value: str):
-        if value not in ("<", ">"):
-            raise ValueError("Expected a '<' or '>' sign")
-        return value
+        if value in {"<", ">"}:
+            return value
+        raise ValueError("Expected a '<' or '>' sign")
+
+    class Config:
+        orm_mode = True
+
+class BinanceChain(BaseModel):
+    id: Optional[int]
+    address: str = ''
+    private_key: str = ''
+    telegram_group_member: int
+
+    _validate_address = validator('address',
+                                  allow_reuse=True)(is_valid_address)
+
+    @validator('telegram_group_member', pre=True)
+    def check_telegram_group_member(cls, value: TelegramGroupMember):
+        return value.id
+
+    class Config:
+        orm_mode = True
 
 
 class User(BaseModel):
     id: int
-    bsc_address: Optional[str] = ''
-    bsc_private_key: Optional[str] = ''
+    # bsc_address: Optional[str] = ''
+    # bsc_private_key: Optional[str] = ''
     kucoin_api_key: Optional[str] = ''
     kucoin_api_secret: Optional[str] = ''
     kucoin_api_passphrase: Optional[str] = ''
 
-    _validate_address = validator('bsc_address',
-                                  allow_reuse=True)(is_valid_address)
+    bsc: BinanceChain
 
     class Config:
         orm_mode = True

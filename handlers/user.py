@@ -9,7 +9,7 @@ from config import RegisterTypes
 from handlers import logger
 from handlers.base import send_message
 from models import TelegramGroupMember
-from schemas import User
+from schemas import User, BinanceChain
 
 
 async def send_register(message: Message) -> None:
@@ -38,13 +38,11 @@ async def send_register(message: Message) -> None:
             text = "⚠️ Please provide BNB smart chain address and private key: /register bsc [ADDRESS] [PRIVATE_KEY]"
         else:
             address, private_key = tuple(args[1:])
+            user_id = telegram_user.id
             data.update({
-                "id":
-                    telegram_user.id,
-                "bsc_address":
-                    address,
-                "bsc_private_key":
-                    fernet.encrypt(private_key.encode()).decode(),
+                "id": user_id,
+                "bsc": BinanceChain(address=address, private_key=fernet.encrypt(private_key.encode()).decode(),
+                                    telegram_group_member=user_id)
             })
             exclude = {
                 'kucoin_api_key', 'kucoin_api_secret', 'kucoin_api_passphrase'
@@ -78,7 +76,7 @@ async def send_register(message: Message) -> None:
     if not is_error:
         try:
             user = User(**data)
-            await TelegramGroupMember().create_or_update(data=user.dict(
+            TelegramGroupMember().create_or_update(data=user.dict(
                 exclude=exclude))
             text = f"Successfully registered @{telegram_user.username}"
         except BaseORMException as e:

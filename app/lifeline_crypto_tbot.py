@@ -34,7 +34,7 @@ async def on_startup(dispatcher: Dispatcher):
     """
     await init_database()
 
-    for alert in await CryptoAlert.all():
+    for alert in CryptoAlert.all():
         asyncio.create_task(price_alert_callback(alert=alert, delay=15))
     setup_handlers(dispatcher)
 
