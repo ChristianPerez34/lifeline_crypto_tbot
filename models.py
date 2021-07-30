@@ -17,8 +17,15 @@ class TelegramGroupMember(db.Entity):
     def get_or_none(primary_key: int) -> db.Entity:
         with orm.db_session:
             try:
-                return orm.select(member for member in TelegramGroupMember if member.id == primary_key).prefetch(
-                    BinanceChain).first()
+                return (
+                    orm.select(
+                        member
+                        for member in TelegramGroupMember
+                        if member.id == primary_key
+                    )
+                    .prefetch(BinanceChain)
+                    .first()
+                )
             except orm.ObjectNotFound:
                 return None
 
@@ -30,7 +37,7 @@ class TelegramGroupMember(db.Entity):
         if member:
             bsc_data = data.pop("bsc")
             bsc = BinanceChain(**bsc_data)
-            data['bsc'] = bsc
+            data["bsc"] = bsc
             member.set(**data)
         else:
             member = TelegramGroupMember(**data)

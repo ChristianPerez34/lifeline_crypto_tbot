@@ -25,21 +25,21 @@ def is_positive_number(value: Real):
 
 
 class Coin(BaseModel):
-    symbol: str = ''
-    address: Union[str, AddressLike] = ''
-    platform: str = ''
+    symbol: str = ""
+    address: Union[str, AddressLike] = ""
+    platform: str = ""
 
-    @validator('symbol')
+    @validator("symbol")
     def symbol_is_alphanumeric(cls, value: str):
         if not value.isalnum():
-            raise ValueError(f'{value} is not a valid symbol')
+            raise ValueError(f"{value} is not a valid symbol")
         return value
 
-    @validator('address')
+    @validator("address")
     def check_address(cls, value: Union[str, AddressLike]):
         return Web3.toChecksumAddress(is_valid_address(value))
 
-    @validator('platform')
+    @validator("platform")
     def check_platform(cls, value: str):
         value = value.upper()
         if value not in ("BSC",):
@@ -49,13 +49,13 @@ class Coin(BaseModel):
 
 class TokenAlert(BaseModel):
     id: Optional[int]
-    symbol: str = ''
-    sign: str = ''
+    symbol: str = ""
+    sign: str = ""
     price: Decimal = 0.0
 
-    _validate_price = validator('price', allow_reuse=True)(is_positive_number)
+    _validate_price = validator("price", allow_reuse=True)(is_positive_number)
 
-    @validator('sign')
+    @validator("sign")
     def is_valid_sign(cls, value: str):
         if value in {"<", ">"}:
             return value
@@ -64,16 +64,16 @@ class TokenAlert(BaseModel):
     class Config:
         orm_mode = True
 
+
 class BinanceChain(BaseModel):
     id: Optional[int]
-    address: str = ''
-    private_key: str = ''
+    address: str = ""
+    private_key: str = ""
     telegram_group_member: int
 
-    _validate_address = validator('address',
-                                  allow_reuse=True)(is_valid_address)
+    _validate_address = validator("address", allow_reuse=True)(is_valid_address)
 
-    @validator('telegram_group_member', pre=True)
+    @validator("telegram_group_member", pre=True)
     def check_telegram_group_member(cls, value: TelegramGroupMember):
         return value.id
 
@@ -85,9 +85,9 @@ class User(BaseModel):
     id: int
     # bsc_address: Optional[str] = ''
     # bsc_private_key: Optional[str] = ''
-    kucoin_api_key: Optional[str] = ''
-    kucoin_api_secret: Optional[str] = ''
-    kucoin_api_passphrase: Optional[str] = ''
+    kucoin_api_key: Optional[str] = ""
+    kucoin_api_secret: Optional[str] = ""
+    kucoin_api_passphrase: Optional[str] = ""
 
     bsc: BinanceChain
 
@@ -99,9 +99,9 @@ class TradeCoin(Coin):
     amount: Decimal
     side: str
 
-    _validate_amount = validator('amount', allow_reuse=True)(is_positive_number)
+    _validate_amount = validator("amount", allow_reuse=True)(is_positive_number)
 
-    @validator('side')
+    @validator("side")
     def is_valid_side(cls, value: str):
         if value not in (BUY, SELL):
             raise ValueError(f"Expected side to be either '{BUY}' or '{SELL}'")
@@ -112,13 +112,12 @@ class Chart(Coin):
     time_frame: int
     ticker: str
 
-    _validate_time_frame = validator('time_frame',
-                                     allow_reuse=True)(is_positive_number)
+    _validate_time_frame = validator("time_frame", allow_reuse=True)(is_positive_number)
 
     @root_validator
     def check_ticker(cls, values):
         """Check order id"""
-        ticker = values.get('ticker', '').upper()
+        ticker = values.get("ticker", "").upper()
 
         if not ticker:
             raise ValueError(
@@ -127,21 +126,21 @@ class Chart(Coin):
         if "-" not in ticker:
             ticker = f"{ticker}-USD"
         else:
-            symbols = ticker.split('-')
+            symbols = ticker.split("-")
             if symbols[0] == symbols[1]:
                 raise ValueError(f"Can't compare *{symbols[0]}* to itself.")
 
-        values['ticker'] = ticker
+        values["ticker"] = ticker
         return values
 
 
 class CandleChart(Chart):
     resolution: str
 
-    @validator('resolution')
+    @validator("resolution")
     def validate_resolution(cls, value: str):
-        resolutions = {'m': 'MINUTE', 'h': 'HOUR', 'd': "DAY"}
+        resolutions = {"m": "MINUTE", "h": "HOUR", "d": "DAY"}
         value = value.lower()
-        if value not in ('m', 'h', 'd'):
+        if value not in ("m", "h", "d"):
             raise ValueError("Expected resolution in 'm', 'h', or 'd'")
         return resolutions[value]

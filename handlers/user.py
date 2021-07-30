@@ -39,45 +39,49 @@ async def send_register(message: Message) -> None:
         else:
             address, private_key = tuple(args[1:])
             user_id = telegram_user.id
-            data.update({
-                "id": user_id,
-                "bsc": BinanceChain(address=address, private_key=fernet.encrypt(private_key.encode()).decode(),
-                                    telegram_group_member=user_id)
-            })
-            exclude = {
-                'kucoin_api_key', 'kucoin_api_secret', 'kucoin_api_passphrase'
-            }
+            data.update(
+                {
+                    "id": user_id,
+                    "bsc": BinanceChain(
+                        address=address,
+                        private_key=fernet.encrypt(private_key.encode()).decode(),
+                        telegram_group_member=user_id,
+                    ),
+                }
+            )
+            exclude = {"kucoin_api_key", "kucoin_api_secret", "kucoin_api_passphrase"}
     elif register_type == RegisterTypes.KUCOIN.value:
         if len(args) != 4:
             is_error = True
             text = (
                 "⚠️ Please provide KuCoin API Key, Secret and Passphrase: /register kucoin [API_KEY] "
-                "[API_SECRET] [API_PASSPHRASE]")
+                "[API_SECRET] [API_PASSPHRASE]"
+            )
         else:
             api_key, api_secret, api_passphrase = tuple(args[1:])
-            data.update({
-                "id":
-                    telegram_user.id,
-                "kucoin_api_key":
-                    fernet.encrypt(api_key.encode()).decode(),
-                "kucoin_api_secret":
-                    fernet.encrypt(api_secret.encode()).decode(),
-                "kucoin_api_passphrase":
-                    fernet.encrypt(api_passphrase.encode()).decode(),
-            })
-            exclude = {'bsc_address', 'bsc_private_key'}
+            data.update(
+                {
+                    "id": telegram_user.id,
+                    "kucoin_api_key": fernet.encrypt(api_key.encode()).decode(),
+                    "kucoin_api_secret": fernet.encrypt(api_secret.encode()).decode(),
+                    "kucoin_api_passphrase": fernet.encrypt(
+                        api_passphrase.encode()
+                    ).decode(),
+                }
+            )
+            exclude = {"bsc_address", "bsc_private_key"}
 
     else:
         is_error = True
         text = (
             "⚠️ Stonks! Sorry about that, couldn't identify type of account to register. Specify account type: "
-            "/register [bsc] or [kucoin] ")
+            "/register [bsc] or [kucoin] "
+        )
 
     if not is_error:
         try:
             user = User(**data)
-            TelegramGroupMember().create_or_update(data=user.dict(
-                exclude=exclude))
+            TelegramGroupMember().create_or_update(data=user.dict(exclude=exclude))
             text = f"Successfully registered @{telegram_user.username}"
         except BaseORMException as e:
             logger.info("Failed to register user")

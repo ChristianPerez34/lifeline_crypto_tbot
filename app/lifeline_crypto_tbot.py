@@ -8,7 +8,12 @@ from config import KUCOIN_TASK_NAME, TELEGRAM_CHAT_ID
 from handlers import init_database
 from handlers.base import send_greeting, send_message
 from handlers.base import send_welcome
-from handlers.crypto import kucoin_inline_query_handler, send_sell_coin, send_spy, send_snipe
+from handlers.crypto import (
+    kucoin_inline_query_handler,
+    send_sell_coin,
+    send_spy,
+    send_snipe,
+)
 from handlers.crypto import price_alert_callback
 from handlers.crypto import send_balance
 from handlers.crypto import send_buy_coin
@@ -45,7 +50,9 @@ async def on_shutdown(_):
     """Disable KuCoin bot on shutdown"""
     tasks = asyncio.all_tasks()
 
-    await send_message(channel_id=TELEGRAM_CHAT_ID, message="Going offline! Be right back.")
+    await send_message(
+        channel_id=TELEGRAM_CHAT_ID, message="Going offline! Be right back."
+    )
 
     for task in tasks:
         if task.get_name() == KUCOIN_TASK_NAME:
@@ -58,29 +65,30 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     Args:
         dispatcher (Dispatcher): Bot dispatcher
     """
-    dispatcher.register_message_handler(send_welcome,
-                                        commands=["start", "help"])
+    dispatcher.register_message_handler(send_welcome, commands=["start", "help"])
     dispatcher.register_message_handler(send_price, commands=["price"])
     dispatcher.register_message_handler(send_gas, commands=["gas"])
-    dispatcher.register_message_handler(send_coin_address,
-                                        commands=["coin_address"])
+    dispatcher.register_message_handler(send_coin_address, commands=["coin_address"])
     dispatcher.register_message_handler(send_trending, commands=["trending"])
     dispatcher.register_message_handler(send_chart, commands=["chart"])
     dispatcher.register_message_handler(send_candle_chart, commands=["candle"])
     dispatcher.register_message_handler(send_price_alert, commands=["alert"])
-    dispatcher.register_message_handler(send_latest_listings,
-                                        commands=["latest_listings"])
-    dispatcher.register_message_handler(send_restart_kucoin_bot,
-                                        commands=["restart_kucoin"])
+    dispatcher.register_message_handler(
+        send_latest_listings, commands=["latest_listings"]
+    )
+    dispatcher.register_message_handler(
+        send_restart_kucoin_bot, commands=["restart_kucoin"]
+    )
     dispatcher.register_message_handler(send_buy_coin, commands=["buy_coin"])
     dispatcher.register_message_handler(send_register, commands=["register"])
     dispatcher.register_message_handler(send_balance, commands=["balance"])
     dispatcher.register_callback_query_handler(kucoin_inline_query_handler)
     dp.register_message_handler(send_sell_coin, commands=["sell_coin"])
-    dp.register_message_handler(send_spy, commands=['spy'])
-    dp.register_message_handler(send_snipe, commands=['snipe'])
+    dp.register_message_handler(send_spy, commands=["spy"])
+    dp.register_message_handler(send_snipe, commands=["snipe"])
     dispatcher.register_message_handler(
-        send_greeting, content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
+        send_greeting, content_types=types.ContentTypes.NEW_CHAT_MEMBERS
+    )
     dispatcher.register_errors_handler(send_error)
 
 
@@ -88,7 +96,6 @@ if __name__ == "__main__":
     import os
 
     print(os.getcwd())
-    executor.start_polling(dp,
-                           skip_updates=True,
-                           on_startup=on_startup,
-                           on_shutdown=on_shutdown)
+    executor.start_polling(
+        dp, skip_updates=True, on_startup=on_startup, on_shutdown=on_shutdown
+    )

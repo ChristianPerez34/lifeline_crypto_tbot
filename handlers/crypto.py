@@ -77,8 +77,8 @@ def get_coin_stats(symbol: str) -> dict:
         }
     except IndexError:
         logger.info(
-            "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.",
-            symbol)
+            "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.", symbol
+        )
         data = coin_market_cap.coin_lookup(symbol)
         quote = data["quote"]["USD"]
         coin_stats = {
@@ -141,10 +141,12 @@ async def send_price(message: Message) -> None:
 
             if "website" in coin_stats:
                 reply += f"{coin_stats['website']}\n\n"
-            reply += (f"Price\n{price}\n\n"
-                      f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                      f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                      f"Market Cap\n{market_cap}")
+            reply += (
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+                f"Market Cap\n{market_cap}"
+            )
     except IndexError as e:
         logger.exception(e)
         reply = f"⚠️ Please provide a crypto code: \n{bold('/price')} {italic('COIN')}"
@@ -164,10 +166,12 @@ async def send_gas(message: Message) -> None:
     """
     logger.info("ETH gas price command executed")
     gas_price = eth.get_gas_oracle()
-    reply = ("ETH Gas Prices ⛽️\n"
-             f"Slow: {gas_price['SafeGasPrice']}\n"
-             f"Average: {gas_price['ProposeGasPrice']}\n"
-             f"Fast: {gas_price['FastGasPrice']}\n")
+    reply = (
+        "ETH Gas Prices ⛽️\n"
+        f"Slow: {gas_price['SafeGasPrice']}\n"
+        f"Average: {gas_price['ProposeGasPrice']}\n"
+        f"Fast: {gas_price['FastGasPrice']}\n"
+    )
     await message.reply(text=reply)
 
 
@@ -180,16 +184,22 @@ async def send_coin_address(message: Message) -> None:
     logger.info("Searching for coin by contract address")
     args = message.get_args().split()
     try:
-        address, platform, *_ = chain(args, ['', ''])
+        address, platform, *_ = chain(args, ["", ""])
         coin = Coin(address=address, platform=platform)
         address = coin.address
         platform = coin.platform
-        if platform == 'BSC':
-            user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=message.from_user.id))
-            pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+        if platform == "BSC":
+            user = User.from_orm(
+                TelegramGroupMember.get_or_none(primary_key=message.from_user.id)
+            )
+            pancake_swap = PancakeSwap(
+                address=user.bsc.address, key=user.bsc.private_key
+            )
             token = pancake_swap.get_token(address=address)
             price = "${:,}".format(1 / pancake_swap.get_token_price(token=address))
-            reply = f"{token.name} ({token.symbol})\n\n{token.address}\n\nPrice\n{price}"
+            reply = (
+                f"{token.name} ({token.symbol})\n\n{token.address}\n\nPrice\n{price}"
+            )
         else:
 
             coin_stats = get_coin_stats_by_address(address=address)
@@ -202,10 +212,12 @@ async def send_coin_address(message: Message) -> None:
 
             if "website" in coin_stats:
                 reply += f"{coin_stats['website']}\n\n"
-            reply += (f"Price\n{price}\n\n"
-                      f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                      f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                      f"Market Cap\n{market_cap}")
+            reply += (
+                f"Price\n{price}\n\n"
+                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
+                f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
+                f"Market Cap\n{market_cap}"
+            )
     except IndexError as e:
         logger.exception(e)
         reply = f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"
@@ -231,10 +243,13 @@ async def send_trending(message: Message) -> None:
     )
 
     coin_market_cap_trending_coins = "\n".join(
-        await coin_market_cap.get_trending_coins())
+        await coin_market_cap.get_trending_coins()
+    )
 
-    reply = (f"Trending 🔥\n\nCoinGecko\n\n{coin_gecko_trending_coins}\n\n"
-             f"CoinMarketCap\n\n{coin_market_cap_trending_coins}")
+    reply = (
+        f"Trending 🔥\n\nCoinGecko\n\n{coin_gecko_trending_coins}\n\n"
+        f"CoinMarketCap\n\n{coin_market_cap_trending_coins}"
+    )
     await message.reply(text=reply)
 
 
@@ -248,7 +263,9 @@ async def send_price_alert(message: Message) -> None:
     args = message.get_args().split()
 
     try:
-        alert = TokenAlert(symbol=args[0].upper(), sign=args[1], price=args[2].replace(",", ""))
+        alert = TokenAlert(
+            symbol=args[0].upper(), sign=args[1], price=args[2].replace(",", "")
+        )
         crypto = alert.symbol
         price = alert.price
 
@@ -257,8 +274,10 @@ async def send_price_alert(message: Message) -> None:
         crypto_alert = CryptoAlert.create(data=alert.dict())
 
         asyncio.create_task(price_alert_callback(alert=crypto_alert, delay=15))
-        target_price = "${:,}".format(price.quantize(Decimal('0.01')))
-        current_price = "${:,}".format(Decimal(coin_stats['price']).quantize(Decimal('0.01')))
+        target_price = "${:,}".format(price.quantize(Decimal("0.01")))
+        current_price = "${:,}".format(
+            Decimal(coin_stats["price"]).quantize(Decimal("0.01"))
+        )
         reply = f"⏳ I will send you a message when the price of {crypto} reaches {target_price}\n"
         reply += f"The current price of {crypto} is {current_price}"
     except IndexError as e:
@@ -325,8 +344,8 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-                "https://www.coingecko.com/en/coins/recently_added",
-                headers=HEADERS) as response:
+            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+        ) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
 
             for row in df.itertuples():
@@ -343,8 +362,9 @@ async def send_latest_listings(message: Message) -> None:
         count = 5
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
-        async with session.get("https://coinmarketcap.com/new/",
-                               headers=HEADERS) as response:
+        async with session.get(
+            "https://coinmarketcap.com/new/", headers=HEADERS
+        ) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
                 if count == 0:
@@ -371,17 +391,20 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         logger.info("User %s is admin. Restarting KuCoin Bot", user.username)
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
-        if (user.kucoin_api_key and user.kucoin_api_secret and
-                user.kucoin_api_passphrase):
+        if (
+            user.kucoin_api_key
+            and user.kucoin_api_secret
+            and user.kucoin_api_passphrase
+        ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
-            api_secret = fernet.decrypt(
-                user.kucoin_api_secret.encode()).decode()
+            api_secret = fernet.decrypt(user.kucoin_api_secret.encode()).decode()
             api_passphrase = fernet.decrypt(
-                user.kucoin_api_passphrase.encode()).decode()
-            kucoin_api = KucoinApi(api_key=api_key,
-                                   api_secret=api_secret,
-                                   api_passphrase=api_passphrase)
+                user.kucoin_api_passphrase.encode()
+            ).decode()
+            kucoin_api = KucoinApi(
+                api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase
+            )
             orders = kucoin_api.get_open_stop_order()
 
             for position in kucoin_api.get_all_position():
@@ -394,8 +417,10 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     for position_order in position_orders:
                         stop_price = position_order["stopPrice"]
 
-                        if (position_order["stopPriceType"] == "TP" and
-                                position_order["stop"] == "up"):
+                        if (
+                            position_order["stopPriceType"] == "TP"
+                            and position_order["stop"] == "up"
+                        ):
                             take_profit = stop_price
                         else:
                             stop_loss = stop_price
@@ -404,18 +429,22 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     entry = position["avgEntryPrice"]
                     mark_price = position["markPrice"]
                     unrealized_pnl = position["unrealisedPnl"]
-                    side = ("LONG" if
-                            (entry < mark_price and unrealized_pnl > 0) or
-                            (entry > mark_price and unrealized_pnl < 0) else
-                            "SHORT")
-                    active_orders.update({
-                        symbol: {
-                            "entry": entry,
-                            "side": side,
-                            "take_profit": take_profit,
-                            "stop_loss": stop_loss,
+                    side = (
+                        "LONG"
+                        if (entry < mark_price and unrealized_pnl > 0)
+                        or (entry > mark_price and unrealized_pnl < 0)
+                        else "SHORT"
+                    )
+                    active_orders.update(
+                        {
+                            symbol: {
+                                "entry": entry,
+                                "side": side,
+                                "take_profit": take_profit,
+                                "stop_loss": stop_loss,
+                            }
                         }
-                    })
+                    )
             asyncio.create_task(kucoin_bot(), name=KUCOIN_TASK_NAME)
             reply = "Restarted KuCoin Bot 🤖"
         else:
@@ -440,14 +469,17 @@ async def send_buy_coin(message: Message) -> None:
     args = message.get_args().split()
 
     try:
-        user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=telegram_user.id))
+        user = User.from_orm(
+            TelegramGroupMember.get_or_none(primary_key=telegram_user.id)
+        )
         if user:
             trade = TradeCoin(address=args[0], amount=args[1], side=BUY)
-            pancake_swap = PancakeSwap(address=user.bsc.address,
-                                       key=user.bsc.private_key)
-            reply = pancake_swap.swap_tokens(token=trade.address,
-                                             amount_to_spend=trade.amount,
-                                             side=trade.side)
+            pancake_swap = PancakeSwap(
+                address=user.bsc.address, key=user.bsc.private_key
+            )
+            reply = pancake_swap.swap_tokens(
+                token=trade.address, amount_to_spend=trade.amount, side=trade.side
+            )
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
     except IndexError as e:
@@ -473,13 +505,15 @@ async def send_sell_coin(message: Message) -> None:
     args = message.get_args().split()
 
     try:
-        user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=telegram_user.id))
+        user = User.from_orm(
+            TelegramGroupMember.get_or_none(primary_key=telegram_user.id)
+        )
         if user:
             trade = TradeCoin(address=args[0], amount=0, side=SELL)
-            pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
-            reply = pancake_swap.swap_tokens(
-                token=trade.address,
-                side=trade.side)
+            pancake_swap = PancakeSwap(
+                address=user.bsc.address, key=user.bsc.private_key
+            )
+            reply = pancake_swap.swap_tokens(token=trade.address, side=trade.side)
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
     except IndexError as e:
@@ -506,7 +540,7 @@ async def send_chart(message: Message):
 
     try:
         chart = Chart(ticker=args[0], time_frame=args[1])
-        pair = chart.ticker.split('-')
+        pair = chart.ticker.split("-")
         symbol = pair[0]
         base_coin = pair[1]
         time_frame = chart.time_frame
@@ -516,12 +550,11 @@ async def send_chart(message: Message):
 
         logger.info("Creating chart layout")
         # Volume
-        df_volume = DataFrame(market["total_volumes"],
-                              columns=["DateTime", "Volume"])
+        df_volume = DataFrame(market["total_volumes"], columns=["DateTime", "Volume"])
         df_volume["DateTime"] = pd.to_datetime(df_volume["DateTime"], unit="ms")
-        volume = go.Scatter(x=df_volume.get("DateTime"),
-                            y=df_volume.get("Volume"),
-                            name="Volume")
+        volume = go.Scatter(
+            x=df_volume.get("DateTime"), y=df_volume.get("Volume"), name="Volume"
+        )
 
         # Price
         df_price = DataFrame(market["prices"], columns=["DateTime", "Price"])
@@ -561,25 +594,21 @@ async def send_chart(message: Message):
                 ticksuffix="  ",
             ),
             title=dict(text=symbol, font=dict(size=26)),
-            legend=dict(orientation="h",
-                        yanchor="top",
-                        xanchor="center",
-                        y=1.05,
-                        x=0.45),
-            shapes=[{
-                "type": "line",
-                "xref": "paper",
-                "yref": "y2",
-                "x0": 0,
-                "x1": 1,
-                "y0": market["prices"][-1][1],
-                "y1": market["prices"][-1][1],
-                "line": {
-                    "color": "rgb(50, 171, 96)",
-                    "width": 1,
-                    "dash": "dot"
-                },
-            }],
+            legend=dict(
+                orientation="h", yanchor="top", xanchor="center", y=1.05, x=0.45
+            ),
+            shapes=[
+                {
+                    "type": "line",
+                    "xref": "paper",
+                    "yref": "y2",
+                    "x0": 0,
+                    "x1": 1,
+                    "y0": market["prices"][-1][1],
+                    "y1": market["prices"][-1][1],
+                    "line": {"color": "rgb(50, 171, 96)", "width": 1, "dash": "dot"},
+                }
+            ],
         )
 
         fig = go.Figure(data=[price, volume], layout=layout)
@@ -588,7 +617,8 @@ async def send_chart(message: Message):
         logger.exception(e)
         reply = text(
             f"⚠️ Please provide a valid crypto symbol and amount of days: "
-            f"\n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}")
+            f"\n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}"
+        )
     except ValidationError as e:
         logger.exception(e)
         error_message = e.args[0][0].exc
@@ -600,7 +630,8 @@ async def send_chart(message: Message):
         logger.info("Exporting chart as image")
         await message.reply_photo(
             photo=BufferedReader(
-                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+            ),
             parse_mode=ParseMode.MARKDOWN,
         )
 
@@ -616,10 +647,10 @@ async def send_candle_chart(message: Message):
     reply = ""
 
     try:
-        candle_chart = CandleChart(ticker=args[0],
-                                   time_frame=args[1],
-                                   resolution=args[2])
-        pair = candle_chart.ticker.split('-')
+        candle_chart = CandleChart(
+            ticker=args[0], time_frame=args[1], resolution=args[2]
+        )
+        pair = candle_chart.ticker.split("-")
         symbol, base_coin = pair[0], pair[1]
 
         time_frame = candle_chart.time_frame
@@ -628,13 +659,16 @@ async def send_candle_chart(message: Message):
         logger.info("Searching for coin historical data for candle chart")
         if resolution == "MINUTE":
             ohlcv = CryptoCompare().get_historical_ohlcv_minute(
-                symbol, base_coin, time_frame)
+                symbol, base_coin, time_frame
+            )
         elif resolution == "HOUR":
             ohlcv = CryptoCompare().get_historical_ohlcv_hourly(
-                symbol, base_coin, time_frame)
+                symbol, base_coin, time_frame
+            )
         else:
             ohlcv = CryptoCompare().get_historical_ohlcv_daily(
-                symbol, base_coin, time_frame)
+                symbol, base_coin, time_frame
+            )
         if ohlcv["Response"] == "Error":
             if ohlcv["Message"] == "limit is larger than max value.":
                 reply = text(
@@ -658,9 +692,9 @@ async def send_candle_chart(message: Message):
 
                 reply = text(
                     f"{symbol} not found on CryptoCompare. Initiated lookup on CoinPaprika."
-                    f" Data may not be as complete as CoinGecko or CMC")
-                await message.reply(text=emojize(reply),
-                                    parse_mode=ParseMode.MARKDOWN)
+                    f" Data may not be as complete as CoinGecko or CMC"
+                )
+                await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
                 reply = ""
 
                 cp_ohlc = CoinPaprika().get_list_coins()
@@ -707,32 +741,39 @@ async def send_candle_chart(message: Message):
                     margin_l = 125
                     tick_format = "0.2f"
 
-            fig = fif.create_candlestick(open_, high, low, close,
-                                         pd.to_datetime(time_, unit="s"))
+            fig = fif.create_candlestick(
+                open_, high, low, close, pd.to_datetime(time_, unit="s")
+            )
 
-            fig["layout"]["yaxis"].update(tickformat=tick_format,
-                                          tickprefix="   ",
-                                          ticksuffix="  ")
+            fig["layout"]["yaxis"].update(
+                tickformat=tick_format, tickprefix="   ", ticksuffix="  "
+            )
 
             fig["layout"].update(
                 title=dict(text=symbol, font=dict(size=26)),
-                yaxis=dict(title=dict(text=base_coin, font=dict(size=18)), ),
+                yaxis=dict(
+                    title=dict(text=base_coin, font=dict(size=18)),
+                ),
             )
 
-            fig["layout"].update(shapes=[{
-                "type": "line",
-                "xref": "paper",
-                "yref": "y",
-                "x0": 0,
-                "x1": 1,
-                "y0": close[-1],
-                "y1": close[-1],
-                "line": {
-                    "color": "rgb(50, 171, 96)",
-                    "width": 1,
-                    "dash": "dot",
-                },
-            }])
+            fig["layout"].update(
+                shapes=[
+                    {
+                        "type": "line",
+                        "xref": "paper",
+                        "yref": "y",
+                        "x0": 0,
+                        "x1": 1,
+                        "y0": close[-1],
+                        "y1": close[-1],
+                        "line": {
+                            "color": "rgb(50, 171, 96)",
+                            "width": 1,
+                            "dash": "dot",
+                        },
+                    }
+                ]
+            )
 
             fig["layout"].update(
                 paper_bgcolor="rgb(233,233,233)",
@@ -747,7 +788,8 @@ async def send_candle_chart(message: Message):
         reply = text(
             f"⚠️ Please provide a valid crypto symbol and time followed by desired timeframe letter:\n"
             f" m - Minute\n h - Hour\n d - Day\n \n{bold('/candle')} {italic('SYMBOL')} "
-            f"{italic('NUMBER')} {italic('LETTER')}")
+            f"{italic('NUMBER')} {italic('LETTER')}"
+        )
     except ValidationError as e:
         logger.exception(e)
         error_message = e.args[0][0].exc
@@ -759,7 +801,8 @@ async def send_candle_chart(message: Message):
         logger.info("Exporting chart as image")
         await message.reply_photo(
             photo=BufferedReader(
-                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))),
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+            ),
             parse_mode=ParseMode.MARKDOWN,
         )
 
@@ -780,11 +823,10 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
         fernet = Fernet(FERNET_KEY)
         api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
         api_secret = fernet.decrypt(user.kucoin_api_secret.encode()).decode()
-        api_passphrase = fernet.decrypt(
-            user.kucoin_api_passphrase.encode()).decode()
-        kucoin_api = KucoinApi(api_key=api_key,
-                               api_secret=api_secret,
-                               api_passphrase=api_passphrase)
+        api_passphrase = fernet.decrypt(user.kucoin_api_passphrase.encode()).decode()
+        kucoin_api = KucoinApi(
+            api_key=api_key, api_secret=api_secret, api_passphrase=api_passphrase
+        )
         logger.info("Retrieving user balance")
         balance = kucoin_api.get_balance()
 
@@ -798,10 +840,9 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
         try:
             ticker = kucoin_api.get_ticker(symbol=symbol)
             size = (ten_percent_port / Decimal(ticker["price"])) * leverage
-            kucoin_api.create_market_order(symbol=symbol,
-                                           side=side,
-                                           size=int(size),
-                                           lever=str(leverage))
+            kucoin_api.create_market_order(
+                symbol=symbol, side=side, size=int(size), lever=str(leverage)
+            )
             reply = f"@{username} successfully followed signal"
         except RequestException as e:
             logger.exception(e)
@@ -816,36 +857,48 @@ async def send_balance(message: Message):
     logger.info("Retrieving account balance")
     user_id = message.from_user.id
     user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
-    pancake_swap = PancakeSwap(address=user.bsc.address,
-                               key=user.bsc.private_key)
+    pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
     account_holdings = await pancake_swap.get_account_token_holdings(
-        address=pancake_swap.address)
+        address=pancake_swap.address
+    )
     account_data_frame = pandas.DataFrame()
     for k in account_holdings.keys():
         coin = account_holdings[k]
         token = coin["address"]
 
         # Quantity in wei used to calculate price
-        quantity = pancake_swap.get_token_balance(address=pancake_swap.address, token=token)
+        quantity = pancake_swap.get_token_balance(
+            address=pancake_swap.address, token=token
+        )
         if quantity > 0:
             try:
                 token_price = pancake_swap.get_token_price(token=token)
                 price = quantity / token_price
 
                 # Quantity in correct format as seen in wallet
-                quantity = pancake_swap.get_decimal_representation(quantity=quantity, decimals=coin['decimals'])
-                usd_amount = "${:,}".format(price.quantize(Decimal('0.01')))
+                quantity = pancake_swap.get_decimal_representation(
+                    quantity=quantity, decimals=coin["decimals"]
+                )
+                usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
                 data_frame = pandas.DataFrame(
-                    {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]})
-                account_data_frame = account_data_frame.append(data_frame, ignore_index=True)
+                    {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]}
+                )
+                account_data_frame = account_data_frame.append(
+                    data_frame, ignore_index=True
+                )
             except ContractLogicError as e:
                 logger.exception(e)
     fig = fif.create_table(account_data_frame)
     fig.update_layout(
         autosize=True,
     )
-    await send_photo(chat_id=user_id, caption="Account Balance 💲", photo=BufferedReader(
-        BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))))
+    await send_photo(
+        chat_id=user_id,
+        caption="Account Balance 💲",
+        photo=BufferedReader(
+            BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+        ),
+    )
 
 
 async def send_spy(message: Message):
@@ -859,13 +912,12 @@ async def send_spy(message: Message):
     try:
         coin = Coin(address=args[0])
         account_holdings = await bsc.get_account_token_holdings(address=coin.address)
-        pancake_swap = PancakeSwap(address=user.bsc.address,
-                                   key=user.bsc.private_key)
+        pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
         for k in account_holdings.keys():
             if counter > 5:
                 break
             _coin = account_holdings[k]
-            token = _coin['address']
+            token = _coin["address"]
 
             # Quantity in wei used to calculate price
             quantity = bsc.get_token_balance(address=coin.address, token=token)
@@ -875,10 +927,16 @@ async def send_spy(message: Message):
                     price = quantity / token_price
 
                     # Quantity in correct format as seen in wallet
-                    quantity = pancake_swap.get_decimal_representation(quantity=quantity, decimals=_coin['decimals'])
-                    usd_amount = "${:,}".format(price.quantize(Decimal('0.01')))
-                    data_frame = pandas.DataFrame({"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]})
-                    account_data_frame = account_data_frame.append(data_frame, ignore_index=True)
+                    quantity = pancake_swap.get_decimal_representation(
+                        quantity=quantity, decimals=_coin["decimals"]
+                    )
+                    usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
+                    data_frame = pandas.DataFrame(
+                        {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]}
+                    )
+                    account_data_frame = account_data_frame.append(
+                        data_frame, ignore_index=True
+                    )
                     counter += 1
                 except ContractLogicError as e:
                     logger.exception(e)
@@ -889,22 +947,33 @@ async def send_spy(message: Message):
     fig.update_layout(
         autosize=True,
     )
-    await send_photo(chat_id=message.chat.id, caption="👀 Super Spy 👀", photo=BufferedReader(
-        BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))))
+    await send_photo(
+        chat_id=message.chat.id,
+        caption="👀 Super Spy 👀",
+        photo=BufferedReader(
+            BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+        ),
+    )
 
 
 async def send_snipe(message: Message):
     logger.info("Executing snipe command")
     args = message.get_args().split()
-    address, amount, *_ = chain(args, ['', 0])
+    address, amount, *_ = chain(args, ["", 0])
     trade = TradeCoin(address=address, amount=amount, side=BUY)
 
     user_id = message.from_user.id
     user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
 
-    pancake_swap = PancakeSwap(address=user.bsc.address,
-                               key=user.bsc.private_key)
+    pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
     asyncio.create_task(
-        pancake_swap_sniper(chat_id=message.chat.id, token=trade.address, amount=trade.amount,
-                            pancake_swap=pancake_swap))
-    await message.reply(text=f"🎯 Sniping {trade.address}...", parse_mode=ParseMode.MARKDOWN)
+        pancake_swap_sniper(
+            chat_id=message.chat.id,
+            token=trade.address,
+            amount=trade.amount,
+            pancake_swap=pancake_swap,
+        )
+    )
+    await message.reply(
+        text=f"🎯 Sniping {trade.address}...", parse_mode=ParseMode.MARKDOWN
+    )
