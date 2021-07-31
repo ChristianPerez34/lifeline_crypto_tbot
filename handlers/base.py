@@ -1,8 +1,7 @@
 import random
 from io import BufferedReader
 
-from aiogram.types import (InlineKeyboardButton, InlineKeyboardMarkup, Message,
-                           ParseMode)
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, ParseMode
 from aiogram.utils.markdown import bold, italic, text
 
 from app import bot

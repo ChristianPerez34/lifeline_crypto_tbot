@@ -29,8 +29,7 @@ from app import bot
 from bot import active_orders
 from bot.bsc_sniper import pancake_swap_sniper
 from bot.kucoin_bot import kucoin_bot
-from config import (BUY, FERNET_KEY, HEADERS, KUCOIN_TASK_NAME, SELL,
-                    TELEGRAM_CHAT_ID)
+from config import BUY, FERNET_KEY, HEADERS, KUCOIN_TASK_NAME, SELL, TELEGRAM_CHAT_ID
 from handlers.base import send_message, send_photo
 from models import CryptoAlert, TelegramGroupMember
 from schemas import CandleChart, Chart, Coin, TokenAlert, TradeCoin, User

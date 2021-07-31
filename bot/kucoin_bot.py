@@ -7,8 +7,12 @@ from kucoin_futures.ws_client import KucoinFuturesWsClient
 from requests.exceptions import RequestException
 
 from bot import active_orders
-from config import (KUCOIN_API_KEY, KUCOIN_API_PASSPHRASE, KUCOIN_API_SECRET,
-                    TELEGRAM_CHAT_ID)
+from config import (
+    KUCOIN_API_KEY,
+    KUCOIN_API_PASSPHRASE,
+    KUCOIN_API_SECRET,
+    TELEGRAM_CHAT_ID,
+)
 from handlers import logger
 from handlers.base import send_message
 

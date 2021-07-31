@@ -6,12 +6,24 @@ from app import dp
 from config import KUCOIN_TASK_NAME, TELEGRAM_CHAT_ID
 from handlers import init_database
 from handlers.base import send_greeting, send_message, send_welcome
-from handlers.crypto import (kucoin_inline_query_handler, price_alert_callback,
-                             send_balance, send_buy_coin, send_candle_chart,
-                             send_chart, send_gas, send_latest_listings,
-                             send_price, send_price_address, send_price_alert,
-                             send_restart_kucoin_bot, send_sell_coin,
-                             send_snipe, send_spy, send_trending)
+from handlers.crypto import (
+    kucoin_inline_query_handler,
+    price_alert_callback,
+    send_balance,
+    send_buy_coin,
+    send_candle_chart,
+    send_chart,
+    send_gas,
+    send_latest_listings,
+    send_price,
+    send_price_address,
+    send_price_alert,
+    send_restart_kucoin_bot,
+    send_sell_coin,
+    send_snipe,
+    send_spy,
+    send_trending,
+)
 from handlers.error import send_error
 from handlers.user import send_register
 from models import CryptoAlert
