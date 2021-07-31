@@ -6,8 +6,6 @@ from itertools import chain
 
 import aiohttp
 import dateutil.parser as dau
-import pandas
-import pandas as pd
 import plotly.figure_factory as fif
 import plotly.graph_objs as go
 import plotly.io as pio
@@ -16,7 +14,7 @@ from aiogram.utils.emoji import emojize
 from aiogram.utils.markdown import bold, italic, text
 from cryptography.fernet import Fernet
 from inflection import titleize
-from pandas import DataFrame
+from pandas import DataFrame, read_html, to_datetime
 from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException
 from web3.exceptions import ContractLogicError
@@ -147,7 +145,7 @@ async def send_price(message: Message) -> None:
 
             for key in ("website", "explorers"):
                 coin_stats.pop(key)
-        dataframe = pandas.DataFrame(coin_stats_list)
+        dataframe = DataFrame(coin_stats_list)
         columns = {column: titleize(column) for column in dataframe.columns}
         dataframe = dataframe.rename(columns=columns)
         fig = fif.create_table(dataframe.rename(columns=columns))
@@ -223,7 +221,7 @@ async def send_price_address(message: Message) -> None:
 
             for key in ("website", "explorers"):
                 coin_stats.pop(key)
-        dataframe = pandas.DataFrame(coin_stats, index=[0])
+        dataframe = DataFrame(coin_stats, index=[0])
         columns = {column: titleize(column) for column in dataframe.columns}
         dataframe = dataframe.rename(columns=columns)
         fig = fif.create_table(dataframe.rename(columns=columns))
@@ -367,7 +365,7 @@ async def send_latest_listings(message: Message) -> None:
         async with session.get(
             "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
-            df = pd.read_html(await response.text(), flavor="bs4")[0]
+            df = read_html(await response.text(), flavor="bs4")[0]
 
             for row in df.itertuples():
                 if count == 0:
@@ -386,7 +384,7 @@ async def send_latest_listings(message: Message) -> None:
         async with session.get(
             "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
-            df = pd.read_html(await response.text(), flavor="bs4")[0]
+            df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
                 if count == 0:
                     break
@@ -572,14 +570,14 @@ async def send_chart(message: Message):
         logger.info("Creating chart layout")
         # Volume
         df_volume = DataFrame(market["total_volumes"], columns=["DateTime", "Volume"])
-        df_volume["DateTime"] = pd.to_datetime(df_volume["DateTime"], unit="ms")
+        df_volume["DateTime"] = to_datetime(df_volume["DateTime"], unit="ms")
         volume = go.Scatter(
             x=df_volume.get("DateTime"), y=df_volume.get("Volume"), name="Volume"
         )
 
         # Price
         df_price = DataFrame(market["prices"], columns=["DateTime", "Price"])
-        df_price["DateTime"] = pd.to_datetime(df_price["DateTime"], unit="ms")
+        df_price["DateTime"] = to_datetime(df_price["DateTime"], unit="ms")
         price = go.Scatter(
             x=df_price.get("DateTime"),
             y=df_price.get("Price"),
@@ -763,7 +761,7 @@ async def send_candle_chart(message: Message):
                     tick_format = "0.2f"
 
             fig = fif.create_candlestick(
-                open_, high, low, close, pd.to_datetime(time_, unit="s")
+                open_, high, low, close, to_datetime(time_, unit="s")
             )
 
             fig["layout"]["yaxis"].update(
@@ -882,7 +880,7 @@ async def send_balance(message: Message):
     account_holdings = await pancake_swap.get_account_token_holdings(
         address=pancake_swap.address
     )
-    account_data_frame = pandas.DataFrame()
+    account_data_frame = DataFrame()
     for k in account_holdings.keys():
         coin = account_holdings[k]
         token = coin["address"]
@@ -901,7 +899,7 @@ async def send_balance(message: Message):
                     quantity=quantity, decimals=coin["decimals"]
                 )
                 usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
-                data_frame = pandas.DataFrame(
+                data_frame = DataFrame(
                     {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]}
                 )
                 account_data_frame = account_data_frame.append(
@@ -930,7 +928,7 @@ async def send_spy(message: Message):
     user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
     bsc = BinanceSmartChain()
     args = message.get_args().split()
-    account_data_frame = pandas.DataFrame()
+    account_data_frame = DataFrame()
     try:
         coin = Coin(address=args[0])
         account_holdings = await bsc.get_account_token_holdings(address=coin.address)
@@ -953,7 +951,7 @@ async def send_spy(message: Message):
                         quantity=quantity, decimals=_coin["decimals"]
                     )
                     usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
-                    data_frame = pandas.DataFrame(
+                    data_frame = DataFrame(
                         {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]}
                     )
                     account_data_frame = account_data_frame.append(
