@@ -322,7 +322,7 @@ async def price_alert_callback(alert: CryptoAlert, delay: int) -> None:
     dip = False
 
     while not send:
-        coin_stats = get_coin_stats(symbol=crypto)
+        coin_stats = get_coin_stats(symbol=crypto)[0]
 
         spot_price = coin_stats["price"]
 
