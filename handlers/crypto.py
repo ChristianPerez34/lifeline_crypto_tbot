@@ -288,15 +288,13 @@ async def send_price_alert(message: Message) -> None:
         crypto = alert.symbol
         price = alert.price
 
-        coin_stats = get_coin_stats(symbol=crypto)
+        coin_stats = get_coin_stats(symbol=crypto)[0]
 
         crypto_alert = CryptoAlert.create(data=alert.dict())
 
         asyncio.create_task(price_alert_callback(alert=crypto_alert, delay=15))
         target_price = "${:,}".format(price.quantize(Decimal("0.01")))
-        current_price = "${:,}".format(
-            Decimal(coin_stats["price"]).quantize(Decimal("0.01"))
-        )
+        current_price = coin_stats["price"]
         reply = f"⏳ I will send you a message when the price of {crypto} reaches {target_price}\n"
         reply += f"The current price of {crypto} is {current_price}"
     except IndexError as e:
