@@ -90,4 +90,4 @@ async def send_message(
 
 
 async def send_photo(chat_id: int, caption: str, photo: BufferedReader):
-    await bot.send_photo(chat_id=chat_id, caption=caption, photo=photo)
+    await bot.send_photo(chat_id=chat_id, caption=caption, photo=photo, parse_mode=ParseMode.MARKDOWN)

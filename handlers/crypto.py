@@ -3,6 +3,7 @@ import time
 from decimal import Decimal
 from io import BufferedReader, BytesIO
 from itertools import chain
+from urllib.parse import urlparse
 
 import aiohttp
 import dateutil.parser as dau
@@ -61,7 +62,7 @@ def get_coin_stats(symbol: str) -> list:
             coin_stats = {
                 "token_name": data["name"],
                 "website": links["homepage"][0],
-                "explorers": [link for link in links["blockchain_site"] if link],
+                "explorers": [f"[{urlparse(link).hostname}]({link})" for link in links["blockchain_site"] if link],
                 "price": "${:,}".format(float(market_data["current_price"]["usd"])),
                 "24h_change": f"{market_data['price_change_percentage_24h']}%",
                 "7d_change": f"{market_data['price_change_percentage_7d']}%",
@@ -112,7 +113,7 @@ def get_coin_stats_by_address(address: str) -> dict:
     return {
         "token_name": data["name"],
         "website": links["homepage"][0],
-        "explorers": [link for link in links["blockchain_site"] if link],
+        "explorers": [f"[{urlparse(link).hostname}]({link})" for link in links["blockchain_site"] if link],
         "price": "${:,}".format(float(market_data["current_price"]["usd"])),
         "24h_change": f"{market_data['price_change_percentage_24h']}%",
         "7d_change": f"{market_data['price_change_percentage_7d']}%",
