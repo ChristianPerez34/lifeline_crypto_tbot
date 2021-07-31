@@ -323,7 +323,7 @@ async def price_alert_callback(alert: CryptoAlert, delay: int) -> None:
     while not send:
         coin_stats = get_coin_stats(symbol=crypto)[0]
 
-        spot_price = Decimal(coin_stats["price"].replace("$", "").replace(".", ""))
+        spot_price = Decimal(coin_stats["price"].replace("$", "").replace(",", ""))
 
         if sign == "<":
             if price >= spot_price:
