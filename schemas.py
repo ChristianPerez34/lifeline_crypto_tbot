@@ -1,10 +1,10 @@
 import re
 from decimal import Decimal
 from numbers import Real
-from typing import Union, Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel
-from pydantic.class_validators import validator, root_validator
+from pydantic.class_validators import root_validator, validator
 from uniswap.types import AddressLike
 from web3 import Web3
 
@@ -27,7 +27,7 @@ def is_positive_number(value: Real):
 class Coin(BaseModel):
     symbol: str = ""
     address: Union[str, AddressLike] = ""
-    platform: str = ""
+    platform: Optional[str]
 
     @validator("symbol")
     def symbol_is_alphanumeric(cls, value: str):
@@ -42,7 +42,7 @@ class Coin(BaseModel):
     @validator("platform")
     def check_platform(cls, value: str):
         value = value.upper()
-        if value not in ("BSC",):
+        if value and value not in ("BSC",):
             raise ValueError("Invalid platform")
         return value
 

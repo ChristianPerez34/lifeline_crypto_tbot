@@ -1,5 +1,4 @@
-from aiogram import Bot
-from aiogram import Dispatcher
+from aiogram import Bot, Dispatcher
 
 from config import TELEGRAM_BOT_API_KEY
 

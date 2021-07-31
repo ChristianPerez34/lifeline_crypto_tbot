@@ -13,10 +13,7 @@ from uniswap.types import AddressLike
 from web3 import Web3
 from web3.exceptions import ContractLogicError
 
-from config import BSCSCAN_API_KEY
-from config import BUY
-from config import FERNET_KEY
-from config import HEADERS
+from config import BSCSCAN_API_KEY, BUY, FERNET_KEY, HEADERS
 from handlers import logger
 
 PANCAKE_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(

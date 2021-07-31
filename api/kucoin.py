@@ -1,8 +1,6 @@
 from decimal import Decimal
 
-from kucoin_futures.client import Market
-from kucoin_futures.client import Trade
-from kucoin_futures.client import User
+from kucoin_futures.client import Market, Trade, User
 
 from handlers import logger
 

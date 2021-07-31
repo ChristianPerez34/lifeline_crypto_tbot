@@ -2,8 +2,7 @@ import aiohttp
 import pandas as pd
 from coinmarketcapapi import CoinMarketCapAPI
 
-from config import COIN_MARKET_CAP_API_KEY
-from config import HEADERS
+from config import COIN_MARKET_CAP_API_KEY, HEADERS
 from handlers import logger
 
 
@@ -21,9 +20,10 @@ class CoinMarketCap:
             dict: Results of coin lookup
         """
         logger.info("Looking up price for %s in CoinMarketCap API", symbol)
-        return self.cmc.cryptocurrency_quotes_latest(symbol=symbol, convert="usd").data[
-            symbol
-        ]
+        ids = ",".join(
+            str(item["id"]) for item in self.cmc.cryptocurrency_map(symbol=symbol).data
+        )
+        return self.cmc.cryptocurrency_quotes_latest(id=ids, convert="usd").data
 
     @staticmethod
     async def get_trending_coins() -> list:

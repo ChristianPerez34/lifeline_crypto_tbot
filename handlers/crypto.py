@@ -1,8 +1,7 @@
 import asyncio
 import time
 from decimal import Decimal
-from io import BufferedReader
-from io import BytesIO
+from io import BufferedReader, BytesIO
 from itertools import chain
 
 import aiohttp
@@ -12,20 +11,17 @@ import pandas as pd
 import plotly.figure_factory as fif
 import plotly.graph_objs as go
 import plotly.io as pio
-from aiogram.types import CallbackQuery
-from aiogram.types import Message
-from aiogram.types import ParseMode
+from aiogram.types import CallbackQuery, Message, ParseMode
 from aiogram.utils.emoji import emojize
-from aiogram.utils.markdown import bold
-from aiogram.utils.markdown import italic
-from aiogram.utils.markdown import text
+from aiogram.utils.markdown import bold, italic, text
 from cryptography.fernet import Fernet
+from inflection import titleize
 from pandas import DataFrame
 from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException
 from web3.exceptions import ContractLogicError
 
-from api.bsc import PancakeSwap, BinanceSmartChain
+from api.bsc import BinanceSmartChain, PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
@@ -35,21 +31,16 @@ from app import bot
 from bot import active_orders
 from bot.bsc_sniper import pancake_swap_sniper
 from bot.kucoin_bot import kucoin_bot
-from config import BUY, SELL
-from config import FERNET_KEY
-from config import HEADERS
-from config import KUCOIN_TASK_NAME
-from config import TELEGRAM_CHAT_ID
+from config import (BUY, FERNET_KEY, HEADERS, KUCOIN_TASK_NAME, SELL,
+                    TELEGRAM_CHAT_ID)
 from handlers.base import send_message, send_photo
-from models import CryptoAlert
-from models import TelegramGroupMember
-from schemas import Coin, TokenAlert, User, TradeCoin, Chart, CandleChart
+from models import CryptoAlert, TelegramGroupMember
+from schemas import CandleChart, Chart, Coin, TokenAlert, TradeCoin, User
 from utils import all_same
-from . import eth
-from . import logger
+from . import eth, logger
 
 
-def get_coin_stats(symbol: str) -> dict:
+def get_coin_stats(symbol: str) -> list:
     """Retrieves coin stats from connected services crypto services
 
     Args:
@@ -60,35 +51,50 @@ def get_coin_stats(symbol: str) -> dict:
     """
     # Search CoinGecko API first
     logger.info("Getting coin stats for %s", symbol)
+    coin_stats_list = []
     coin_gecko = CoinGecko()
     coin_market_cap = CoinMarketCap()
     try:
-        coin_id = coin_gecko.get_coin_id(symbol=symbol)
-        data = coin_gecko.coin_lookup(ids=coin_id)
-        market_data = data["market_data"]
-        coin_stats = {
-            "slug": data["name"],
-            "contract_address": data.get("contract_address", ""),
-            "website": data["links"]["homepage"][0],
-            "price": market_data["current_price"]["usd"],
-            "usd_change_24h": market_data["price_change_percentage_24h"],
-            "usd_change_7d": market_data["price_change_percentage_7d"],
-            "market_cap": market_data["market_cap"]["usd"],
-        }
+        coin_ids = coin_gecko.get_coin_ids(symbol=symbol)
+
+        for coin_id in coin_ids:
+            data = coin_gecko.coin_lookup(ids=coin_id)
+            market_data = data["market_data"]
+            links = data["links"]
+            coin_stats = {
+                "token_name": data["name"],
+                "website": links["homepage"][0],
+                "explorers": [link for link in links["blockchain_site"] if link],
+                "price": "${:,}".format(float(market_data["current_price"]["usd"])),
+                "24h_change": f"{market_data['price_change_percentage_24h']}%",
+                "7d_change": f"{market_data['price_change_percentage_7d']}%",
+                "30d_change": f"{market_data['price_change_percentage_30d']}%",
+                "market_cap": "${:,}".format(float(market_data["market_cap"]["usd"])),
+            }
+            coin_stats_list.append(coin_stats)
     except IndexError:
         logger.info(
             "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.", symbol
         )
-        data = coin_market_cap.coin_lookup(symbol)
-        quote = data["quote"]["USD"]
-        coin_stats = {
-            "slug": data["name"],
-            "price": quote["price"],
-            "usd_change_24h": quote["percent_change_24h"],
-            "usd_change_7d": quote["percent_change_7d"],
-            "market_cap": quote["market_cap"],
-        }
-    return coin_stats
+        coin_lookup = coin_market_cap.coin_lookup(symbol)
+
+        for coin in coin_lookup:
+            data = coin_lookup[coin]
+            quote = data["quote"]["USD"]
+
+            for key in quote:
+                if quote[key] is None:
+                    quote[key] = 0
+            coin_stats = {
+                "token_name": data["name"],
+                "price": "${:,}".format(quote["price"]),
+                "24h_change": f"{quote['percent_change_24h']}%",
+                "7d_change": f"{quote['percent_change_7d']}%",
+                "30d_change": f"{quote['percent_change_30d']}%",
+                "market_cap": "${:,}".format(quote["market_cap"]),
+            }
+            coin_stats_list.append(coin_stats)
+    return coin_stats_list
 
 
 def get_coin_stats_by_address(address: str) -> dict:
@@ -105,16 +111,16 @@ def get_coin_stats_by_address(address: str) -> dict:
     coin_gecko = CoinGecko()
     data = coin_gecko.coin_lookup(ids=address, is_address=True)
     market_data = data["market_data"]
-    slug = data["name"]
+    links = data["links"]
     return {
-        "slug": slug,
-        "contract_address": data["contract_address"],
-        "website": data["links"]["homepage"][0],
-        "symbol": data["symbol"].upper(),
-        "price": market_data["current_price"]["usd"],
-        "usd_change_24h": market_data["price_change_percentage_24h"],
-        "usd_change_7d": market_data["price_change_percentage_7d"],
-        "market_cap": market_data["market_cap"]["usd"],
+        "token_name": data["name"],
+        "website": links["homepage"][0],
+        "explorers": [link for link in links["blockchain_site"] if link],
+        "price": "${:,}".format(float(market_data["current_price"]["usd"])),
+        "24h_change": f"{market_data['price_change_percentage_24h']}%",
+        "7d_change": f"{market_data['price_change_percentage_7d']}%",
+        "30d_change": f"{market_data['price_change_percentage_30d']}%",
+        "market_cap": "${:,}".format(float(market_data["market_cap"]["usd"])),
     }
 
 
@@ -125,37 +131,43 @@ async def send_price(message: Message) -> None:
         message (Message): Message to reply to
     """
     logger.info("Crypto command executed")
-    reply = "Failed to get provided coin data"
+    reply = ""
     args = message.get_args().split()
     try:
         coin = Coin(symbol=args[0].upper())
         symbol = coin.symbol
-        coin_stats = get_coin_stats(symbol=symbol)
-        if coin_stats:
-            price = "${:,}".format(float(coin_stats["price"]))
-            market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-            reply = f"{coin_stats['slug']} ({symbol})\n\n"
-
-            if coin_stats["contract_address"]:
-                reply += f"{coin_stats['contract_address']}\n\n"
-
-            if "website" in coin_stats:
-                reply += f"{coin_stats['website']}\n\n"
+        coin_stats_list = get_coin_stats(symbol=symbol)
+        for coin_stats in coin_stats_list:
+            explorers = "\n".join(coin_stats["explorers"])
             reply += (
-                f"Price\n{price}\n\n"
-                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                f"Market Cap\n{market_cap}"
+                f"{coin_stats['token_name']} ({symbol})\n\n"
+                f"Website\n{coin_stats['website']}\n\n"
+                f"Explorers\n{explorers}\n\n"
             )
+
+            for key in ("website", "explorers"):
+                coin_stats.pop(key)
+        dataframe = pandas.DataFrame(coin_stats_list)
+        columns = {column: titleize(column) for column in dataframe.columns}
+        dataframe = dataframe.rename(columns=columns)
+        fig = fif.create_table(dataframe.rename(columns=columns))
+        fig.update_layout(width=1000)
+        await send_photo(
+            chat_id=message.chat.id,
+            caption=reply,
+            photo=BufferedReader(
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+            ),
+        )
     except IndexError as e:
         logger.exception(e)
         reply = f"⚠️ Please provide a crypto code: \n{bold('/price')} {italic('COIN')}"
+        await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
     except ValidationError as e:
         logger.exception(e)
         error_message = e.args[0][0].exc
         reply = f"⚠️ {error_message}"
-
-    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+        await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
 async def send_gas(message: Message) -> None:
@@ -175,7 +187,7 @@ async def send_gas(message: Message) -> None:
     await message.reply(text=reply)
 
 
-async def send_coin_address(message: Message) -> None:
+async def send_price_address(message: Message) -> None:
     """Replies to command with coin stats for given crypto contract address
 
     Args:
@@ -183,6 +195,7 @@ async def send_coin_address(message: Message) -> None:
     """
     logger.info("Searching for coin by contract address")
     args = message.get_args().split()
+    reply = ""
     try:
         address, platform, *_ = chain(args, ["", ""])
         coin = Coin(address=address, platform=platform)
@@ -197,35 +210,43 @@ async def send_coin_address(message: Message) -> None:
             )
             token = pancake_swap.get_token(address=address)
             price = "${:,}".format(1 / pancake_swap.get_token_price(token=address))
-            reply = (
-                f"{token.name} ({token.symbol})\n\n{token.address}\n\nPrice\n{price}"
-            )
+            coin_stats = {"token_name": token.name, "price": price}
         else:
 
             coin_stats = get_coin_stats_by_address(address=address)
-            price = "${:,}".format(float(coin_stats["price"]))
-            market_cap = "${:,}".format(float(coin_stats["market_cap"]))
-            reply = f"{coin_stats['slug']} ({coin_stats['symbol']})\n\n"
-
-            if "contract_address" in coin_stats:
-                reply += f"{coin_stats['contract_address']}\n\n"
-
-            if "website" in coin_stats:
-                reply += f"{coin_stats['website']}\n\n"
+            explorers = "\n".join(coin_stats["explorers"])
             reply += (
-                f"Price\n{price}\n\n"
-                f"24h Change\n{coin_stats['usd_change_24h']}%\n\n"
-                f"7D Change\n{coin_stats['usd_change_7d']}%\n\n"
-                f"Market Cap\n{market_cap}"
+                f"{coin_stats['token_name']} ({address})\n\n"
+                f"Website\n{coin_stats.get('website')}\n\n"
+                f"Explorers\n{explorers}\n\n"
             )
+
+            for key in ("website", "explorers"):
+                coin_stats.pop(key)
+        dataframe = pandas.DataFrame(coin_stats, index=[0])
+        columns = {column: titleize(column) for column in dataframe.columns}
+        dataframe = dataframe.rename(columns=columns)
+        fig = fif.create_table(dataframe.rename(columns=columns))
+        fig.update_layout(width=1000)
+        await send_photo(
+            chat_id=message.chat.id,
+            caption=reply,
+            photo=BufferedReader(
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+            ),
+        )
+
     except IndexError as e:
         logger.exception(e)
-        reply = f"⚠️ Please provide a crypto address: \n{bold('/coin')}_{bold('address')} {italic('ADDRESS')}"
+        reply = (
+            "⚠️ Please provide a crypto address: \n"
+            f"{bold('/price')}_{bold('address')} {italic('ADDRESS')} {italic('PLATFORM')}"
+        )
+        await message.reply(text=reply)
     except ValueError as e:
         logger.exception(e)
         reply = "⚠️ Could not find coin"
-
-    await message.reply(text=reply)
+        await message.reply(text=reply)
 
 
 async def send_trending(message: Message) -> None:
@@ -899,6 +920,7 @@ async def send_balance(message: Message):
             BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
         ),
     )
+    await message.reply(text="Replied privately 🤫")
 
 
 async def send_spy(message: Message):

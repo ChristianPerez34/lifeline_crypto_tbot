@@ -1,31 +1,17 @@
 import asyncio
 
-from aiogram import Dispatcher, types
-from aiogram import executor
+from aiogram import Dispatcher, executor, types
 
 from app import dp
 from config import KUCOIN_TASK_NAME, TELEGRAM_CHAT_ID
 from handlers import init_database
-from handlers.base import send_greeting, send_message
-from handlers.base import send_welcome
-from handlers.crypto import (
-    kucoin_inline_query_handler,
-    send_sell_coin,
-    send_spy,
-    send_snipe,
-)
-from handlers.crypto import price_alert_callback
-from handlers.crypto import send_balance
-from handlers.crypto import send_buy_coin
-from handlers.crypto import send_candle_chart
-from handlers.crypto import send_chart
-from handlers.crypto import send_coin_address
-from handlers.crypto import send_gas
-from handlers.crypto import send_latest_listings
-from handlers.crypto import send_price
-from handlers.crypto import send_price_alert
-from handlers.crypto import send_restart_kucoin_bot
-from handlers.crypto import send_trending
+from handlers.base import send_greeting, send_message, send_welcome
+from handlers.crypto import (kucoin_inline_query_handler, price_alert_callback,
+                             send_balance, send_buy_coin, send_candle_chart,
+                             send_chart, send_gas, send_latest_listings,
+                             send_price, send_price_address, send_price_alert,
+                             send_restart_kucoin_bot, send_sell_coin,
+                             send_snipe, send_spy, send_trending)
 from handlers.error import send_error
 from handlers.user import send_register
 from models import CryptoAlert
@@ -68,7 +54,7 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_message_handler(send_welcome, commands=["start", "help"])
     dispatcher.register_message_handler(send_price, commands=["price"])
     dispatcher.register_message_handler(send_gas, commands=["gas"])
-    dispatcher.register_message_handler(send_coin_address, commands=["coin_address"])
+    dispatcher.register_message_handler(send_price_address, commands=["price_address"])
     dispatcher.register_message_handler(send_trending, commands=["trending"])
     dispatcher.register_message_handler(send_chart, commands=["chart"])
     dispatcher.register_message_handler(send_candle_chart, commands=["candle"])

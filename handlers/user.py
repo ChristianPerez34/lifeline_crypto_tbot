@@ -1,15 +1,14 @@
 from aiogram.types import Message
 from cryptography.fernet import Fernet
+from pony.orm import OrmError
 from pydantic import ValidationError
-from tortoise.exceptions import BaseORMException
 
 from app import bot
-from config import FERNET_KEY
-from config import RegisterTypes
+from config import FERNET_KEY, RegisterTypes
 from handlers import logger
 from handlers.base import send_message
 from models import TelegramGroupMember
-from schemas import User, BinanceChain
+from schemas import BinanceChain, User
 
 
 async def send_register(message: Message) -> None:
@@ -83,7 +82,7 @@ async def send_register(message: Message) -> None:
             user = User(**data)
             TelegramGroupMember().create_or_update(data=user.dict(exclude=exclude))
             text = f"Successfully registered @{telegram_user.username}"
-        except BaseORMException as e:
+        except OrmError as e:
             logger.info("Failed to register user")
             logger.exception(e)
         except ValidationError as e:
