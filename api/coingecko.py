@@ -1,8 +1,7 @@
 from pycoingecko import CoinGeckoAPI
 from requests.exceptions import RequestException
 
-from handlers import coingecko_coin_lookup_cache
-from handlers import logger
+from handlers import coingecko_coin_lookup_cache, logger
 
 
 class CoinGecko:
@@ -27,6 +26,10 @@ class CoinGecko:
                 )
                 if is_address
                 else self.cg.get_coin_by_id(id=ids)
+            )
+        except ValueError:
+            data = self.cg.get_coin_info_from_contract_address_by_id(
+                id="binance-smart-chain", contract_address=ids
             )
         except RequestException:
             data = (
@@ -61,26 +64,29 @@ class CoinGecko:
         logger.info("Looking up chart data for %s in CoinGecko API", ids)
         return self.cg.get_coin_market_chart_by_id(ids, base_coin, time_frame)
 
-    def get_coin_id(self, symbol: str) -> str:
+    def get_coin_ids(self, symbol: str) -> list:
         """Retrieves coin stats from connected services crypto services
 
         Args:
             symbol (str): Cryptocurrency symbol of coin to lookup
 
         Returns:
-            str: coin id of the cryptocurrency
+            list: coin ids of matching search results for given symbol
         """
         logger.info("Getting coin ID for %s", symbol)
-
+        coin_ids = []
         if symbol in coingecko_coin_lookup_cache.keys():
-            coin_id = coingecko_coin_lookup_cache[symbol]
+            coin_ids.append(coingecko_coin_lookup_cache[symbol])
         else:
-            coin = [
+            coins = [
                 coin
                 for coin in self.cg.get_coins_list()
                 if coin["symbol"].upper() == symbol
-            ][0]
-            coin_id = coin["id"]
-            coingecko_coin_lookup_cache[symbol] = coin_id
+            ]
 
-        return coin_id
+            for coin in coins:
+                coin_id = coin["id"]
+                coin_ids.append(coin_id)
+                coingecko_coin_lookup_cache[symbol] = coin_id
+
+        return coin_ids
