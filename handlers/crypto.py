@@ -562,7 +562,7 @@ async def send_chart(message: Message):
         base_coin = pair[1]
         time_frame = chart.time_frame
 
-        coin_id = coin_gecko.get_coin_id(symbol)
+        coin_id = coin_gecko.get_coin_ids(symbol)[0]
         market = coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
 
         logger.info("Creating chart layout")
