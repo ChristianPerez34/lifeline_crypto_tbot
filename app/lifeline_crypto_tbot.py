@@ -4,7 +4,7 @@ from aiogram import Dispatcher, executor, types
 
 from app import dp
 from bot.bsc_order import limit_order_executor
-from config import KUCOIN_TASK_NAME, TELEGRAM_CHAT_ID
+from config import TELEGRAM_CHAT_ID
 from handlers import init_database
 from handlers.base import send_greeting, send_message, send_welcome
 from handlers.crypto import (
@@ -51,16 +51,10 @@ async def on_startup(dispatcher: Dispatcher):
 
 
 async def on_shutdown(_):
-    """Disable KuCoin bot on shutdown"""
-    tasks = asyncio.all_tasks()
-
+    """Displays message to let users know bot is offline"""
     await send_message(
         channel_id=TELEGRAM_CHAT_ID, message="Going offline! Be right back."
     )
-
-    for task in tasks:
-        if task.get_name() == KUCOIN_TASK_NAME:
-            task.cancel()
 
 
 def setup_handlers(dispatcher: Dispatcher) -> None:
