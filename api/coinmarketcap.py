@@ -2,8 +2,8 @@ import aiohttp
 import pandas as pd
 from coinmarketcapapi import CoinMarketCapAPI
 
+from app import logger
 from config import COIN_MARKET_CAP_API_KEY, HEADERS
-from handlers import logger
 
 
 class CoinMarketCap:

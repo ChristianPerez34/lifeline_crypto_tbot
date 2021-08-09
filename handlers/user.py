@@ -4,8 +4,8 @@ from pony.orm import OrmError
 from pydantic import ValidationError
 
 from app import bot
+from app import logger
 from config import FERNET_KEY, RegisterTypes
-from handlers import logger
 from handlers.base import send_message
 from models import TelegramGroupMember
 from schemas import BinanceChain, User

@@ -3,6 +3,7 @@ import asyncio
 from aiogram import Dispatcher, executor, types
 
 from app import dp
+from bot.bsc_order import limit_order_executor
 from config import KUCOIN_TASK_NAME, TELEGRAM_CHAT_ID
 from handlers import init_database
 from handlers.base import send_greeting, send_message, send_welcome
@@ -22,11 +23,12 @@ from handlers.crypto import (
     send_sell_coin,
     send_snipe,
     send_spy,
-    send_trending,
+    send_trending, send_limit_swap,
 )
 from handlers.error import send_error
 from handlers.user import send_register
-from models import CryptoAlert
+from models import CryptoAlert, Order
+from schemas import LimitOrder
 
 
 async def on_startup(dispatcher: Dispatcher):
@@ -39,6 +41,9 @@ async def on_startup(dispatcher: Dispatcher):
 
     for alert in CryptoAlert.all():
         asyncio.create_task(price_alert_callback(alert=alert, delay=15))
+    for order in Order.all():
+        limit_order = LimitOrder.from_orm(order)
+        asyncio.create_task(limit_order_executor(order=limit_order))
     setup_handlers(dispatcher)
 
     await send_message(channel_id=TELEGRAM_CHAT_ID, message="Up and running! 👾")
@@ -81,9 +86,11 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_message_handler(send_register, commands=["register"])
     dispatcher.register_message_handler(send_balance, commands=["balance"])
     dispatcher.register_callback_query_handler(kucoin_inline_query_handler)
-    dp.register_message_handler(send_sell_coin, commands=["sell_coin"])
-    dp.register_message_handler(send_spy, commands=["spy"])
-    dp.register_message_handler(send_snipe, commands=["snipe"])
+    dispatcher.register_message_handler(send_sell_coin, commands=["sell_coin"])
+    dispatcher.register_message_handler(send_spy, commands=["spy"])
+    dispatcher.register_message_handler(send_snipe, commands=["snipe"])
+    dispatcher.register_message_handler(send_limit_swap, commands=['limit'])
+
     dispatcher.register_message_handler(
         send_greeting, content_types=types.ContentTypes.NEW_CHAT_MEMBERS
     )

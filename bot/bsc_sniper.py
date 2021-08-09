@@ -5,8 +5,8 @@ from uniswap.types import AddressLike
 from web3.exceptions import BadFunctionCallOutput
 
 from api.bsc import PancakeSwap
+from app import logger
 from config import BUY
-from handlers import logger
 from handlers.base import send_message
 
 

@@ -26,16 +26,17 @@ from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from api.kucoin import KucoinApi
-from app import bot
+from app import bot, logger
 from bot import active_orders
+from bot.bsc_order import limit_order_executor
 from bot.bsc_sniper import pancake_swap_sniper
 from bot.kucoin_bot import kucoin_bot
 from config import BUY, FERNET_KEY, HEADERS, KUCOIN_TASK_NAME, SELL, TELEGRAM_CHAT_ID
 from handlers.base import send_message, send_photo
-from models import CryptoAlert, TelegramGroupMember
-from schemas import CandleChart, Chart, Coin, TokenAlert, TradeCoin, User
+from models import CryptoAlert, TelegramGroupMember, Order
+from schemas import CandleChart, Chart, Coin, TokenAlert, TradeCoin, User, LimitOrder
 from utils import all_same
-from . import eth, logger
+from . import eth
 
 
 def get_coin_stats(symbol: str) -> list:
@@ -361,7 +362,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -380,7 +381,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-            "https://coinmarketcap.com/new/", headers=HEADERS
+                "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -409,9 +410,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-            user.kucoin_api_key
-            and user.kucoin_api_secret
-            and user.kucoin_api_passphrase
+                user.kucoin_api_key
+                and user.kucoin_api_secret
+                and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -435,8 +436,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                            position_order["stopPriceType"] == "TP"
-                            and position_order["stop"] == "up"
+                                position_order["stopPriceType"] == "TP"
+                                and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -449,7 +450,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                        or (entry > mark_price and unrealized_pnl < 0)
+                           or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -994,4 +995,31 @@ async def send_snipe(message: Message):
     )
     await message.reply(
         text=f"🎯 Sniping {trade.address}...", parse_mode=ParseMode.MARKDOWN
+    )
+
+
+async def send_limit_swap(message: Message):
+    logger.info("Executing limit swap command")
+    args = message.get_args().split()
+    trade_direction, address, target_price, bnb_amount, *_ = chain(args, ["", "", Decimal(0.0), Decimal(0.0)])
+    try:
+        user_id = message.from_user.id
+        # user = TelegramGroupMember.get_or_none(primary_key=user_id)
+        limit_order = LimitOrder(trade_direction=trade_direction, address=address, target_price=target_price,
+                                 bnb_amount=bnb_amount)
+        data = limit_order.dict()
+        data.update({'telegram_group_member': user_id})
+
+        order = Order.get_or_none(primary_key=Order.create(data=data).id)
+        limit_order = LimitOrder.from_orm(order)
+        asyncio.create_task(
+            limit_order_executor(order=order)
+        )
+        reply = f"Created limit order for {address}"
+    except ValueError as e:
+        logger.exception(e)
+        reply = "Unable to create order"
+
+    await message.reply(
+        text=reply, parse_mode=ParseMode.MARKDOWN
     )

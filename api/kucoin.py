@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from kucoin_futures.client import Market, Trade, User
 
-from handlers import logger
+from app import logger
 
 
 class KucoinApi:

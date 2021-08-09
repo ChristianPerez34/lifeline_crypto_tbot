@@ -33,6 +33,7 @@ GREETINGS = [
 BSCSCAN_API_KEY = os.getenv("BSCSCAN_API_KEY")
 BUY = "BUY"
 SELL = "SELL"
+STOP = "STOP"
 
 # Telegram env settings
 TELEGRAM_BOT_API_KEY = os.getenv("TELEGRAM_BOT_API_KEY")
