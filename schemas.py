@@ -9,7 +9,6 @@ from uniswap.types import AddressLike
 from web3 import Web3
 
 from config import BUY, SELL, STOP
-from models import TelegramGroupMember
 
 
 def is_positive_number(value: Real):
@@ -68,10 +67,6 @@ class BinanceChain(Token):
     id: Optional[int]
     private_key: str = ""
     telegram_group_member: int
-
-    @validator("telegram_group_member", pre=True)
-    def check_telegram_group_member(cls, value: TelegramGroupMember):
-        return value.id
 
     class Config:
         orm_mode = True
