@@ -72,7 +72,7 @@ async def send_greeting(message: Message) -> None:
 
 
 async def send_message(
-        channel_id: int, message: str, inline: bool = False, data: str = ""
+    channel_id: int, message: str, inline: bool = False, data: str = ""
 ) -> None:
     logger.info("Sending message to chat id: %s", channel_id)
     keyboard_markup = InlineKeyboardMarkup()
@@ -91,4 +91,6 @@ async def send_message(
 
 
 async def send_photo(chat_id: int, caption: str, photo: BufferedReader):
-    await bot.send_photo(chat_id=chat_id, caption=caption, photo=photo, parse_mode=ParseMode.MARKDOWN)
+    await bot.send_photo(
+        chat_id=chat_id, caption=caption, photo=photo, parse_mode=ParseMode.MARKDOWN
+    )

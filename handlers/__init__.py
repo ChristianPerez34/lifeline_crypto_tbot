@@ -4,6 +4,7 @@ from etherscan import Etherscan
 from lru import LRU
 
 from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_USER
+
 # Enable logging
 from models import db
 

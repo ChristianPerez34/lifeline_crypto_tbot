@@ -26,8 +26,8 @@ class TelegramGroupMember(db.Entity):
                         for member in TelegramGroupMember
                         if member.id == primary_key
                     )
-                        .prefetch(BinanceNetwork)
-                        .first()
+                    .prefetch(BinanceNetwork)
+                    .first()
                 )
             except orm.ObjectNotFound:
                 return None
@@ -58,10 +58,11 @@ class BinanceNetwork(db.Entity):
     def get_by_telegram_member_id(telegram_member_id: int) -> db.Entity:
         with orm.db_session:
             try:
-                return (
-                    orm.select(
-                        bsc for bsc in BinanceNetwork if bsc.telegram_group_member.id == telegram_member_id).first()
-                )
+                return orm.select(
+                    bsc
+                    for bsc in BinanceNetwork
+                    if bsc.telegram_group_member.id == telegram_member_id
+                ).first()
             except orm.ObjectNotFound:
                 return None
 
@@ -102,14 +103,10 @@ class Order(db.Entity):
         with orm.db_session:
             try:
                 return (
-                    orm.select(
-                        order
-                        for order in Order
-                        if order.id == primary_key
-                    )
-                        .prefetch(TelegramGroupMember)
-                        .prefetch(TelegramGroupMember.bsc)
-                        .first()
+                    orm.select(order for order in Order if order.id == primary_key)
+                    .prefetch(TelegramGroupMember)
+                    .prefetch(TelegramGroupMember.bsc)
+                    .first()
                 )
             except orm.ObjectNotFound:
                 return None
@@ -124,4 +121,8 @@ class Order(db.Entity):
     @staticmethod
     def all() -> list:
         with orm.db_session:
-            return list(Order.select().prefetch(TelegramGroupMember).prefetch(TelegramGroupMember.bsc))
+            return list(
+                Order.select()
+                .prefetch(TelegramGroupMember)
+                .prefetch(TelegramGroupMember.bsc)
+            )

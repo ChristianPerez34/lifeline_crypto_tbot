@@ -23,7 +23,8 @@ from handlers.crypto import (
     send_sell_coin,
     send_snipe,
     send_spy,
-    send_trending, send_limit_swap,
+    send_trending,
+    send_limit_swap,
 )
 from handlers.error import send_error
 from handlers.user import send_register
@@ -89,7 +90,7 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_message_handler(send_sell_coin, commands=["sell_coin"])
     dispatcher.register_message_handler(send_spy, commands=["spy"])
     dispatcher.register_message_handler(send_snipe, commands=["snipe"])
-    dispatcher.register_message_handler(send_limit_swap, commands=['limit'])
+    dispatcher.register_message_handler(send_limit_swap, commands=["limit"])
 
     dispatcher.register_message_handler(
         send_greeting, content_types=types.ContentTypes.NEW_CHAT_MEMBERS
