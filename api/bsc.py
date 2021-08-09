@@ -13,8 +13,8 @@ from uniswap.types import AddressLike
 from web3 import Web3
 from web3.exceptions import ContractLogicError
 
+from app import logger
 from config import BSCSCAN_API_KEY, BUY, FERNET_KEY, HEADERS
-from handlers import logger
 
 PANCAKE_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
     "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
@@ -129,6 +129,7 @@ class PancakeSwap(BinanceSmartChain):
         """
         logger.info("Retrieving metadata for token: %s", address)
         return self.pancake_swap.get_token(address=address)
+        # return self.pancake_swap_api.tokens(address=address)['data']
 
     def swap_tokens(
         self,
@@ -205,15 +206,15 @@ class PancakeSwap(BinanceSmartChain):
                     sell_abi = self.get_contract_abi(abi_type="sell")
                     token_contract = self.web3.eth.contract(address=token, abi=sell_abi)
                     try:
-                        max_approval = int(
-                            "0x000000000000000fffffffffffffffffffffffffffffffffffffffffffffffff",
-                            16,
-                        )
                         allowance = token_contract.functions.allowance(
                             token, self.pancake_swap.router_address
                         ).call()
 
                         if balance < allowance:
+                            max_approval = int(
+                                "0x000000000000000fffffffffffffffffffffffffffffffffffffffffffffffff",
+                                16,
+                            )
                             approve = token_contract.functions.approve(
                                 self.pancake_swap.router_address, max_approval
                             ).buildTransaction(
@@ -292,18 +293,25 @@ class PancakeSwap(BinanceSmartChain):
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
         return reply
 
-    def get_token_price(self, token: AddressLike) -> Decimal:
+    def get_token_price(
+        self, token: AddressLike, as_busd_per_token: bool = False
+    ) -> Decimal:
         """
         Gets token price in BUSD
         Args:
             token (AddressLike): Contract Address of coin
+            as_busd_per_token (bool): Determines if output should be busd per token or token per busd
 
-        Returns (Decimal): Token price in BUSD
+        Returns (Decimal): Tokens per BUSD / BUSD per tokens
 
         """
         logger.info("Retrieving token price in BUSD for %s", token)
         busd = CONTRACT_ADDRESSES["BUSD"]
-        return Decimal(self.pancake_swap.get_price_input(busd, token, 10 ** 18))
+        return (
+            Decimal(self.pancake_swap.get_price_output(busd, token, 10 ** 18))
+            if as_busd_per_token
+            else Decimal(self.pancake_swap.get_price_input(busd, token, 10 ** 18))
+        )
 
     def get_token_pair_address(self, token) -> str:
         """

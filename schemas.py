@@ -8,14 +8,8 @@ from pydantic.class_validators import root_validator, validator
 from uniswap.types import AddressLike
 from web3 import Web3
 
-from config import BUY, SELL
+from config import BUY, SELL, STOP
 from models import TelegramGroupMember
-
-
-def is_valid_address(value: str):
-    if re.match(r"^0x\w+", value) is None:
-        raise ValueError(f"'{value}' is not a valid contract address")
-    return value
 
 
 def is_positive_number(value: Real):
@@ -24,9 +18,18 @@ def is_positive_number(value: Real):
     return value
 
 
-class Coin(BaseModel):
-    symbol: str = ""
+class Token(BaseModel):
     address: Union[str, AddressLike] = ""
+
+    @validator("address")
+    def check_address(cls, value: Union[str, AddressLike]):
+        if re.match(r"^0x\w+", value) is None:
+            raise ValueError(f"'{value}' is not a valid contract address")
+        return Web3.toChecksumAddress(value)
+
+
+class Coin(Token):
+    symbol: str = ""
     platform: Optional[str]
 
     @validator("symbol")
@@ -34,10 +37,6 @@ class Coin(BaseModel):
         if not value.isalnum():
             raise ValueError(f"{value} is not a valid symbol")
         return value
-
-    @validator("address")
-    def check_address(cls, value: Union[str, AddressLike]):
-        return Web3.toChecksumAddress(is_valid_address(value))
 
     @validator("platform")
     def check_platform(cls, value: str):
@@ -65,13 +64,10 @@ class TokenAlert(BaseModel):
         orm_mode = True
 
 
-class BinanceChain(BaseModel):
+class BinanceChain(Token):
     id: Optional[int]
-    address: str = ""
     private_key: str = ""
     telegram_group_member: int
-
-    _validate_address = validator("address", allow_reuse=True)(is_valid_address)
 
     @validator("telegram_group_member", pre=True)
     def check_telegram_group_member(cls, value: TelegramGroupMember):
@@ -144,3 +140,22 @@ class CandleChart(Chart):
         if value not in ("m", "h", "d"):
             raise ValueError("Expected resolution in 'm', 'h', or 'd'")
         return resolutions[value]
+
+
+class LimitOrder(Token):
+    id: Optional[int]
+    trade_direction: str
+    target_price: Decimal
+    bnb_amount: Decimal
+    telegram_group_member: Optional[User]
+
+    @validator("trade_direction")
+    def validate_trade_direction(cls, value: str):
+        value = value.upper()
+        if value not in (BUY, SELL, STOP):
+            raise ValueError("Valid options are either 'buy'|'sell'|'stop'")
+        return value
+
+    class Config:
+        orm_mode = True
+        arbitrary_types_allowed = True

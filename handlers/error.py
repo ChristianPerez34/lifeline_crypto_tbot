@@ -1,6 +1,6 @@
 from aiogram.types import Update
 
-from . import logger
+from app import logger
 
 
 async def send_error(update: Update, exception: Exception) -> bool:

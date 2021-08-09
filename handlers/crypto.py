@@ -26,16 +26,17 @@ from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from api.kucoin import KucoinApi
-from app import bot
+from app import bot, logger
 from bot import active_orders
+from bot.bsc_order import limit_order_executor
 from bot.bsc_sniper import pancake_swap_sniper
 from bot.kucoin_bot import kucoin_bot
 from config import BUY, FERNET_KEY, HEADERS, KUCOIN_TASK_NAME, SELL, TELEGRAM_CHAT_ID
 from handlers.base import send_message, send_photo
-from models import CryptoAlert, TelegramGroupMember
-from schemas import CandleChart, Chart, Coin, TokenAlert, TradeCoin, User
+from models import CryptoAlert, TelegramGroupMember, Order
+from schemas import CandleChart, Chart, Coin, TokenAlert, TradeCoin, User, LimitOrder
 from utils import all_same
-from . import eth, logger
+from . import eth
 
 
 def get_coin_stats(symbol: str) -> list:
@@ -62,7 +63,11 @@ def get_coin_stats(symbol: str) -> list:
             coin_stats = {
                 "token_name": data["name"],
                 "website": links["homepage"][0],
-                "explorers": [f"[{urlparse(link).hostname}]({link})" for link in links["blockchain_site"] if link],
+                "explorers": [
+                    f"[{urlparse(link).hostname}]({link})"
+                    for link in links["blockchain_site"]
+                    if link
+                ],
                 "price": "${:,}".format(float(market_data["current_price"]["usd"])),
                 "24h_change": f"{market_data['price_change_percentage_24h']}%",
                 "7d_change": f"{market_data['price_change_percentage_7d']}%",
@@ -113,7 +118,11 @@ def get_coin_stats_by_address(address: str) -> dict:
     return {
         "token_name": data["name"],
         "website": links["homepage"][0],
-        "explorers": [f"[{urlparse(link).hostname}]({link})" for link in links["blockchain_site"] if link],
+        "explorers": [
+            f"[{urlparse(link).hostname}]({link})"
+            for link in links["blockchain_site"]
+            if link
+        ],
         "price": "${:,}".format(float(market_data["current_price"]["usd"])),
         "24h_change": f"{market_data['price_change_percentage_24h']}%",
         "7d_change": f"{market_data['price_change_percentage_7d']}%",
@@ -995,3 +1004,32 @@ async def send_snipe(message: Message):
     await message.reply(
         text=f"🎯 Sniping {trade.address}...", parse_mode=ParseMode.MARKDOWN
     )
+
+
+async def send_limit_swap(message: Message):
+    logger.info("Executing limit swap command")
+    args = message.get_args().split()
+    trade_direction, address, target_price, bnb_amount, *_ = chain(
+        args, ["", "", Decimal(0.0), Decimal(0.0)]
+    )
+    try:
+        user_id = message.from_user.id
+        # user = TelegramGroupMember.get_or_none(primary_key=user_id)
+        limit_order = LimitOrder(
+            trade_direction=trade_direction,
+            address=address,
+            target_price=target_price,
+            bnb_amount=bnb_amount,
+        )
+        data = limit_order.dict()
+        data.update({"telegram_group_member": user_id})
+
+        order = Order.get_or_none(primary_key=Order.create(data=data).id)
+        limit_order = LimitOrder.from_orm(order)
+        asyncio.create_task(limit_order_executor(order=order))
+        reply = f"Created limit order for {address}"
+    except ValueError as e:
+        logger.exception(e)
+        reply = "Unable to create order"
+
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
