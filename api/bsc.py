@@ -6,7 +6,6 @@ from numbers import Real
 import aiohttp
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
-from pythonpancakes import PancakeSwapAPI
 from uniswap import Uniswap
 from uniswap.exceptions import InsufficientBalance
 from uniswap.token import ERC20Token
@@ -118,7 +117,6 @@ class PancakeSwap(BinanceSmartChain):
             router_contract_addr=PANCAKE_SWAP_ROUTER_ADDRESS,
             default_slippage=0.15,
         )
-        self.pancake_swap_api = PancakeSwapAPI()
 
     def get_token(self, address: AddressLike) -> ERC20Token:
         """
