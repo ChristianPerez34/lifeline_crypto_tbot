@@ -159,6 +159,7 @@ async def send_price(message: Message) -> None:
         dataframe = dataframe.rename(columns=columns)
         fig = fif.create_table(dataframe.rename(columns=columns))
         fig.update_layout(width=1000)
+
         await send_photo(
             chat_id=message.chat.id,
             caption=reply,
@@ -235,6 +236,7 @@ async def send_price_address(message: Message) -> None:
         dataframe = dataframe.rename(columns=columns)
         fig = fif.create_table(dataframe.rename(columns=columns))
         fig.update_layout(width=1000)
+
         await send_photo(
             chat_id=message.chat.id,
             caption=reply,
@@ -278,6 +280,7 @@ async def send_trending(message: Message) -> None:
         f"Trending 🔥\n\nCoinGecko\n\n{coin_gecko_trending_coins}\n\n"
         f"CoinMarketCap\n\n{coin_market_cap_trending_coins}"
     )
+
     await message.reply(text=reply)
 
 
@@ -370,7 +373,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -389,7 +392,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-            "https://coinmarketcap.com/new/", headers=HEADERS
+                "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -418,9 +421,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-            user.kucoin_api_key
-            and user.kucoin_api_secret
-            and user.kucoin_api_passphrase
+                user.kucoin_api_key
+                and user.kucoin_api_secret
+                and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -444,8 +447,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                            position_order["stopPriceType"] == "TP"
-                            and position_order["stop"] == "up"
+                                position_order["stopPriceType"] == "TP"
+                                and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -458,7 +461,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                        or (entry > mark_price and unrealized_pnl < 0)
+                           or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -905,7 +908,8 @@ async def send_balance(message: Message):
                 quantity = pancake_swap.get_decimal_representation(
                     quantity=quantity, decimals=coin["decimals"]
                 )
-                usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
+                # usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
+                usd_amount = price.quantize(Decimal("0.01"))
                 data_frame = DataFrame(
                     {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]}
                 )
@@ -914,10 +918,13 @@ async def send_balance(message: Message):
                 )
             except ContractLogicError as e:
                 logger.exception(e)
+    account_data_frame.sort_values(by=['USD'], inplace=True, ascending=False)
+    account_data_frame['USD'] = account_data_frame['USD'].apply(lambda x: "${:,}".format(x))
     fig = fif.create_table(account_data_frame)
     fig.update_layout(
         autosize=True,
     )
+
     await send_photo(
         chat_id=user_id,
         caption="Account Balance 💲",
