@@ -98,8 +98,7 @@ class BinanceSmartChain:
 
         abi = self.get_contract_abi(abi_type="sell")
         contract = self.web3.eth.contract(address=token, abi=abi)
-        balance = contract.functions.balanceOf(address).call()
-        return balance
+        return contract.functions.balanceOf(address).call()
 
 
 class PancakeSwap(BinanceSmartChain):
@@ -300,7 +299,7 @@ class PancakeSwap(BinanceSmartChain):
         Gets token price in BUSD
         Args:
             token (AddressLike): Contract Address of coin
-            as_busd_per_token (bool): Determines if output should be busd per token or token per busd
+            as_busd_per_token (bool): Determines if output should be BUSD per token or token per BUSD
 
         Returns (Decimal): Tokens per BUSD / BUSD per tokens
 

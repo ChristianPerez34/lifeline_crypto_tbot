@@ -159,6 +159,7 @@ async def send_price(message: Message) -> None:
         dataframe = dataframe.rename(columns=columns)
         fig = fif.create_table(dataframe.rename(columns=columns))
         fig.update_layout(width=1000)
+
         await send_photo(
             chat_id=message.chat.id,
             caption=reply,
@@ -235,6 +236,7 @@ async def send_price_address(message: Message) -> None:
         dataframe = dataframe.rename(columns=columns)
         fig = fif.create_table(dataframe.rename(columns=columns))
         fig.update_layout(width=1000)
+
         await send_photo(
             chat_id=message.chat.id,
             caption=reply,
@@ -278,6 +280,7 @@ async def send_trending(message: Message) -> None:
         f"Trending 🔥\n\nCoinGecko\n\n{coin_gecko_trending_coins}\n\n"
         f"CoinMarketCap\n\n{coin_market_cap_trending_coins}"
     )
+
     await message.reply(text=reply)
 
 
@@ -905,7 +908,8 @@ async def send_balance(message: Message):
                 quantity = pancake_swap.get_decimal_representation(
                     quantity=quantity, decimals=coin["decimals"]
                 )
-                usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
+                # usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
+                usd_amount = price.quantize(Decimal("0.01"))
                 data_frame = DataFrame(
                     {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]}
                 )
@@ -914,10 +918,13 @@ async def send_balance(message: Message):
                 )
             except ContractLogicError as e:
                 logger.exception(e)
+    account_data_frame.sort_values(by=["USD"], inplace=True, ascending=False)
+    account_data_frame["USD"] = account_data_frame["USD"].apply("${:,}".format)
     fig = fif.create_table(account_data_frame)
     fig.update_layout(
         autosize=True,
     )
+
     await send_photo(
         chat_id=user_id,
         caption="Account Balance 💲",
