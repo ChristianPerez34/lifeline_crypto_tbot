@@ -78,6 +78,8 @@ class BinanceSmartChain:
 
     @staticmethod
     def get_decimal_representation(quantity, decimals):
+        if decimals < 9:
+            decimals += 2
         return quantity / Decimal(10 ** (18 - (decimals % 18)))
 
     @staticmethod
