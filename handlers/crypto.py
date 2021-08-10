@@ -918,8 +918,8 @@ async def send_balance(message: Message):
                 )
             except ContractLogicError as e:
                 logger.exception(e)
-    account_data_frame.sort_values(by=['USD'], inplace=True, ascending=False)
-    account_data_frame['USD'] = account_data_frame['USD'].apply("${:,}".format)
+    account_data_frame.sort_values(by=["USD"], inplace=True, ascending=False)
+    account_data_frame["USD"] = account_data_frame["USD"].apply("${:,}".format)
     fig = fif.create_table(account_data_frame)
     fig.update_layout(
         autosize=True,
