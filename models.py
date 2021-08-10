@@ -26,8 +26,8 @@ class TelegramGroupMember(db.Entity):
                         for member in TelegramGroupMember
                         if member.id == primary_key
                     )
-                        .prefetch(BinanceNetwork)
-                        .first()
+                    .prefetch(BinanceNetwork)
+                    .first()
                 )
             except orm.ObjectNotFound:
                 return None
@@ -40,10 +40,12 @@ class TelegramGroupMember(db.Entity):
         with orm.db_session:
             member = TelegramGroupMember.get_or_none(primary_key=_id)
             if member:
-                data.pop('id')
-                bsc = BinanceNetwork.get_by_telegram_member_id(telegram_member_id=member.id)
+                data.pop("id")
+                bsc = BinanceNetwork.get_by_telegram_member_id(
+                    telegram_member_id=member.id
+                )
                 if bsc:
-                    bsc_data.pop('id')
+                    bsc_data.pop("id")
                     bsc.set(**bsc_data)
                 else:
                     bsc = BinanceNetwork(**bsc_data)
