@@ -485,14 +485,14 @@ async def send_restart_kucoin_bot(message: Message) -> None:
     await message.reply(text=reply)
 
 
-async def send_buy_coin(message: Message) -> None:
+async def send_buy(message: Message) -> None:
     """
     Command to buy coins in PancakeSwap
     Args:
         message (Message): Telegram chat message
 
     """
-    logger.info("Started buy coin command")
+    logger.info("Started buy command")
 
     telegram_user = message.from_user
     args = message.get_args().split()
@@ -522,14 +522,14 @@ async def send_buy_coin(message: Message) -> None:
     await message.reply(text=reply)
 
 
-async def send_sell_coin(message: Message) -> None:
+async def send_sell(message: Message) -> None:
     """
     Command to sell coins in PancakeSwap
     Args:
         message (Message): Message to reply to
 
     """
-    logger.info("Started sell coin command")
+    logger.info("Started sell command")
     telegram_user = message.from_user
     args = message.get_args().split()
 
@@ -1044,11 +1044,25 @@ async def send_limit_swap(message: Message):
 
 async def send_active_orders(message: Message):
     logger.info("Executing active orders command")
-    reply = "No active orders"
     user_id = message.from_user.id
-    orders = Order.get_orders_by_member_id(telegram_group_member_id=user_id)
+    orders = []
 
-    if orders:
-        pass
-    else:
+    for order in Order.get_orders_by_member_id(telegram_group_member_id=user_id):
+        _order = LimitOrder.from_orm(order).dict(exclude={'address'})
+        _order['telegram_group_member'] = user_id
+        orders.append(_order)
+    orders_dataframe = DataFrame(orders)
+
+    if orders_dataframe.empty:
+        reply = "No active orders"
         await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+    else:
+        fig = fif.create_table(orders_dataframe)
+        fig.update_layout(
+            width=1000,
+            autosize=True,
+        )
+
+        await message.reply_photo(photo=BufferedReader(
+            BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+        ), caption="Active Limit Orders")

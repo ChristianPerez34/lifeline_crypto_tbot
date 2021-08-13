@@ -11,7 +11,7 @@ from handlers.crypto import (
     kucoin_inline_query_handler,
     price_alert_callback,
     send_balance,
-    send_buy_coin,
+    send_buy,
     send_candle_chart,
     send_chart,
     send_gas,
@@ -20,7 +20,7 @@ from handlers.crypto import (
     send_price_address,
     send_price_alert,
     send_restart_kucoin_bot,
-    send_sell_coin,
+    send_sell,
     send_snipe,
     send_spy,
     send_trending,
@@ -77,11 +77,11 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_message_handler(
         send_restart_kucoin_bot, commands=["restart_kucoin"]
     )
-    dispatcher.register_message_handler(send_buy_coin, commands=["buy_coin"])
+    dispatcher.register_message_handler(send_buy, commands=["buy"])
     dispatcher.register_message_handler(send_register, commands=["register"])
     dispatcher.register_message_handler(send_balance, commands=["balance"])
     dispatcher.register_callback_query_handler(kucoin_inline_query_handler)
-    dispatcher.register_message_handler(send_sell_coin, commands=["sell_coin"])
+    dispatcher.register_message_handler(send_sell, commands=["sell"])
     dispatcher.register_message_handler(send_spy, commands=["spy"])
     dispatcher.register_message_handler(send_snipe, commands=["snipe"])
     dispatcher.register_message_handler(send_limit_swap, commands=["limit"])
