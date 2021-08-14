@@ -1054,8 +1054,7 @@ async def send_active_orders(message: Message):
     orders_dataframe = DataFrame(orders)
 
     if orders_dataframe.empty:
-        reply = "No active orders"
-        await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+        await message.reply(text="No active orders", parse_mode=ParseMode.MARKDOWN)
     else:
         fig = fif.create_table(orders_dataframe)
         fig.update_layout(
@@ -1066,3 +1065,19 @@ async def send_active_orders(message: Message):
         await message.reply_photo(photo=BufferedReader(
             BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
         ), caption="Active Limit Orders")
+
+
+async def send_cancel_order(message: Message):
+    logger.info("Executing delete order command")
+    user_id = message.from_user.id
+    reply = "Unable to cancel non-existent order"
+    args = message.get_args()
+
+    order_id = int(args)
+    order = Order.get_or_none(primary_key=order_id)
+
+    if order.telegram_group_member.id == user_id:
+        reply = f"Cancelled order {order_id}"
+        order.remove()
+
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)

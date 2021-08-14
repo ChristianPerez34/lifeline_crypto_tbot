@@ -36,10 +36,8 @@ async def send_welcome(message: Message) -> None:
         rf"{bold('/register')} {bold('kucoin')} {italic('API')}\_{italic('KEY')} {italic('API')}\_{italic('SECRET')} "
         rf"{italic('API')}\_{italic('PASSPHRASE')} to register KuCoin account and follow signals"
         "\n\n"
-        rf"{bold('/buy')}\_{bold('coin')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on "
-        f"PancakeSwap\n\n",
-        rf"{bold('/sell')}\_{bold('coin')} {italic('ADDRESS')} to sell coins on PancakeSwap"
-        "\n\n",
+        f"{bold('/buy')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on PancakeSwap\n\n",
+        f"{bold('/sell')} {italic('ADDRESS')} to sell coins on PancakeSwap\n\n",
         rf"{bold('/chart')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('DAYS')} to display coin "
         "chart. If BaseCoin not specified, will default to USD\n\n",
         rf"{bold('/candle')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('TIME')} {italic('LETTER')}"
@@ -52,6 +50,8 @@ async def send_welcome(message: Message) -> None:
         rf"{italic('BNB')}\_{italic('AMOUNT')} to create a limit order. "
         "Actions: buy|sell|stop\n\n",
         rf"{bold('/active')}\_{bold('orders')} to display active limit orders"
+        "\n\n",
+        rf"{bold('/cancel')}\_{bold('order')} {italic('ORDER')}\_{italic('ID')} to cancel order"
     )
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
