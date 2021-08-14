@@ -75,7 +75,7 @@ async def send_greeting(message: Message) -> None:
 
 
 async def send_message(
-        channel_id: int, message: str, inline: bool = False, data: str = ""
+    channel_id: int, message: str, inline: bool = False, data: str = ""
 ) -> None:
     logger.info("Sending message to chat id: %s", channel_id)
     keyboard_markup = InlineKeyboardMarkup()
