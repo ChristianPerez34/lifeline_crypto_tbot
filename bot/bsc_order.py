@@ -26,7 +26,7 @@ async def limit_order_executor(order: LimitOrder):
             )
             order_executed = True
         elif (trade_direction == SELL and token_price >= target_price) or (
-                trade_direction == STOP and token_price <= target_price
+            trade_direction == STOP and token_price <= target_price
         ):
             dex.swap_tokens(
                 token=order.address, amount_to_spend=order.bnb_amount, side=SELL

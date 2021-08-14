@@ -26,8 +26,8 @@ class TelegramGroupMember(db.Entity):
                         for member in TelegramGroupMember
                         if member.id == primary_key
                     )
-                        .prefetch(BinanceNetwork)
-                        .first()
+                    .prefetch(BinanceNetwork)
+                    .first()
                 )
             except orm.ObjectNotFound:
                 return None
@@ -115,22 +115,30 @@ class Order(db.Entity):
             try:
                 return (
                     orm.select(order for order in Order if order.id == primary_key)
-                        .prefetch(TelegramGroupMember)
-                        .prefetch(TelegramGroupMember.bsc)
-                        .first()
+                    .prefetch(TelegramGroupMember)
+                    .prefetch(TelegramGroupMember.bsc)
+                    .first()
                 )
             except orm.ObjectNotFound:
                 return None
 
     @staticmethod
     def get_orders_by_member_id(telegram_group_member_id: int) -> list:
-        logger.info("Getting all orders for user with id: %d}", telegram_group_member_id)
+        logger.info(
+            "Getting all orders for user with id: %d}", telegram_group_member_id
+        )
         with orm.db_session:
-            return list((
-                orm.select(order for order in Order if order.telegram_group_member.id == telegram_group_member_id)
+            return list(
+                (
+                    orm.select(
+                        order
+                        for order in Order
+                        if order.telegram_group_member.id == telegram_group_member_id
+                    )
                     .prefetch(TelegramGroupMember)
                     .prefetch(TelegramGroupMember.bsc)
-            ))
+                )
+            )
 
     @staticmethod
     # @orm.db_session
@@ -144,8 +152,8 @@ class Order(db.Entity):
         with orm.db_session:
             return list(
                 Order.select()
-                    .prefetch(TelegramGroupMember)
-                    .prefetch(TelegramGroupMember.bsc)
+                .prefetch(TelegramGroupMember)
+                .prefetch(TelegramGroupMember.bsc)
             )
 
     @orm.db_session

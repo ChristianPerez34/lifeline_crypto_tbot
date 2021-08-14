@@ -60,7 +60,7 @@ class BinanceSmartChain:
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         bep20_transfers = data["result"]
@@ -135,7 +135,9 @@ class PancakeSwap(BinanceSmartChain):
         logger.info("Retrieving metadata for token: %s", address)
         return self.pancake_swap.get_token(address=address)
 
-    def _swap_exact_bnb_for_tokens(self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei):
+    def _swap_exact_bnb_for_tokens(
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+    ):
         logger.info("Swapping exact bnb for tokens")
         return contract.functions.swapExactETHForTokens(
             0, route, self.address, (int(time.time()) + 10000)
@@ -148,8 +150,9 @@ class PancakeSwap(BinanceSmartChain):
             }
         )
 
-    def _swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens(self, contract: Contract, route: list,
-                                                                     amount_to_spend: Wei, gas_price: Wei):
+    def _swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens(
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+    ):
         logger.info("Swapping exact bnb for tokens supporting fee on transfer tokens")
         return contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
             0, route, self.address, (int(time.time()) + 10000)
@@ -162,7 +165,9 @@ class PancakeSwap(BinanceSmartChain):
             }
         )
 
-    def _swap_exact_tokens_for_bnb(self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei):
+    def _swap_exact_tokens_for_bnb(
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+    ):
         logger.info("Swapping exact tokens for bnb")
         return contract.functions.swapExactTokensForETH(
             amount_to_spend,
@@ -174,14 +179,13 @@ class PancakeSwap(BinanceSmartChain):
             {
                 "from": self.address,
                 "gasPrice": gas_price,
-                "nonce": self.web3.eth.get_transaction_count(
-                    self.address
-                ),
+                "nonce": self.web3.eth.get_transaction_count(self.address),
             }
         )
 
-    def swap_exact_tokens_for_bnb_supporting_fee_on_transfer_tokens(self, contract: Contract, route: list,
-                                                                    amount_to_spend: Wei, gas_price: Wei):
+    def swap_exact_tokens_for_bnb_supporting_fee_on_transfer_tokens(
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+    ):
         logger.info("Swapping exact tokens for bnb supporting fee on transfer tokens")
         txn = contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
             amount_to_spend,
@@ -193,9 +197,7 @@ class PancakeSwap(BinanceSmartChain):
             {
                 "from": self.address,
                 "gasPrice": gas_price,
-                "nonce": self.web3.eth.get_transaction_count(
-                    self.address
-                ),
+                "nonce": self.web3.eth.get_transaction_count(self.address),
             }
         )
 
@@ -211,20 +213,14 @@ class PancakeSwap(BinanceSmartChain):
             {
                 "from": self.address,
                 "gasPrice": self.web3.toWei("5", "gwei"),
-                "nonce": self.web3.eth.get_transaction_count(
-                    self.address
-                ),
+                "nonce": self.web3.eth.get_transaction_count(self.address),
             }
         )
         signed_txn = self.web3.eth.account.sign_transaction(
             approve,
-            private_key=self.fernet.decrypt(
-                self.key.encode()
-            ).decode(),
+            private_key=self.fernet.decrypt(self.key.encode()).decode(),
         )
-        self.web3.eth.send_raw_transaction(
-            signed_txn.rawTransaction
-        )
+        self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         logger.info("Approved token for swap")
         time.sleep(1)
 
@@ -238,11 +234,11 @@ class PancakeSwap(BinanceSmartChain):
             self._approve(contract=contract)
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, str, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -276,20 +272,28 @@ class PancakeSwap(BinanceSmartChain):
                     amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
                     route = [wbnb, token]
                     args = (contract, route, amount_to_spend, gas_price)
-                    swap_methods = [self._swap_exact_bnb_for_tokens,
-                                    self._swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens]
-                    balance = self.get_token_balance(address=self.address, token=CONTRACT_ADDRESSES['BNB'])
+                    swap_methods = [
+                        self._swap_exact_bnb_for_tokens,
+                        self._swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens,
+                    ]
+                    balance = self.get_token_balance(
+                        address=self.address, token=CONTRACT_ADDRESSES["BNB"]
+                    )
                 else:
                     abi = self.get_contract_abi(abi_type="sell")
-                    contract = self.web3.eth.contract(
-                        address=token, abi=abi
+                    contract = self.web3.eth.contract(address=token, abi=abi)
+                    amount_to_spend = self.get_token_balance(
+                        address=self.address, token=token
                     )
-                    amount_to_spend = self.get_token_balance(address=self.address, token=token)
                     route = [token, CONTRACT_ADDRESSES["WBNB"]]
                     args = (contract, route, amount_to_spend, gas_price)
-                    swap_methods = [self._swap_exact_tokens_for_bnb,
-                                    self._swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens]
-                    balance = self.get_token_balance(address=self.address, token=CONTRACT_ADDRESSES['BNB'])
+                    swap_methods = [
+                        self._swap_exact_tokens_for_bnb,
+                        self._swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens,
+                    ]
+                    balance = self.get_token_balance(
+                        address=self.address, token=CONTRACT_ADDRESSES["BNB"]
+                    )
                     self._check_approval(contract=contract, token=token)
 
                 if balance < amount_to_spend:
@@ -322,7 +326,7 @@ class PancakeSwap(BinanceSmartChain):
         return reply
 
     def get_token_price(
-            self, token: AddressLike, as_busd_per_token: bool = False
+        self, token: AddressLike, as_busd_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in BUSD

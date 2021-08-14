@@ -24,7 +24,9 @@ from handlers.crypto import (
     send_snipe,
     send_spy,
     send_trending,
-    send_limit_swap, send_active_orders, send_cancel_order,
+    send_limit_swap,
+    send_active_orders,
+    send_cancel_order,
 )
 from handlers.error import send_error
 from handlers.user import send_register
@@ -85,8 +87,8 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_message_handler(send_spy, commands=["spy"])
     dispatcher.register_message_handler(send_snipe, commands=["snipe"])
     dispatcher.register_message_handler(send_limit_swap, commands=["limit"])
-    dispatcher.register_message_handler(send_active_orders, commands=['active_orders'])
-    dispatcher.register_message_handler(send_cancel_order, commands=['cancel_order'])
+    dispatcher.register_message_handler(send_active_orders, commands=["active_orders"])
+    dispatcher.register_message_handler(send_cancel_order, commands=["cancel_order"])
 
     dispatcher.register_message_handler(
         send_greeting, content_types=types.ContentTypes.NEW_CHAT_MEMBERS
