@@ -110,7 +110,7 @@ class Order(db.Entity):
 
     @staticmethod
     def get_or_none(primary_key: int) -> db.Entity:
-        # return Order[primary_key]
+        logger.info("Retrieving order with id: %d", primary_key)
         with orm.db_session:
             try:
                 return (
@@ -121,6 +121,24 @@ class Order(db.Entity):
                 )
             except orm.ObjectNotFound:
                 return None
+
+    @staticmethod
+    def get_orders_by_member_id(telegram_group_member_id: int) -> list:
+        logger.info(
+            "Getting all orders for user with id: %d}", telegram_group_member_id
+        )
+        with orm.db_session:
+            return list(
+                (
+                    orm.select(
+                        order
+                        for order in Order
+                        if order.telegram_group_member.id == telegram_group_member_id
+                    )
+                    .prefetch(TelegramGroupMember)
+                    .prefetch(TelegramGroupMember.bsc)
+                )
+            )
 
     @staticmethod
     # @orm.db_session
@@ -137,3 +155,8 @@ class Order(db.Entity):
                 .prefetch(TelegramGroupMember)
                 .prefetch(TelegramGroupMember.bsc)
             )
+
+    @orm.db_session
+    def remove(self) -> None:
+        logger.info("Deleting order with id: %d", self.id)
+        Order[self.id].delete()
