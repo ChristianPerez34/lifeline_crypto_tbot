@@ -79,13 +79,29 @@ class BinanceSmartChain:
         return account_holdings
 
     @staticmethod
-    def get_decimal_representation(quantity, decimals):
+    def get_decimal_representation(quantity: Decimal, decimals: int) -> Decimal:
+        """
+        Decimal representation of inputted quantity
+        Args:
+            quantity (Decimal): Amount to convert to decimal representation
+            decimals (int): Amount of decimals for token contract
+
+        Returns: Decimal/Normalized representation of inputted quantity
+        """
         if decimals < 9:
             decimals += 2
         return quantity / Decimal(10 ** (18 - (decimals % 18)))
 
     @staticmethod
     def get_contract_abi(abi_type: str = "liquidity") -> str:
+        """
+        Retrieves contract abi
+        Args:
+            abi_type (str): Type of abi to use
+
+        Returns (str): Abi string
+
+        """
         logger.info("Retrieving contract abi for type: %s", abi_type)
         filename = "abi/pancake_swap_liquidity_v2.abi"
 
@@ -97,7 +113,16 @@ class BinanceSmartChain:
             abi = json.dumps(json.load(file))
         return abi
 
-    def get_token_balance(self, address: AddressLike, token: AddressLike):
+    def get_token_balance(self, address: AddressLike, token: AddressLike) -> Wei:
+        """
+        Retrieves amount of tokens in address
+        Args:
+            address (AddressLike): Wallet address
+            token (AddressLike): Token Contract Address
+
+        Returns (Wei): Token balance in wallet
+
+        """
         logger.info("Retrieving token balance for %s", address)
         if token == CONTRACT_ADDRESSES["BNB"]:
             return self.web3.eth.get_balance(address)
@@ -187,7 +212,7 @@ class PancakeSwap(BinanceSmartChain):
         self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ):
         logger.info("Swapping exact tokens for bnb supporting fee on transfer tokens")
-        txn = contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
+        return contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
             amount_to_spend,
             0,
             route,

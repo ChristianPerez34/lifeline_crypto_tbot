@@ -36,7 +36,8 @@ async def send_welcome(message: Message) -> None:
         rf"{bold('/register')} {bold('kucoin')} {italic('API')}\_{italic('KEY')} {italic('API')}\_{italic('SECRET')} "
         rf"{italic('API')}\_{italic('PASSPHRASE')} to register KuCoin account and follow signals"
         "\n\n"
-        f"{bold('/buy')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on PancakeSwap\n\n",
+        rf"{bold('/buy')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on "
+        "PancakeSwap\n\n",
         f"{bold('/sell')} {italic('ADDRESS')} to sell coins on PancakeSwap\n\n",
         rf"{bold('/chart')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('DAYS')} to display coin "
         "chart. If BaseCoin not specified, will default to USD\n\n",
@@ -74,7 +75,7 @@ async def send_greeting(message: Message) -> None:
 
 
 async def send_message(
-    channel_id: int, message: str, inline: bool = False, data: str = ""
+        channel_id: int, message: str, inline: bool = False, data: str = ""
 ) -> None:
     logger.info("Sending message to chat id: %s", channel_id)
     keyboard_markup = InlineKeyboardMarkup()
