@@ -1059,7 +1059,7 @@ async def send_active_orders(message: Message) -> None:
         _order = LimitOrder.from_orm(order).dict(exclude={"address"})
         _order["telegram_group_member"] = user_id
         _order["token"] = token.name
-        _order['symbol'] = token.symbol
+        _order["symbol"] = token.symbol
         orders.append(_order)
     orders_dataframe = DataFrame(orders)
 
