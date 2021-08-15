@@ -317,7 +317,7 @@ class PancakeSwap(BinanceSmartChain):
                         self._swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens,
                     ]
                     balance = self.get_token_balance(
-                        address=self.address, token=CONTRACT_ADDRESSES["BNB"]
+                        address=self.address, token=token
                     )
                     self._check_approval(contract=contract, token=token)
 
