@@ -1042,14 +1042,24 @@ async def send_limit_swap(message: Message):
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
-async def send_active_orders(message: Message):
+async def send_active_orders(message: Message) -> None:
+    """
+    Replies with users active orders
+    Args:
+        message (Message): Message to reply to
+    """
     logger.info("Executing active orders command")
     user_id = message.from_user.id
     orders = []
+    user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
+    dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
 
     for order in Order.get_orders_by_member_id(telegram_group_member_id=user_id):
+        token = dex.get_token(address=order.address)
         _order = LimitOrder.from_orm(order).dict(exclude={"address"})
         _order["telegram_group_member"] = user_id
+        _order["token"] = token.name
+        _order['symbol'] = token.symbol
         orders.append(_order)
     orders_dataframe = DataFrame(orders)
 
