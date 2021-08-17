@@ -80,7 +80,7 @@ class EthereumChain(ERC20Like):
         }
 
         erc20_transfers = ether_scan.get_erc20_token_transfer_events_by_address(
-            address="0xd79B66e6B765f1DA3E56AbC9bC53C9b12879C843",
+            address=address,
             startblock=0, endblock=99999999, sort='desc')
 
         for transfer in erc20_transfers:

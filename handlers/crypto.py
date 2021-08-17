@@ -27,6 +27,7 @@ from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
 from api.eth import UniSwap
 from api.kucoin import KucoinApi
+from api.matic import QuickSwap
 from app import bot, logger
 from bot import active_orders
 from bot.bsc_order import limit_order_executor
@@ -892,9 +893,10 @@ async def send_balance(message: Message):
     address, key = user.bsc.address, user.bsc.private_key
     if platform == "BSC":
         dex = PancakeSwap(address=address, key=key)
-    # elif platform == "ETH":
-    else:
+    elif platform == "ETH":
         dex = UniSwap(address=address, key=key)
+    else:
+        dex = QuickSwap(address=address, key=key)
 
     account_holdings = await dex.get_account_token_holdings(
         address=dex.address
@@ -936,7 +938,7 @@ async def send_balance(message: Message):
 
     await send_photo(
         chat_id=user_id,
-        caption="ETH Account Balance 💲",
+        caption="MATIC Account Balance 💲",
         photo=BufferedReader(
             BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
         ),

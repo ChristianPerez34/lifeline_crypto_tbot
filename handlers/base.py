@@ -43,7 +43,8 @@ async def send_welcome(message: Message) -> None:
         "chart. If BaseCoin not specified, will default to USD\n\n",
         rf"{bold('/candle')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('TIME')} {italic('LETTER')}"
         " to display coin candle chart. If BaseCoin not specified, will default to USD\n\n",
-        f"{bold('/balance')} to display binance smart chain balance. Responds privately.\n\n",
+        f"{bold('/balance')} {italic('NETWORK')} to display binance smart chain balance. Responds privately."
+        " Valid networks eth|bsc|matic\n\n",
         f"{bold('/spy')} {italic('ADDRESS')} to display some of the accounts holdings.\n\n",
         rf"{bold('/snipe')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to snipe token."
         " Uses high gas!\n\n",
@@ -75,7 +76,7 @@ async def send_greeting(message: Message) -> None:
 
 
 async def send_message(
-    channel_id: int, message: str, inline: bool = False, data: str = ""
+        channel_id: int, message: str, inline: bool = False, data: str = ""
 ) -> None:
     logger.info("Sending message to chat id: %s", channel_id)
     keyboard_markup = InlineKeyboardMarkup()
