@@ -342,6 +342,9 @@ class PancakeSwap(BinanceSmartChain):
                 reply = (
                     "⚠️ Insufficient balance. Top up your token balance and try again. "
                 )
+            except ValueError as e:
+                logger.exception(e)
+                reply = e.args[0]['message']
         else:
             logger.info("Unable to connect to Binance Smart Chain")
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
