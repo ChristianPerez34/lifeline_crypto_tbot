@@ -944,7 +944,7 @@ async def send_balance(message: Message):
 
     await send_photo(
         chat_id=user_id,
-        caption="MATIC Account Balance 💲",
+        caption=f"{network} Account Balance 💲",
         photo=BufferedReader(
             BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
         ),
