@@ -184,6 +184,8 @@ class Order(db.Entity):
                     orm.select(order for order in Order if order.id == primary_key)
                         .prefetch(TelegramGroupMember)
                         .prefetch(TelegramGroupMember.bsc)
+                        .prefetch(TelegramGroupMember.eth)
+                        .prefetch(TelegramGroupMember.matic)
                         .first()
                 )
             except orm.ObjectNotFound:
