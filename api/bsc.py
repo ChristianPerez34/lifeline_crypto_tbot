@@ -288,12 +288,11 @@ class PancakeSwap(BinanceSmartChain):
             )
             try:
                 txn = None
-
+                abi = self.get_contract_abi(abi_type="router")
+                contract = self.web3.eth.contract(
+                    address=self.pancake_swap.router_address, abi=abi
+                )
                 if side == BUY:
-                    abi = self.get_contract_abi(abi_type="router")
-                    contract = self.web3.eth.contract(
-                        address=self.pancake_swap.router_address, abi=abi
-                    )
                     amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
                     route = [wbnb, token]
                     args = (contract, route, amount_to_spend, gas_price)
@@ -305,8 +304,8 @@ class PancakeSwap(BinanceSmartChain):
                         address=self.address, token=CONTRACT_ADDRESSES["BNB"]
                     )
                 else:
-                    abi = self.get_contract_abi(abi_type="sell")
-                    contract = self.web3.eth.contract(address=token, abi=abi)
+                    token_abi = self.get_contract_abi(abi_type="sell")
+                    token_contract = self.web3.eth.contract(address=token, abi=token_abi)
                     amount_to_spend = self.get_token_balance(
                         address=self.address, token=token
                     )
@@ -317,7 +316,7 @@ class PancakeSwap(BinanceSmartChain):
                         self._swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens,
                     ]
                     balance = self.get_token_balance(address=self.address, token=token)
-                    self._check_approval(contract=contract, token=token)
+                    self._check_approval(contract=token_contract, token=token)
 
                 if balance < amount_to_spend:
                     raise InsufficientBalance(had=balance, needed=amount_to_spend)
@@ -349,12 +348,13 @@ class PancakeSwap(BinanceSmartChain):
         return reply
 
     def get_token_price(
-        self, token: AddressLike, as_busd_per_token: bool = False
+            self, token: AddressLike, decimals: int = 18, as_busd_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in BUSD
         Args:
             token (AddressLike): Contract Address of coin
+            decimals (int): Token decimals
             as_busd_per_token (bool): Determines if output should be BUSD per token or token per BUSD
 
         Returns (Decimal): Tokens per BUSD / BUSD per tokens
@@ -365,7 +365,7 @@ class PancakeSwap(BinanceSmartChain):
         return (
             Decimal(self.pancake_swap.get_price_output(busd, token, 10 ** 18))
             if as_busd_per_token
-            else Decimal(self.pancake_swap.get_price_input(busd, token, 10 ** 18))
+            else Decimal(self.pancake_swap.get_price_input(busd, token, 10 ** decimals))
         )
 
     def get_token_pair_address(self, token) -> str:
