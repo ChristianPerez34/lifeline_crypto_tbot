@@ -204,6 +204,8 @@ class Order(db.Entity):
                     )
                         .prefetch(TelegramGroupMember)
                         .prefetch(TelegramGroupMember.bsc)
+                        .prefetch(TelegramGroupMember.eth)
+                        .prefetch(TelegramGroupMember.matic)
                 )
             )
 
