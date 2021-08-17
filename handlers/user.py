@@ -8,7 +8,45 @@ from app import logger
 from config import FERNET_KEY, RegisterTypes
 from handlers.base import send_message
 from models import TelegramGroupMember
-from schemas import BinanceChain, User
+from schemas import BinanceChain, User, EthereumChain, MaticChain
+
+
+async def register_network(
+    register_type: str, address: str, private_key: str, user_id: int
+) -> dict:
+    fernet = Fernet(FERNET_KEY)
+    data = {"id": user_id}
+    if register_type == RegisterTypes.BSC.value:
+        data.update(
+            {
+                "bsc": BinanceChain(
+                    address=address,
+                    private_key=fernet.encrypt(private_key.encode()).decode(),
+                    telegram_group_member=user_id,
+                ),
+            }
+        )
+    elif register_type == RegisterTypes.ETH.value:
+        data.update(
+            {
+                "eth": EthereumChain(
+                    address=address,
+                    private_key=fernet.encrypt(private_key.encode()).decode(),
+                    telegram_group_member=user_id,
+                ),
+            }
+        )
+    else:
+        data.update(
+            {
+                "matic": MaticChain(
+                    address=address,
+                    private_key=fernet.encrypt(private_key.encode()).decode(),
+                    telegram_group_member=user_id,
+                ),
+            }
+        )
+    return data
 
 
 async def send_register(message: Message) -> None:
@@ -27,28 +65,22 @@ async def send_register(message: Message) -> None:
 
     args = message.get_args().split()
     register_type = args[0].upper()
-    fernet = Fernet(FERNET_KEY)
+
     exclude = {}
 
-    if register_type == RegisterTypes.BSC.value:
-
-        if len(args) != 3:
-            is_error = True
-            text = "⚠️ Please provide BNB smart chain address and private key: /register bsc [ADDRESS] [PRIVATE_KEY]"
-        else:
-            address, private_key = tuple(args[1:])
-            user_id = telegram_user.id
-            data.update(
-                {
-                    "id": user_id,
-                    "bsc": BinanceChain(
-                        address=address,
-                        private_key=fernet.encrypt(private_key.encode()).decode(),
-                        telegram_group_member=user_id,
-                    ),
-                }
-            )
-            exclude = {"kucoin_api_key", "kucoin_api_secret", "kucoin_api_passphrase"}
+    if register_type in (
+        RegisterTypes.BSC.value,
+        RegisterTypes.ETH.value,
+        RegisterTypes.MATIC.value,
+    ):
+        address, private_key = tuple(args[1:])
+        data = await register_network(
+            register_type=register_type,
+            address=address,
+            private_key=private_key,
+            user_id=telegram_user.id,
+        )
+        exclude = {"kucoin_api_key", "kucoin_api_secret", "kucoin_api_passphrase"}
     elif register_type == RegisterTypes.KUCOIN.value:
         if len(args) != 4:
             is_error = True
@@ -57,6 +89,7 @@ async def send_register(message: Message) -> None:
                 "[API_SECRET] [API_PASSPHRASE]"
             )
         else:
+            fernet = Fernet(FERNET_KEY)
             api_key, api_secret, api_passphrase = tuple(args[1:])
             data.update(
                 {

@@ -25,7 +25,9 @@ from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
 from api.cryptocompare import CryptoCompare
+from api.eth import UniSwap
 from api.kucoin import KucoinApi
+from api.matic import QuickSwap
 from app import bot, logger
 from bot import active_orders
 from bot.bsc_order import limit_order_executor
@@ -34,9 +36,18 @@ from bot.kucoin_bot import kucoin_bot
 from config import BUY, FERNET_KEY, HEADERS, KUCOIN_TASK_NAME, SELL, TELEGRAM_CHAT_ID
 from handlers.base import send_message, send_photo
 from models import CryptoAlert, TelegramGroupMember, Order
-from schemas import CandleChart, Chart, Coin, TokenAlert, TradeCoin, User, LimitOrder
+from schemas import (
+    CandleChart,
+    Chart,
+    Coin,
+    TokenAlert,
+    TradeCoin,
+    User,
+    LimitOrder,
+    Platform,
+)
 from utils import all_same
-from . import eth
+from . import ether_scan
 
 
 def get_coin_stats(symbol: str) -> list:
@@ -185,7 +196,7 @@ async def send_gas(message: Message) -> None:
         message (Message): Message to reply to
     """
     logger.info("ETH gas price command executed")
-    gas_price = eth.get_gas_oracle()
+    gas_price = ether_scan.get_gas_oracle()
     reply = (
         "ETH Gas Prices ⛽️\n"
         f"Slow: {gas_price['SafeGasPrice']}\n"
@@ -205,11 +216,11 @@ async def send_price_address(message: Message) -> None:
     args = message.get_args().split()
     reply = ""
     try:
-        address, platform, *_ = chain(args, ["", ""])
-        coin = Coin(address=address, platform=platform)
+        address, network, *_ = chain(args, ["", ""])
+        coin = Coin(address=address, network=network)
         address = coin.address
-        platform = coin.platform
-        if platform == "BSC":
+        network = coin.network
+        if network == "BSC":
             user = User.from_orm(
                 TelegramGroupMember.get_or_none(primary_key=message.from_user.id)
             )
@@ -249,7 +260,7 @@ async def send_price_address(message: Message) -> None:
         logger.exception(e)
         reply = (
             "⚠️ Please provide a crypto address: \n"
-            f"{bold('/price')}_{bold('address')} {italic('ADDRESS')} {italic('PLATFORM')}"
+            f"{bold('/price')}_{bold('address')} {italic('ADDRESS')} {italic('NETWORK')}"
         )
         await message.reply(text=reply)
     except ValueError as e:
@@ -885,27 +896,33 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
 async def send_balance(message: Message):
     logger.info("Retrieving account balance")
     user_id = message.from_user.id
+
     user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
-    pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
-    account_holdings = await pancake_swap.get_account_token_holdings(
-        address=pancake_swap.address
-    )
+    network = Platform(network=message.get_args()).network
+
+    if network == "BSC":
+        dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+    elif network == "ETH":
+        dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
+    else:
+        dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
+    account_holdings = await dex.get_account_token_holdings(address=dex.address)
     account_data_frame = DataFrame()
+
     for k in account_holdings.keys():
         coin = account_holdings[k]
         token = coin["address"]
 
         # Quantity in wei used to calculate price
-        quantity = pancake_swap.get_token_balance(
-            address=pancake_swap.address, token=token
-        )
+        quantity = dex.get_token_balance(address=dex.address, token=token)
+
         if quantity > 0:
             try:
-                token_price = pancake_swap.get_token_price(token=token)
+                token_price = dex.get_token_price(token=token)
                 price = quantity / token_price
 
                 # Quantity in correct format as seen in wallet
-                quantity = pancake_swap.get_decimal_representation(
+                quantity = dex.get_decimal_representation(
                     quantity=quantity, decimals=coin["decimals"]
                 )
                 # usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
@@ -927,7 +944,7 @@ async def send_balance(message: Message):
 
     await send_photo(
         chat_id=user_id,
-        caption="Account Balance 💲",
+        caption="MATIC Account Balance 💲",
         photo=BufferedReader(
             BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
         ),

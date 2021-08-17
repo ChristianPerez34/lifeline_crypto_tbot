@@ -28,21 +28,24 @@ class Token(BaseModel):
         return Web3.toChecksumAddress(value)
 
 
-class Coin(Token):
+class Platform(BaseModel):
+    network: Optional[str]
+
+    @validator("network")
+    def check_platform(cls, value: str):
+        value = value.upper()
+        if value and value not in ("BSC", "ETH", "MATIC"):
+            raise ValueError("Invalid network. Expected one of eth|bsc|matic")
+        return value
+
+
+class Coin(Token, Platform):
     symbol: str = ""
-    platform: Optional[str]
 
     @validator("symbol")
     def symbol_is_alphanumeric(cls, value: str):
         if not value.isalnum():
             raise ValueError(f"{value} is not a valid symbol")
-        return value
-
-    @validator("platform")
-    def check_platform(cls, value: str):
-        value = value.upper()
-        if value and value not in ("BSC",):
-            raise ValueError("Invalid platform")
         return value
 
 
@@ -64,7 +67,7 @@ class TokenAlert(BaseModel):
         orm_mode = True
 
 
-class BinanceChain(Token):
+class Network(Token):
     id: Optional[int]
     private_key: str = ""
     telegram_group_member: int
@@ -75,6 +78,18 @@ class BinanceChain(Token):
             return value
         return value.id
 
+
+class BinanceChain(Network):
+    class Config:
+        orm_mode = True
+
+
+class EthereumChain(Network):
+    class Config:
+        orm_mode = True
+
+
+class MaticChain(Network):
     class Config:
         orm_mode = True
 
@@ -87,7 +102,9 @@ class User(BaseModel):
     kucoin_api_secret: Optional[str] = ""
     kucoin_api_passphrase: Optional[str] = ""
 
-    bsc: BinanceChain
+    bsc: Optional[BinanceChain]
+    eth: Optional[EthereumChain]
+    matic: Optional[MaticChain]
 
     class Config:
         orm_mode = True

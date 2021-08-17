@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 
 class RegisterTypes(Enum):
     BSC = "BSC"
+    ETH = "ETH"
+    MATIC = "MATIC"
     KUCOIN = "KUCOIN"
 
 
@@ -34,6 +36,13 @@ BSCSCAN_API_KEY = os.getenv("BSCSCAN_API_KEY")
 BUY = "BUY"
 SELL = "SELL"
 STOP = "STOP"
+
+# Ethereum Main Net settings
+ETHEREUM_MAIN_NET_URL = os.getenv("ETHEREUM_MAIN_NET_URL")
+ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY")
+
+# Polygon settings
+POLYGONSCAN_API_KEY = os.getenv("POLYGONSCAN_API_KEY")
 
 # Telegram env settings
 TELEGRAM_BOT_API_KEY = os.getenv("TELEGRAM_BOT_API_KEY")
