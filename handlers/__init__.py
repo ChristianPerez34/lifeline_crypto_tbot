@@ -1,16 +1,13 @@
-import os
-
 from etherscan import Etherscan
 from lru import LRU
 
-from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_USER
-
+from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_USER, ETHERSCAN_API_KEY
 # Enable logging
 from models import db
 
 coingecko_coin_lookup_cache = LRU(5)
 
-eth = Etherscan(os.getenv("ETHERSCAN_API_KEY"))
+ether_scan = Etherscan(ETHERSCAN_API_KEY)
 
 
 async def init_database():

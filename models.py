@@ -14,6 +14,8 @@ class TelegramGroupMember(db.Entity):
     kucoin_api_passphrase = orm.Optional(str)
 
     bsc = orm.Optional(lambda: BinanceNetwork)
+    eth = orm.Optional(lambda: EthereumNetwork)
+    matic = orm.Optional(lambda: MaticNetwork)
     orders = orm.Set(lambda: Order)
 
     @staticmethod
@@ -26,8 +28,10 @@ class TelegramGroupMember(db.Entity):
                         for member in TelegramGroupMember
                         if member.id == primary_key
                     )
-                    .prefetch(BinanceNetwork)
-                    .first()
+                        .prefetch(BinanceNetwork)
+                        .prefetch(EthereumNetwork)
+                        .prefetch(MaticNetwork)
+                        .first()
                 )
             except orm.ObjectNotFound:
                 return None
@@ -36,20 +40,43 @@ class TelegramGroupMember(db.Entity):
     def create_or_update(data: dict) -> db.Entity:
         _id = data.get("id")
         bsc_data = data.pop("bsc")
+        eth_data = data.pop('eth')
+        matic_data = data.pop('matic')
 
         with orm.db_session:
             member = TelegramGroupMember.get_or_none(primary_key=_id)
             if member:
                 data.pop("id")
-                bsc = BinanceNetwork.get_by_telegram_member_id(
-                    telegram_member_id=member.id
-                )
-                if bsc:
-                    bsc_data.pop("id")
-                    bsc.set(**bsc_data)
-                else:
-                    bsc = BinanceNetwork(**bsc_data)
-                data["bsc"] = bsc
+                if bsc_data:
+                    bsc = BinanceNetwork.get_by_telegram_member_id(
+                        telegram_member_id=member.id
+                    )
+                    if bsc:
+                        bsc_data.pop("id")
+                        bsc.set(**bsc_data)
+                    else:
+                        bsc = BinanceNetwork(**bsc_data)
+                    data["bsc"] = bsc
+                elif eth_data:
+                    eth = EthereumNetwork.get_by_telegram_member_id(
+                        telegram_member_id=member.id
+                    )
+                    if eth:
+                        eth_data.pop("id")
+                        eth.set(**eth_data)
+                    else:
+                        eth = EthereumNetwork(**eth_data)
+                    data["eth"] = eth
+                elif matic_data:
+                    matic = MaticNetwork.get_by_telegram_member_id(
+                        telegram_member_id=member.id
+                    )
+                    if matic:
+                        matic_data.pop("id")
+                        matic.set(**matic_data)
+                    else:
+                        matic = MaticNetwork(**matic_data)
+                    data["matic"] = matic
                 member.set(**data)
             else:
                 member = TelegramGroupMember(**data)
@@ -73,6 +100,46 @@ class BinanceNetwork(db.Entity):
                     bsc
                     for bsc in BinanceNetwork
                     if bsc.telegram_group_member.id == telegram_member_id
+                ).first()
+            except orm.ObjectNotFound:
+                return None
+
+
+class EthereumNetwork(db.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    address = orm.Required(str)
+    private_key = orm.Required(str)
+
+    telegram_group_member = orm.Required(lambda: TelegramGroupMember)
+
+    @staticmethod
+    def get_by_telegram_member_id(telegram_member_id: int) -> db.Entity:
+        with orm.db_session:
+            try:
+                return orm.select(
+                    eth
+                    for eth in EthereumNetwork
+                    if eth.telegram_group_member.id == telegram_member_id
+                ).first()
+            except orm.ObjectNotFound:
+                return None
+
+
+class MaticNetwork(db.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    address = orm.Required(str)
+    private_key = orm.Required(str)
+
+    telegram_group_member = orm.Required(lambda: TelegramGroupMember)
+
+    @staticmethod
+    def get_by_telegram_member_id(telegram_member_id: int) -> db.Entity:
+        with orm.db_session:
+            try:
+                return orm.select(
+                    matic
+                    for matic in MaticNetwork
+                    if matic.telegram_group_member.id == telegram_member_id
                 ).first()
             except orm.ObjectNotFound:
                 return None
@@ -115,9 +182,9 @@ class Order(db.Entity):
             try:
                 return (
                     orm.select(order for order in Order if order.id == primary_key)
-                    .prefetch(TelegramGroupMember)
-                    .prefetch(TelegramGroupMember.bsc)
-                    .first()
+                        .prefetch(TelegramGroupMember)
+                        .prefetch(TelegramGroupMember.bsc)
+                        .first()
                 )
             except orm.ObjectNotFound:
                 return None
@@ -135,8 +202,8 @@ class Order(db.Entity):
                         for order in Order
                         if order.telegram_group_member.id == telegram_group_member_id
                     )
-                    .prefetch(TelegramGroupMember)
-                    .prefetch(TelegramGroupMember.bsc)
+                        .prefetch(TelegramGroupMember)
+                        .prefetch(TelegramGroupMember.bsc)
                 )
             )
 
@@ -152,8 +219,8 @@ class Order(db.Entity):
         with orm.db_session:
             return list(
                 Order.select()
-                .prefetch(TelegramGroupMember)
-                .prefetch(TelegramGroupMember.bsc)
+                    .prefetch(TelegramGroupMember)
+                    .prefetch(TelegramGroupMember.bsc)
             )
 
     @orm.db_session
