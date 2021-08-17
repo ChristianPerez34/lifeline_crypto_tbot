@@ -14,12 +14,11 @@ from handlers import ether_scan
 CONTRACT_ADDRESSES = {
     "ETH": Web3.toChecksumAddress("0x0000000000000000000000000000000000000000"),
     "WETH": Web3.toChecksumAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
-    "USDC": Web3.toChecksumAddress("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")
+    "USDC": Web3.toChecksumAddress("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"),
 }
 
 
 class ERC20Like:
-
     @staticmethod
     def get_decimal_representation(quantity: Decimal, decimals: int) -> Decimal:
         """
@@ -80,8 +79,8 @@ class EthereumChain(ERC20Like):
         }
 
         erc20_transfers = ether_scan.get_erc20_token_transfer_events_by_address(
-            address=address,
-            startblock=0, endblock=99999999, sort='desc')
+            address=address, startblock=0, endblock=99999999, sort="desc"
+        )
 
         for transfer in erc20_transfers:
             account_holdings.update(
@@ -129,7 +128,7 @@ class UniSwap(EthereumChain):
         )
 
     def get_token_price(
-            self, token: AddressLike, as_usdc_per_token: bool = False
+        self, token: AddressLike, as_usdc_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in USDC
