@@ -1,7 +1,8 @@
 import asyncio
 
 from api.bsc import PancakeSwap
-from config import BUY, SELL, STOP
+from config import BUY, SELL, STOP, TELEGRAM_CHAT_ID
+from handlers.base import send_message
 from schemas import LimitOrder
 
 
@@ -13,7 +14,7 @@ async def limit_order_executor(order: LimitOrder):
     token = dex.get_token(address=order.address)
     target_price = order.target_price
     trade_direction = order.trade_direction
-
+    reply = "Limit order executed\n"
     while not order_executed:
         token_price = dex.get_decimal_representation(
             quantity=dex.get_token_price(token=order.address, as_busd_per_token=True),
@@ -21,15 +22,16 @@ async def limit_order_executor(order: LimitOrder):
         )
 
         if trade_direction == BUY and token_price <= target_price:
-            dex.swap_tokens(
+            reply += dex.swap_tokens(
                 token=order.address, amount_to_spend=order.bnb_amount, side=BUY
             )
             order_executed = True
         elif (trade_direction == SELL and token_price >= target_price) or (
             trade_direction == STOP and token_price <= target_price
         ):
-            dex.swap_tokens(
+            reply += dex.swap_tokens(
                 token=order.address, amount_to_spend=order.bnb_amount, side=SELL
             )
             order_executed = True
         await asyncio.sleep(2)
+    await send_message(channel_id=TELEGRAM_CHAT_ID, message=reply)
