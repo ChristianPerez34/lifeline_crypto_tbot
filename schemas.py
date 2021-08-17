@@ -29,13 +29,13 @@ class Token(BaseModel):
 
 
 class Platform(BaseModel):
-    platform: Optional[str]
+    network: Optional[str]
 
-    @validator("platform")
+    @validator("network")
     def check_platform(cls, value: str):
         value = value.upper()
         if value and value not in ("BSC", "ETH", "MATIC"):
-            raise ValueError("Invalid platform. Expected one of eth|bsc|matic")
+            raise ValueError("Invalid network. Expected one of eth|bsc|matic")
         return value
 
 

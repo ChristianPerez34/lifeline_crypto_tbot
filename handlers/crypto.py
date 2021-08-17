@@ -216,11 +216,11 @@ async def send_price_address(message: Message) -> None:
     args = message.get_args().split()
     reply = ""
     try:
-        address, platform, *_ = chain(args, ["", ""])
-        coin = Coin(address=address, platform=platform)
+        address, network, *_ = chain(args, ["", ""])
+        coin = Coin(address=address, network=network)
         address = coin.address
-        platform = coin.platform
-        if platform == "BSC":
+        network = coin.network
+        if network == "BSC":
             user = User.from_orm(
                 TelegramGroupMember.get_or_none(primary_key=message.from_user.id)
             )
@@ -260,7 +260,7 @@ async def send_price_address(message: Message) -> None:
         logger.exception(e)
         reply = (
             "⚠️ Please provide a crypto address: \n"
-            f"{bold('/price')}_{bold('address')} {italic('ADDRESS')} {italic('PLATFORM')}"
+            f"{bold('/price')}_{bold('address')} {italic('ADDRESS')} {italic('NETWORK')}"
         )
         await message.reply(text=reply)
     except ValueError as e:
@@ -898,12 +898,11 @@ async def send_balance(message: Message):
     user_id = message.from_user.id
 
     user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
-    platform = Platform(platform=message.get_args()).platform
-    address, key = user.bsc.address, user.bsc.private_key
+    network = Platform(network=message.get_args()).network
 
-    if platform == "BSC":
+    if network == "BSC":
         dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
-    elif platform == "ETH":
+    elif network == "ETH":
         dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
     else:
         dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
