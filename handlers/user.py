@@ -11,7 +11,9 @@ from models import TelegramGroupMember
 from schemas import BinanceChain, User, EthereumChain, MaticChain
 
 
-async def register_network(register_type: str, address: str, private_key: str, user_id: int) -> dict:
+async def register_network(
+    register_type: str, address: str, private_key: str, user_id: int
+) -> dict:
     fernet = Fernet(FERNET_KEY)
     data = {"id": user_id}
     if register_type == RegisterTypes.BSC.value:
@@ -66,10 +68,18 @@ async def send_register(message: Message) -> None:
 
     exclude = {}
 
-    if register_type in (RegisterTypes.BSC.value, RegisterTypes.ETH.value, RegisterTypes.MATIC.value):
+    if register_type in (
+        RegisterTypes.BSC.value,
+        RegisterTypes.ETH.value,
+        RegisterTypes.MATIC.value,
+    ):
         address, private_key = tuple(args[1:])
-        data = await register_network(register_type=register_type, address=address, private_key=private_key,
-                                      user_id=telegram_user.id)
+        data = await register_network(
+            register_type=register_type,
+            address=address,
+            private_key=private_key,
+            user_id=telegram_user.id,
+        )
         exclude = {"kucoin_api_key", "kucoin_api_secret", "kucoin_api_passphrase"}
     elif register_type == RegisterTypes.KUCOIN.value:
         if len(args) != 4:

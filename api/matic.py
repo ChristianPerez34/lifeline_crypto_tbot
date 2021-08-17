@@ -20,7 +20,7 @@ QUICK_SWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
 CONTRACT_ADDRESSES = {
     "MATIC": Web3.toChecksumAddress("0x0000000000000000000000000000000000000000"),
     "WMATIC": Web3.toChecksumAddress("0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"),
-    "USDC": Web3.toChecksumAddress("0x2791bca1f2de4661ed88a30c99a7a9449aa84174")
+    "USDC": Web3.toChecksumAddress("0x2791bca1f2de4661ed88a30c99a7a9449aa84174"),
 }
 
 MATIC_CHAIN_URL = "https://rpc-mainnet.matic.network"
@@ -53,7 +53,7 @@ class MaticChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         erc20_transfers = data["result"]
@@ -102,11 +102,11 @@ class QuickSwap(MaticChain):
             version=2,
             web3=self.web3,
             factory_contract_addr=QUICK_SWAP_FACTORY_ADDRESS,
-            router_contract_addr=QUICK_SWAP_ROUTER_ADDRESS
+            router_contract_addr=QUICK_SWAP_ROUTER_ADDRESS,
         )
 
     def get_token_price(
-            self, token: AddressLike, as_usdc_per_token: bool = False
+        self, token: AddressLike, as_usdc_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in USDC
