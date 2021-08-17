@@ -892,11 +892,11 @@ async def send_balance(message: Message):
     platform = Platform(platform=message.get_args()).platform
     address, key = user.bsc.address, user.bsc.private_key
     if platform == "BSC":
-        dex = PancakeSwap(address=address, key=key)
+        dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
     elif platform == "ETH":
-        dex = UniSwap(address=address, key=key)
+        dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
     else:
-        dex = QuickSwap(address=address, key=key)
+        dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
 
     account_holdings = await dex.get_account_token_holdings(
         address=dex.address
