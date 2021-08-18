@@ -384,7 +384,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -403,7 +403,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-            "https://coinmarketcap.com/new/", headers=HEADERS
+                "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -432,9 +432,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-            user.kucoin_api_key
-            and user.kucoin_api_secret
-            and user.kucoin_api_passphrase
+                user.kucoin_api_key
+                and user.kucoin_api_secret
+                and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -458,8 +458,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                            position_order["stopPriceType"] == "TP"
-                            and position_order["stop"] == "up"
+                                position_order["stopPriceType"] == "TP"
+                                and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -472,7 +472,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                        or (entry > mark_price and unrealized_pnl < 0)
+                           or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -506,18 +506,25 @@ async def send_buy(message: Message) -> None:
     logger.info("Started buy command")
 
     telegram_user = message.from_user
-    args = message.get_args().split()
 
     try:
+        network, address, amount = message.get_args().split()
         user = User.from_orm(
             TelegramGroupMember.get_or_none(primary_key=telegram_user.id)
         )
         if user:
-            trade = TradeCoin(address=args[0], amount=args[1], side=BUY)
-            pancake_swap = PancakeSwap(
-                address=user.bsc.address, key=user.bsc.private_key
-            )
-            reply = pancake_swap.swap_tokens(
+            trade = TradeCoin(network=network, address=address, amount=amount, side=BUY)
+
+            if network == 'BSC':
+                dex = PancakeSwap(
+                    address=user.bsc.address, key=user.bsc.private_key
+                )
+            elif network == 'ETH':
+                dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
+            else:
+                dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
+
+            reply = dex.swap_tokens(
                 token=trade.address, amount_to_spend=trade.amount, side=trade.side
             )
         else:
@@ -529,8 +536,11 @@ async def send_buy(message: Message) -> None:
         logger.exception(e)
         error_message = e.args[0][0].exc
         reply = f"⚠️ {error_message}"
+    except ValueError as e:
+        logger.exception(e)
+        reply = f"⚠ Please provide network, address & amount to spend. Ex: /buy bsc 0x000000000000000000 0.01"
 
-    await message.reply(text=reply)
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
 async def send_sell(message: Message) -> None:
@@ -542,18 +552,27 @@ async def send_sell(message: Message) -> None:
     """
     logger.info("Started sell command")
     telegram_user = message.from_user
-    args = message.get_args().split()
 
     try:
+        network, address = message.get_args().split()
         user = User.from_orm(
             TelegramGroupMember.get_or_none(primary_key=telegram_user.id)
         )
         if user:
-            trade = TradeCoin(address=args[0], amount=0, side=SELL)
-            pancake_swap = PancakeSwap(
-                address=user.bsc.address, key=user.bsc.private_key
+            trade = TradeCoin(network=network, address=address, amount=0, side=SELL)
+
+            if network == 'BSC':
+                dex = PancakeSwap(
+                    address=user.bsc.address, key=user.bsc.private_key
+                )
+            elif network == 'ETH':
+                dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
+            else:
+                dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
+
+            reply = dex.swap_tokens(
+                token=trade.address, amount_to_spend=trade.amount, side=trade.side
             )
-            reply = pancake_swap.swap_tokens(token=trade.address, side=trade.side)
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
     except IndexError as e:
@@ -563,8 +582,11 @@ async def send_sell(message: Message) -> None:
         logger.exception(e)
         error_message = e.args[0][0].exc
         reply = f"⚠️ {error_message}"
+    except ValueError as e:
+        logger.exception(e)
+        reply = f"⚠ Please provide network, address & amount to spend. Ex: /sell bsc 0x000000000000000000"
 
-    await message.reply(text=reply)
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
 async def send_chart(message: Message):

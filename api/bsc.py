@@ -1,5 +1,3 @@
-import json
-import time
 from decimal import Decimal
 from typing import Union
 
@@ -11,10 +9,10 @@ from uniswap.exceptions import InsufficientBalance
 from uniswap.token import ERC20Token
 from uniswap.types import AddressLike
 from web3 import Web3
-from web3.contract import Contract
 from web3.exceptions import ContractLogicError
 from web3.types import Wei
 
+from api.eth import ERC20Like
 from app import logger
 from config import BSCSCAN_API_KEY, BUY, FERNET_KEY, HEADERS
 
@@ -32,11 +30,10 @@ CONTRACT_ADDRESSES = {
 BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
 
 
-class BinanceSmartChain:
+class BinanceSmartChain(ERC20Like):
     def __init__(self):
+        super(BinanceSmartChain, self).__init__()
         self.web3 = Web3(Web3.HTTPProvider(BINANCE_SMART_CHAIN_URL))
-        self.api_url = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
-        self.min_pool_size_bnb = 25
 
     async def get_account_token_holdings(self, address: AddressLike) -> dict:
         """
@@ -60,7 +57,7 @@ class BinanceSmartChain:
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-            url, headers=HEADERS
+                url, headers=HEADERS
         ) as response:
             data = await response.json()
         bep20_transfers = data["result"]
@@ -77,41 +74,6 @@ class BinanceSmartChain:
                 }
             )
         return account_holdings
-
-    @staticmethod
-    def get_decimal_representation(quantity: Decimal, decimals: int) -> Decimal:
-        """
-        Decimal representation of inputted quantity
-        Args:
-            quantity (Decimal): Amount to convert to decimal representation
-            decimals (int): Amount of decimals for token contract
-
-        Returns: Decimal/Normalized representation of inputted quantity
-        """
-        if decimals < 9:
-            decimals += 2
-        return quantity / Decimal(10 ** (18 - (decimals % 18)))
-
-    @staticmethod
-    def get_contract_abi(abi_type: str = "liquidity") -> str:
-        """
-        Retrieves contract abi
-        Args:
-            abi_type (str): Type of abi to use
-
-        Returns (str): Abi string
-
-        """
-        logger.info("Retrieving contract abi for type: %s", abi_type)
-        filename = "abi/pancake_swap_liquidity_v2.abi"
-
-        if abi_type == "sell":
-            filename = "abi/sell.abi"
-        elif abi_type == "router":
-            filename = "abi/pancakeswap_v2.abi"
-        with open(filename) as file:
-            abi = json.dumps(json.load(file))
-        return abi
 
     def get_token_balance(self, address: AddressLike, token: AddressLike) -> Wei:
         """
@@ -138,7 +100,7 @@ class PancakeSwap(BinanceSmartChain):
         self.address = self.web3.toChecksumAddress(address)
         self.key = key
         self.fernet = Fernet(FERNET_KEY)
-        self.pancake_swap = Uniswap(
+        self.dex = Uniswap(
             self.address,
             self.fernet.decrypt(key.encode()).decode(),
             version=2,
@@ -158,112 +120,14 @@ class PancakeSwap(BinanceSmartChain):
 
         """
         logger.info("Retrieving metadata for token: %s", address)
-        return self.pancake_swap.get_token(address=address)
-
-    def _swap_exact_bnb_for_tokens(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
-    ):
-        logger.info("Swapping exact bnb for tokens")
-        return contract.functions.swapExactETHForTokens(
-            0, route, self.address, (int(time.time()) + 10000)
-        ).buildTransaction(
-            {
-                "from": self.address,
-                "value": amount_to_spend,
-                "gasPrice": gas_price,
-                "nonce": self.web3.eth.get_transaction_count(self.address),
-            }
-        )
-
-    def _swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
-    ):
-        logger.info("Swapping exact bnb for tokens supporting fee on transfer tokens")
-        return contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
-            0, route, self.address, (int(time.time()) + 10000)
-        ).buildTransaction(
-            {
-                "from": self.address,
-                "value": amount_to_spend,
-                "gasPrice": gas_price,
-                "nonce": self.web3.eth.get_transaction_count(self.address),
-            }
-        )
-
-    def _swap_exact_tokens_for_bnb(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
-    ):
-        logger.info("Swapping exact tokens for bnb")
-        return contract.functions.swapExactTokensForETH(
-            amount_to_spend,
-            0,
-            route,
-            self.address,
-            (int(time.time()) + 1000000),
-        ).buildTransaction(
-            {
-                "from": self.address,
-                "gasPrice": gas_price,
-                "nonce": self.web3.eth.get_transaction_count(self.address),
-            }
-        )
-
-    def swap_exact_tokens_for_bnb_supporting_fee_on_transfer_tokens(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
-    ):
-        logger.info("Swapping exact tokens for bnb supporting fee on transfer tokens")
-        return contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
-            amount_to_spend,
-            0,
-            route,
-            self.address,
-            (int(time.time()) + 1000000),
-        ).buildTransaction(
-            {
-                "from": self.address,
-                "gasPrice": gas_price,
-                "nonce": self.web3.eth.get_transaction_count(self.address),
-            }
-        )
-
-    def _approve(self, contract: Contract):
-        logger.info("Approving token for swap")
-        max_approval = int(
-            "0x000000000000000fffffffffffffffffffffffffffffffffffffffffffffffff",
-            16,
-        )
-        approve = contract.functions.approve(
-            self.pancake_swap.router_address, max_approval
-        ).buildTransaction(
-            {
-                "from": self.address,
-                "gasPrice": self.web3.toWei("5", "gwei"),
-                "nonce": self.web3.eth.get_transaction_count(self.address),
-            }
-        )
-        signed_txn = self.web3.eth.account.sign_transaction(
-            approve,
-            private_key=self.fernet.decrypt(self.key.encode()).decode(),
-        )
-        self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-        logger.info("Approved token for swap")
-        time.sleep(1)
-
-    def _check_approval(self, contract: Contract, token: AddressLike):
-        logger.info("Verifying token (%s) has approval", token)
-        allowance = contract.functions.allowance(
-            token, self.pancake_swap.router_address
-        ).call()
-
-        if self.get_token_balance(address=self.address, token=token) < allowance:
-            self._approve(contract=contract)
+        return self.dex.get_token(address=address)
 
     def swap_tokens(
-        self,
-        token: str,
-        amount_to_spend: Union[int, float, str, Decimal] = 0,
-        side: str = BUY,
-        is_snipe: bool = False,
+            self,
+            token: str,
+            amount_to_spend: Union[int, float, str, Decimal] = 0,
+            side: str = BUY,
+            is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -290,15 +154,15 @@ class PancakeSwap(BinanceSmartChain):
                 txn = None
                 abi = self.get_contract_abi(abi_type="router")
                 contract = self.web3.eth.contract(
-                    address=self.pancake_swap.router_address, abi=abi
+                    address=self.dex.router_address, abi=abi
                 )
                 if side == BUY:
                     amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
                     route = [wbnb, token]
                     args = (contract, route, amount_to_spend, gas_price)
                     swap_methods = [
-                        self._swap_exact_bnb_for_tokens,
-                        self._swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens,
+                        self._swap_exact_eth_for_tokens,
+                        self._swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens,
                     ]
                     balance = self.get_token_balance(
                         address=self.address, token=CONTRACT_ADDRESSES["BNB"]
@@ -312,8 +176,8 @@ class PancakeSwap(BinanceSmartChain):
                     route = [token, CONTRACT_ADDRESSES["WBNB"]]
                     args = (contract, route, amount_to_spend, gas_price)
                     swap_methods = [
-                        self._swap_exact_tokens_for_bnb,
-                        self._swap_exact_bnb_for_tokens_supporting_fee_on_transfer_tokens,
+                        self._swap_exact_tokens_for_eth,
+                        self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
                     ]
                     balance = self.get_token_balance(address=self.address, token=token)
                     self._check_approval(contract=token_contract, token=token)
@@ -366,9 +230,9 @@ class PancakeSwap(BinanceSmartChain):
         logger.info("Retrieving token price in BUSD for %s", token)
         busd = CONTRACT_ADDRESSES["BUSD"]
         return (
-            Decimal(self.pancake_swap.get_price_output(busd, token, 10 ** 18))
+            Decimal(self.dex.get_price_output(busd, token, 10 ** 18))
             if as_busd_per_token
-            else Decimal(self.pancake_swap.get_price_input(busd, token, 10 ** decimals))
+            else Decimal(self.dex.get_price_input(busd, token, 10 ** decimals))
         )
 
     def get_token_pair_address(self, token) -> str:
@@ -381,7 +245,7 @@ class PancakeSwap(BinanceSmartChain):
 
         """
         token = self.web3.toChecksumAddress(token)
-        contract = self.pancake_swap.factory_contract
+        contract = self.dex.factory_contract
         pair_address = contract.functions.getPair(
             token, CONTRACT_ADDRESSES["WBNB"]
         ).call()
