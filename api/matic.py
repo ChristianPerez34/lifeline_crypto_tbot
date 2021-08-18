@@ -28,14 +28,14 @@ CONTRACT_ADDRESSES = {
     "USDC": Web3.toChecksumAddress("0x2791bca1f2de4661ed88a30c99a7a9449aa84174"),
 }
 
-AVERAGE_TRANSACTION_SPEED = 'standard'
-FAST_TRANSACTION_SPEED = 'fastest'
+AVERAGE_TRANSACTION_SPEED = "standard"
+FAST_TRANSACTION_SPEED = "fastest"
 
 TRANSACTION_SPEEDS = {
-    'slow': 'safeLow',
-    'average': 'standard',
-    'fast': 'fast',
-    'fastest': 'fastest'
+    "slow": "safeLow",
+    "average": "standard",
+    "fast": "fast",
+    "fastest": "fastest",
 }
 
 MATIC_CHAIN_URL = "https://rpc-mainnet.matic.network"
@@ -69,7 +69,7 @@ class PolygonChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         erc20_transfers = data["result"]
@@ -122,7 +122,7 @@ class QuickSwap(PolygonChain):
         )
 
     def get_token_price(
-            self, token: AddressLike, as_usdc_per_token: bool = False
+        self, token: AddressLike, as_usdc_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in USDC
@@ -142,15 +142,17 @@ class QuickSwap(PolygonChain):
         )
 
     def get_gas_price(self, speed: str):
-        gas_prices = requests.get("https://gasstation-mainnet.matic.network/", timeout=5).json()
+        gas_prices = requests.get(
+            "https://gasstation-mainnet.matic.network/", timeout=5
+        ).json()
         return gas_prices[TRANSACTION_SPEEDS[speed]]
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, str, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -169,9 +171,13 @@ class QuickSwap(PolygonChain):
             token = self.web3.toChecksumAddress(token)
             wmatic = CONTRACT_ADDRESSES["WMATIC"]
             gas_price = (
-                self.web3.toWei(self.get_gas_price(speed=AVERAGE_TRANSACTION_SPEED), "gwei")
+                self.web3.toWei(
+                    self.get_gas_price(speed=AVERAGE_TRANSACTION_SPEED), "gwei"
+                )
                 if not is_snipe
-                else self.web3.toWei(self.get_gas_price(speed=FAST_TRANSACTION_SPEED), "gwei")
+                else self.web3.toWei(
+                    self.get_gas_price(speed=FAST_TRANSACTION_SPEED), "gwei"
+                )
             )
             try:
                 txn = None
@@ -192,7 +198,9 @@ class QuickSwap(PolygonChain):
                     )
                 else:
                     token_abi = self.get_contract_abi(abi_type="sell")
-                    token_contract = self.web3.eth.contract(address=token, abi=token_abi)
+                    token_contract = self.web3.eth.contract(
+                        address=token, abi=token_abi
+                    )
                     amount_to_spend = self.get_token_balance(
                         address=self.address, token=token
                     )
@@ -231,7 +239,7 @@ class QuickSwap(PolygonChain):
                 )
             except ValueError as e:
                 logger.exception(e)
-                reply = e.args[0]['message']
+                reply = e.args[0]["message"]
         else:
             logger.info("Unable to connect to Polygon Network")
             reply = "⚠ Sorry, I was unable to connect to the Polygon Network. Try again later."

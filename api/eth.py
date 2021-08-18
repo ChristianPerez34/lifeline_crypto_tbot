@@ -64,7 +64,7 @@ class ERC20Like:
         return abi
 
     def _swap_exact_eth_for_tokens(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact ETH|BNB|MATIC for tokens.
@@ -90,7 +90,7 @@ class ERC20Like:
         )
 
     def _swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact ETH|BNB|MATIC for tokens supporting fee on transfer tokens
@@ -116,7 +116,7 @@ class ERC20Like:
         )
 
     def _swap_exact_tokens_for_eth(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact tokens for ETH|BNB|MATIC
@@ -145,7 +145,7 @@ class ERC20Like:
         )
 
     def _swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact tokens for ETH|BNB|MATIC supporting fee on transfer tokens
@@ -213,9 +213,7 @@ class ERC20Like:
 
         """
         logger.info("Verifying token (%s) has approval", token)
-        allowance = contract.functions.allowance(
-            token, self.dex.router_address
-        ).call()
+        allowance = contract.functions.allowance(token, self.dex.router_address).call()
 
         if self.get_token_balance(address=self.address, token=token) < allowance:
             self._approve(contract=contract)

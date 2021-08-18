@@ -57,7 +57,7 @@ class BinanceSmartChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         bep20_transfers = data["result"]
@@ -123,11 +123,11 @@ class PancakeSwap(BinanceSmartChain):
         return self.dex.get_token(address=address)
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, str, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -169,7 +169,9 @@ class PancakeSwap(BinanceSmartChain):
                     )
                 else:
                     token_abi = self.get_contract_abi(abi_type="sell")
-                    token_contract = self.web3.eth.contract(address=token, abi=token_abi)
+                    token_contract = self.web3.eth.contract(
+                        address=token, abi=token_abi
+                    )
                     amount_to_spend = self.get_token_balance(
                         address=self.address, token=token
                     )
@@ -208,14 +210,14 @@ class PancakeSwap(BinanceSmartChain):
                 )
             except ValueError as e:
                 logger.exception(e)
-                reply = e.args[0]['message']
+                reply = e.args[0]["message"]
         else:
             logger.info("Unable to connect to Binance Smart Chain")
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
         return reply
 
     def get_token_price(
-            self, token: AddressLike, decimals: int = 18, as_busd_per_token: bool = False
+        self, token: AddressLike, decimals: int = 18, as_busd_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in BUSD
