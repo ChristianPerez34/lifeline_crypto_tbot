@@ -224,9 +224,8 @@ class ERC20Like:
 
 class EthereumChain(ERC20Like):
     def __init__(self):
-        self.web3 = Web3(Web3.HTTPProvider(ETHEREUM_MAIN_NET_URL))
-        # self.api_url = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
-        # self.min_pool_size_bnb = 25
+        super(EthereumChain, self).__init__()
+        self.web3 = Web3(Web3.HTTPProvider(ETHEREUM_MAIN_NET_URL, request_kwargs={"timeout": 60}))
 
     async def get_account_token_holdings(self, address: AddressLike) -> dict:
         """

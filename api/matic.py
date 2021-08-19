@@ -44,7 +44,7 @@ MATIC_CHAIN_URL = "https://rpc-mainnet.matic.network"
 class PolygonChain(ERC20Like):
     def __init__(self):
         super(PolygonChain, self).__init__()
-        self.web3 = Web3(Web3.HTTPProvider(MATIC_CHAIN_URL))
+        self.web3 = Web3(Web3.HTTPProvider(MATIC_CHAIN_URL, request_kwargs={"timeout": 60}))
 
     async def get_account_token_holdings(self, address: AddressLike) -> dict:
         """
@@ -69,7 +69,7 @@ class PolygonChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-            url, headers=HEADERS
+                url, headers=HEADERS
         ) as response:
             data = await response.json()
         erc20_transfers = data["result"]
@@ -122,7 +122,7 @@ class QuickSwap(PolygonChain):
         )
 
     def get_token_price(
-        self, token: AddressLike, as_usdc_per_token: bool = False
+            self, token: AddressLike, as_usdc_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in USDC
@@ -141,18 +141,19 @@ class QuickSwap(PolygonChain):
             else Decimal(self.dex.get_price_input(usdc, token, 10 ** 6))
         )
 
-    def get_gas_price(self, speed: str):
+    @staticmethod
+    def get_gas_price(speed: str):
         gas_prices = requests.get(
             "https://gasstation-mainnet.matic.network/", timeout=5
         ).json()
         return gas_prices[TRANSACTION_SPEEDS[speed]]
 
     def swap_tokens(
-        self,
-        token: str,
-        amount_to_spend: Union[int, float, str, Decimal] = 0,
-        side: str = BUY,
-        is_snipe: bool = False,
+            self,
+            token: str,
+            amount_to_spend: Union[int, float, str, Decimal] = 0,
+            side: str = BUY,
+            is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -239,7 +240,7 @@ class QuickSwap(PolygonChain):
                 )
             except ValueError as e:
                 logger.exception(e)
-                reply = e.args[0]["message"]
+                reply = str(e)
         else:
             logger.info("Unable to connect to Polygon Network")
             reply = "⚠ Sorry, I was unable to connect to the Polygon Network. Try again later."
