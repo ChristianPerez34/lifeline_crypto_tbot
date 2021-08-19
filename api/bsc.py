@@ -33,7 +33,9 @@ BINANCE_SMART_CHAIN_URL = "https://bsc-dataseed.binance.org/"
 class BinanceSmartChain(ERC20Like):
     def __init__(self):
         super(BinanceSmartChain, self).__init__()
-        self.web3 = Web3(Web3.HTTPProvider(BINANCE_SMART_CHAIN_URL, request_kwargs={"timeout": 60}))
+        self.web3 = Web3(
+            Web3.HTTPProvider(BINANCE_SMART_CHAIN_URL, request_kwargs={"timeout": 60})
+        )
 
     async def get_account_token_holdings(self, address: AddressLike) -> dict:
         """

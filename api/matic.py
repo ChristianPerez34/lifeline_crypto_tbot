@@ -44,7 +44,9 @@ MATIC_CHAIN_URL = "https://rpc-mainnet.matic.network"
 class PolygonChain(ERC20Like):
     def __init__(self):
         super(PolygonChain, self).__init__()
-        self.web3 = Web3(Web3.HTTPProvider(MATIC_CHAIN_URL, request_kwargs={"timeout": 60}))
+        self.web3 = Web3(
+            Web3.HTTPProvider(MATIC_CHAIN_URL, request_kwargs={"timeout": 60})
+        )
 
     async def get_account_token_holdings(self, address: AddressLike) -> dict:
         """
@@ -69,7 +71,7 @@ class PolygonChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         erc20_transfers = data["result"]
@@ -122,7 +124,7 @@ class QuickSwap(PolygonChain):
         )
 
     def get_token_price(
-            self, token: AddressLike, as_usdc_per_token: bool = False
+        self, token: AddressLike, as_usdc_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in USDC
@@ -149,11 +151,11 @@ class QuickSwap(PolygonChain):
         return gas_prices[TRANSACTION_SPEEDS[speed]]
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, str, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap

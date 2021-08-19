@@ -225,7 +225,9 @@ class ERC20Like:
 class EthereumChain(ERC20Like):
     def __init__(self):
         super(EthereumChain, self).__init__()
-        self.web3 = Web3(Web3.HTTPProvider(ETHEREUM_MAIN_NET_URL, request_kwargs={"timeout": 60}))
+        self.web3 = Web3(
+            Web3.HTTPProvider(ETHEREUM_MAIN_NET_URL, request_kwargs={"timeout": 60})
+        )
 
     async def get_account_token_holdings(self, address: AddressLike) -> dict:
         """
