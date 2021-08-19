@@ -514,6 +514,7 @@ async def send_buy(message: Message) -> None:
         )
         if user:
             trade = TradeCoin(network=network, address=address, amount=amount, side=BUY)
+            network = trade.network
 
             if network == "BSC":
                 dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
