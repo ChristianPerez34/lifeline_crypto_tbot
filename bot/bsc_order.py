@@ -4,6 +4,7 @@ from decimal import Decimal
 from api.bsc import PancakeSwap
 from config import BUY, SELL, STOP, TELEGRAM_CHAT_ID
 from handlers.base import send_message
+from models import Order
 from schemas import LimitOrder
 
 
@@ -34,4 +35,5 @@ async def limit_order_executor(order: LimitOrder):
             )
             order_executed = True
         await asyncio.sleep(2)
+    Order.get_or_none(primary_key=order.id).remove()
     await send_message(channel_id=TELEGRAM_CHAT_ID, message=reply)
