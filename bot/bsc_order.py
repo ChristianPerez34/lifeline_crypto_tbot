@@ -19,8 +19,9 @@ async def limit_order_executor(order: LimitOrder):
     reply = "Limit order executed\n"
     while not order_executed:
 
-        token_price = dex.get_token_price(token=order.address, decimals=token.decimals,
-                                          as_busd_per_token=True) * Decimal(10 ** (-18 - (token.decimals % 18)))
+        token_price = dex.get_token_price(
+            token=order.address, decimals=token.decimals, as_busd_per_token=True
+        ) * Decimal(10 ** (-18 - (token.decimals % 18)))
 
         if trade_direction == BUY and token_price <= target_price:
             reply += dex.swap_tokens(
@@ -28,7 +29,7 @@ async def limit_order_executor(order: LimitOrder):
             )
             order_executed = True
         elif (trade_direction == SELL and token_price >= target_price) or (
-                trade_direction == STOP and token_price <= target_price
+            trade_direction == STOP and token_price <= target_price
         ):
             reply += dex.swap_tokens(
                 token=order.address, amount_to_spend=order.bnb_amount, side=SELL

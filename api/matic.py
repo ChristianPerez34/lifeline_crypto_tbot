@@ -1,15 +1,20 @@
 from decimal import Decimal
+from typing import Union
 
 import aiohttp
+import requests
+from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
 from uniswap import Uniswap
+from uniswap.exceptions import InsufficientBalance
 from uniswap.types import AddressLike
 from web3 import Web3
+from web3.exceptions import ContractLogicError
 from web3.types import Wei
 
 from api.eth import ERC20Like
 from app import logger
-from config import FERNET_KEY, POLYGONSCAN_API_KEY, HEADERS
+from config import FERNET_KEY, POLYGONSCAN_API_KEY, HEADERS, BUY
 
 QUICK_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
     "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
@@ -23,12 +28,25 @@ CONTRACT_ADDRESSES = {
     "USDC": Web3.toChecksumAddress("0x2791bca1f2de4661ed88a30c99a7a9449aa84174"),
 }
 
+AVERAGE_TRANSACTION_SPEED = "standard"
+FAST_TRANSACTION_SPEED = "fastest"
+
+TRANSACTION_SPEEDS = {
+    "slow": "safeLow",
+    "average": "standard",
+    "fast": "fast",
+    "fastest": "fastest",
+}
+
 MATIC_CHAIN_URL = "https://rpc-mainnet.matic.network"
 
 
-class MaticChain(ERC20Like):
+class PolygonChain(ERC20Like):
     def __init__(self):
-        self.web3 = Web3(Web3.HTTPProvider(MATIC_CHAIN_URL))
+        super(PolygonChain, self).__init__()
+        self.web3 = Web3(
+            Web3.HTTPProvider(MATIC_CHAIN_URL, request_kwargs={"timeout": 60})
+        )
 
     async def get_account_token_holdings(self, address: AddressLike) -> dict:
         """
@@ -90,7 +108,7 @@ class MaticChain(ERC20Like):
         return contract.functions.balanceOf(address).call()
 
 
-class QuickSwap(MaticChain):
+class QuickSwap(PolygonChain):
     def __init__(self, address: str, key: str):
         super(QuickSwap, self).__init__()
         self.address = self.web3.toChecksumAddress(address)
@@ -124,3 +142,108 @@ class QuickSwap(MaticChain):
             if as_usdc_per_token
             else Decimal(self.dex.get_price_input(usdc, token, 10 ** 6))
         )
+
+    @staticmethod
+    def get_gas_price(speed: str):
+        gas_prices = requests.get(
+            "https://gasstation-mainnet.matic.network/", timeout=5
+        ).json()
+        return gas_prices[TRANSACTION_SPEEDS[speed]]
+
+    def swap_tokens(
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
+    ) -> str:
+        """
+        Swaps crypto coins on PancakeSwap
+        Args:
+            token (str): Address of coin to buy/sell
+            amount_to_spend (float): Amount in BNB expected to spend/receive. When selling will read as percentage
+            side (str): Indicates if user wants to buy or sell coins
+            is_snipe (bool): Indicates if swap is for sniping. Utilizes increasingly high gas price to ensure buying
+                token as soon as possible
+
+        Returns: Reply to message
+
+        """
+        logger.info("Swapping tokens")
+        if self.web3.isConnected():
+            token = self.web3.toChecksumAddress(token)
+            wmatic = CONTRACT_ADDRESSES["WMATIC"]
+            gas_price = (
+                self.web3.toWei(
+                    self.get_gas_price(speed=AVERAGE_TRANSACTION_SPEED), "gwei"
+                )
+                if not is_snipe
+                else self.web3.toWei(
+                    self.get_gas_price(speed=FAST_TRANSACTION_SPEED), "gwei"
+                )
+            )
+            try:
+                txn = None
+                abi = self.get_contract_abi(abi_type="router")
+                contract = self.web3.eth.contract(
+                    address=self.dex.router_address, abi=abi
+                )
+                if side == BUY:
+                    amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
+                    route = [wmatic, token]
+                    args = (contract, route, amount_to_spend, gas_price)
+                    swap_methods = [
+                        self._swap_exact_eth_for_tokens,
+                        self._swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens,
+                    ]
+                    balance = self.get_token_balance(
+                        address=self.address, token=CONTRACT_ADDRESSES["MATIC"]
+                    )
+                else:
+                    token_abi = self.get_contract_abi(abi_type="sell")
+                    token_contract = self.web3.eth.contract(
+                        address=token, abi=token_abi
+                    )
+                    amount_to_spend = self.get_token_balance(
+                        address=self.address, token=token
+                    )
+                    route = [token, CONTRACT_ADDRESSES["WMATIC"]]
+                    args = (contract, route, amount_to_spend, gas_price)
+                    swap_methods = [
+                        self._swap_exact_tokens_for_eth,
+                        self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
+                    ]
+                    balance = self.get_token_balance(address=self.address, token=token)
+                    self._check_approval(contract=token_contract, token=token)
+
+                if balance < amount_to_spend:
+                    raise InsufficientBalance(had=balance, needed=amount_to_spend)
+
+                for swap_method in swap_methods:
+                    try:
+                        txn = swap_method(*args)
+                        break
+                    except ContractLogicError as e:
+                        logger.exception(e)
+
+                signed_txn = self.web3.eth.account.sign_transaction(
+                    txn, private_key=self.fernet.decrypt(self.key.encode()).decode()
+                )
+                txn_hash = self.web3.toHex(
+                    self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                )
+                logger.info("Transaction completed successfully")
+                txn_hash_url = f"https://polygonscan.com/tx/{txn_hash}"
+                reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
+            except InsufficientBalance as e:
+                logger.exception(e)
+                reply = (
+                    "⚠️ Insufficient balance. Top up your token balance and try again. "
+                )
+            except ValueError as e:
+                logger.exception(e)
+                reply = str(e)
+        else:
+            logger.info("Unable to connect to Polygon Network")
+            reply = "⚠ Sorry, I was unable to connect to the Polygon Network. Try again later."
+        return reply
