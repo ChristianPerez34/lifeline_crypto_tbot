@@ -506,18 +506,23 @@ async def send_buy(message: Message) -> None:
     logger.info("Started buy command")
 
     telegram_user = message.from_user
-    args = message.get_args().split()
 
     try:
+        network, address, amount = message.get_args().split()
         user = User.from_orm(
             TelegramGroupMember.get_or_none(primary_key=telegram_user.id)
         )
         if user:
-            trade = TradeCoin(address=args[0], amount=args[1], side=BUY)
-            pancake_swap = PancakeSwap(
-                address=user.bsc.address, key=user.bsc.private_key
-            )
-            reply = pancake_swap.swap_tokens(
+            trade = TradeCoin(network=network, address=address, amount=amount, side=BUY)
+
+            if network == "BSC":
+                dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+            elif network == "ETH":
+                dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
+            else:
+                dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
+
+            reply = dex.swap_tokens(
                 token=trade.address, amount_to_spend=trade.amount, side=trade.side
             )
         else:
@@ -529,8 +534,11 @@ async def send_buy(message: Message) -> None:
         logger.exception(e)
         error_message = e.args[0][0].exc
         reply = f"⚠️ {error_message}"
+    except ValueError as e:
+        logger.exception(e)
+        reply = "⚠ Please provide network, address & amount to spend. Ex: /buy bsc 0x000000000000000000 0.01"
 
-    await message.reply(text=reply)
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
 async def send_sell(message: Message) -> None:
@@ -542,18 +550,25 @@ async def send_sell(message: Message) -> None:
     """
     logger.info("Started sell command")
     telegram_user = message.from_user
-    args = message.get_args().split()
 
     try:
+        network, address = message.get_args().split()
         user = User.from_orm(
             TelegramGroupMember.get_or_none(primary_key=telegram_user.id)
         )
         if user:
-            trade = TradeCoin(address=args[0], amount=0, side=SELL)
-            pancake_swap = PancakeSwap(
-                address=user.bsc.address, key=user.bsc.private_key
+            trade = TradeCoin(network=network, address=address, amount=0, side=SELL)
+
+            if network == "BSC":
+                dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+            elif network == "ETH":
+                dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
+            else:
+                dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
+
+            reply = dex.swap_tokens(
+                token=trade.address, amount_to_spend=trade.amount, side=trade.side
             )
-            reply = pancake_swap.swap_tokens(token=trade.address, side=trade.side)
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
     except IndexError as e:
@@ -563,8 +578,11 @@ async def send_sell(message: Message) -> None:
         logger.exception(e)
         error_message = e.args[0][0].exc
         reply = f"⚠️ {error_message}"
+    except ValueError as e:
+        logger.exception(e)
+        reply = "⚠ Please provide network, address & amount to spend. Ex: /sell bsc 0x000000000000000000"
 
-    await message.reply(text=reply)
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
 async def send_chart(message: Message):

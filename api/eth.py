@@ -1,11 +1,13 @@
 import json
+import time
 from decimal import Decimal
 
 from cryptography.fernet import Fernet
 from uniswap import Uniswap
 from uniswap.types import AddressLike
 from web3 import Web3
-from web3.types import Wei
+from web3.contract import Contract
+from web3.types import Wei, TxParams
 
 from app import logger
 from config import FERNET_KEY, ETHEREUM_MAIN_NET_URL
@@ -19,6 +21,13 @@ CONTRACT_ADDRESSES = {
 
 
 class ERC20Like:
+    def __init__(self):
+        self.key = None
+        self.fernet = None
+        self.dex = None
+        self.web3 = None
+        self.address = None
+
     @staticmethod
     def get_decimal_representation(quantity: Decimal, decimals: int) -> Decimal:
         """
@@ -54,12 +63,171 @@ class ERC20Like:
             abi = json.dumps(json.load(file))
         return abi
 
+    def _swap_exact_eth_for_tokens(
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+    ) -> TxParams:
+        """
+        Swaps exact ETH|BNB|MATIC for tokens.
+        Args:
+            contract (Contract): Token contract for swapping
+            route (list): Token route to take for swap
+            amount_to_spend (Wei): Amount to spend on swap
+            gas_price (Wei): gas price to use
+
+        Returns (TxParams): Transaction to be signed
+
+        """
+        logger.info("Swapping exact bnb for tokens")
+        return contract.functions.swapExactETHForTokens(
+            0, route, self.address, (int(time.time()) + 10000)
+        ).buildTransaction(
+            {
+                "from": self.address,
+                "value": amount_to_spend,
+                "gasPrice": gas_price,
+                "nonce": self.web3.eth.get_transaction_count(self.address),
+            }
+        )
+
+    def _swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens(
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+    ) -> TxParams:
+        """
+        Swaps exact ETH|BNB|MATIC for tokens supporting fee on transfer tokens
+        Args:
+            contract (Contract): Token contract for swapping
+            route (list): Token route to take for swap
+            amount_to_spend (Wei): Amount to spend on swap
+            gas_price (Wei): gas price to use
+
+        Returns (TxParams): Transaction to be signed
+
+        """
+        logger.info("Swapping exact bnb for tokens supporting fee on transfer tokens")
+        return contract.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
+            0, route, self.address, (int(time.time()) + 10000)
+        ).buildTransaction(
+            {
+                "from": self.address,
+                "value": amount_to_spend,
+                "gasPrice": gas_price,
+                "nonce": self.web3.eth.get_transaction_count(self.address),
+            }
+        )
+
+    def _swap_exact_tokens_for_eth(
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+    ) -> TxParams:
+        """
+        Swaps exact tokens for ETH|BNB|MATIC
+        Args:
+            contract (Contract): Token contract for swapping
+            route (list): Token route to take for swap
+            amount_to_spend (Wei): Amount to spend on swap
+            gas_price (Wei): gas price to use
+
+        Returns (TxParams): Transaction to be signed
+
+        """
+        logger.info("Swapping exact tokens for bnb")
+        return contract.functions.swapExactTokensForETH(
+            amount_to_spend,
+            0,
+            route,
+            self.address,
+            (int(time.time()) + 1000000),
+        ).buildTransaction(
+            {
+                "from": self.address,
+                "gasPrice": gas_price,
+                "nonce": self.web3.eth.get_transaction_count(self.address),
+            }
+        )
+
+    def _swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens(
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+    ) -> TxParams:
+        """
+        Swaps exact tokens for ETH|BNB|MATIC supporting fee on transfer tokens
+        Args:
+            contract (Contract): Token contract for swapping
+            route (list): Token route to take for swap
+            amount_to_spend (Wei): Amount to spend on swap
+            gas_price (Wei): gas price to use
+
+        Returns (TxParams): Transaction to be signed
+
+        """
+        logger.info("Swapping exact tokens for bnb supporting fee on transfer tokens")
+        return contract.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
+            amount_to_spend,
+            0,
+            route,
+            self.address,
+            (int(time.time()) + 1000000),
+        ).buildTransaction(
+            {
+                "from": self.address,
+                "gasPrice": gas_price,
+                "nonce": self.web3.eth.get_transaction_count(self.address),
+            }
+        )
+
+    def _approve(self, contract: Contract) -> None:
+        """
+        Approves token for spending
+        Args:
+            contract (Contract): Token contract
+
+        """
+        logger.info("Approving token for swap")
+        max_approval = int(
+            "0x000000000000000fffffffffffffffffffffffffffffffffffffffffffffffff",
+            16,
+        )
+        approve = contract.functions.approve(
+            self.dex.router_address, max_approval
+        ).buildTransaction(
+            {
+                "from": self.address,
+                "gasPrice": self.web3.toWei("5", "gwei"),
+                "nonce": self.web3.eth.get_transaction_count(self.address),
+            }
+        )
+        signed_txn = self.web3.eth.account.sign_transaction(
+            approve,
+            private_key=self.fernet.decrypt(self.key.encode()).decode(),
+        )
+        self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        logger.info("Approved token for swap")
+        time.sleep(1)
+
+    def _check_approval(self, contract: Contract, token: AddressLike) -> None:
+        """
+        Validates token is approved for swapping. If not, approves token for swapping.
+        Args:
+            contract (Contract): Token Contract
+            token (AddressLike): Token to check approval
+
+        Returns:
+
+        """
+        logger.info("Verifying token (%s) has approval", token)
+        allowance = contract.functions.allowance(token, self.dex.router_address).call()
+
+        if self.get_token_balance(address=self.address, token=token) < allowance:
+            self._approve(contract=contract)
+
+    def get_token_balance(self, address, token):
+        raise NotImplementedError
+
 
 class EthereumChain(ERC20Like):
     def __init__(self):
-        self.web3 = Web3(Web3.HTTPProvider(ETHEREUM_MAIN_NET_URL))
-        # self.api_url = "https://api.bscscan.com/api?module=contract&action=getabi&address={address}&apikey={api_key}"
-        # self.min_pool_size_bnb = 25
+        super(EthereumChain, self).__init__()
+        self.web3 = Web3(
+            Web3.HTTPProvider(ETHEREUM_MAIN_NET_URL, request_kwargs={"timeout": 60})
+        )
 
     async def get_account_token_holdings(self, address: AddressLike) -> dict:
         """

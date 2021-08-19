@@ -96,8 +96,6 @@ class MaticChain(Network):
 
 class User(BaseModel):
     id: int
-    # bsc_address: Optional[str] = ''
-    # bsc_private_key: Optional[str] = ''
     kucoin_api_key: Optional[str] = ""
     kucoin_api_secret: Optional[str] = ""
     kucoin_api_passphrase: Optional[str] = ""
