@@ -80,9 +80,11 @@ def get_coin_stats(symbol: str) -> list:
                     if link
                 ],
                 "price": "${:,}".format(float(market_data["current_price"]["usd"])),
+                "ath": "${:,}".format(float(market_data["ath"]["usd"])),
                 "24h_change": f"{market_data['price_change_percentage_24h']}%",
                 "7d_change": f"{market_data['price_change_percentage_7d']}%",
                 "30d_change": f"{market_data['price_change_percentage_30d']}%",
+                "ath_change": f"{market_data['ath_change_percentage']['usd']}%",
                 "market_cap": "${:,}".format(float(market_data["market_cap"]["usd"])),
             }
             coin_stats_list.append(coin_stats)

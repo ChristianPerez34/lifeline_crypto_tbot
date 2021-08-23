@@ -129,7 +129,7 @@ class ERC20Like:
         Returns (TxParams): Transaction to be signed
 
         """
-        logger.info("Swapping exact tokens for bnb")
+        logger.info("Swapping exact tokens for eth|bnb|matic")
         return contract.functions.swapExactTokensForETH(
             amount_to_spend,
             0,
@@ -200,22 +200,21 @@ class ERC20Like:
         )
         self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         logger.info("Approved token for swap")
-        time.sleep(1)
+        time.sleep(2)
 
-    def _check_approval(self, contract: Contract, token: AddressLike) -> None:
+    def _check_approval(self, contract: Contract, token: AddressLike, balance: Wei) -> None:
         """
         Validates token is approved for swapping. If not, approves token for swapping.
         Args:
             contract (Contract): Token Contract
             token (AddressLike): Token to check approval
-
-        Returns:
+            balance (Wei): Token balance
 
         """
         logger.info("Verifying token (%s) has approval", token)
         allowance = contract.functions.allowance(token, self.dex.router_address).call()
 
-        if self.get_token_balance(address=self.address, token=token) < allowance:
+        if balance > allowance:
             self._approve(contract=contract)
 
     def get_token_balance(self, address, token):
