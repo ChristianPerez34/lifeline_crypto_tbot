@@ -184,7 +184,9 @@ class PancakeSwap(BinanceSmartChain):
                         self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
                     ]
                     balance = self.get_token_balance(address=self.address, token=token)
-                    self._check_approval(contract=token_contract, token=token)
+                    self._check_approval(
+                        contract=token_contract, token=token, balance=balance
+                    )
 
                 if balance < amount_to_spend:
                     raise InsufficientBalance(had=balance, needed=amount_to_spend)
@@ -250,7 +252,4 @@ class PancakeSwap(BinanceSmartChain):
         """
         token = self.web3.toChecksumAddress(token)
         contract = self.dex.factory_contract
-        pair_address = contract.functions.getPair(
-            token, CONTRACT_ADDRESSES["WBNB"]
-        ).call()
-        return pair_address
+        return contract.functions.getPair(token, CONTRACT_ADDRESSES["WBNB"]).call()
