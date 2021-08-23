@@ -59,7 +59,7 @@ class BinanceSmartChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         bep20_transfers = data["result"]
@@ -125,11 +125,11 @@ class PancakeSwap(BinanceSmartChain):
         return self.dex.get_token(address=address)
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, str, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -184,7 +184,9 @@ class PancakeSwap(BinanceSmartChain):
                         self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
                     ]
                     balance = self.get_token_balance(address=self.address, token=token)
-                    self._check_approval(contract=token_contract, token=token, balance=balance)
+                    self._check_approval(
+                        contract=token_contract, token=token, balance=balance
+                    )
 
                 if balance < amount_to_spend:
                     raise InsufficientBalance(had=balance, needed=amount_to_spend)
@@ -219,7 +221,7 @@ class PancakeSwap(BinanceSmartChain):
         return reply
 
     def get_token_price(
-            self, token: AddressLike, decimals: int = 18, as_busd_per_token: bool = False
+        self, token: AddressLike, decimals: int = 18, as_busd_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in BUSD
@@ -250,6 +252,4 @@ class PancakeSwap(BinanceSmartChain):
         """
         token = self.web3.toChecksumAddress(token)
         contract = self.dex.factory_contract
-        return contract.functions.getPair(
-            token, CONTRACT_ADDRESSES["WBNB"]
-        ).call()
+        return contract.functions.getPair(token, CONTRACT_ADDRESSES["WBNB"]).call()

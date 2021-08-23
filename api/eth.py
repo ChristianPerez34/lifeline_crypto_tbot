@@ -202,7 +202,9 @@ class ERC20Like:
         logger.info("Approved token for swap")
         time.sleep(2)
 
-    def _check_approval(self, contract: Contract, token: AddressLike, balance: Wei) -> None:
+    def _check_approval(
+        self, contract: Contract, token: AddressLike, balance: Wei
+    ) -> None:
         """
         Validates token is approved for swapping. If not, approves token for swapping.
         Args:
