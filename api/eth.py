@@ -200,7 +200,7 @@ class ERC20Like:
         )
         self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         logger.info("Approved token for swap")
-        time.sleep(3)
+        time.sleep(10)
 
     def _check_approval(
         self, contract: Contract, token: AddressLike, balance: Wei
