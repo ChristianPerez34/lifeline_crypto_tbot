@@ -75,7 +75,7 @@ def get_coin_stats(symbol: str) -> list:
                 "token_name": data["name"],
                 "website": links["homepage"][0],
                 "explorers": [
-                    f"[{urlparse(link).hostname}]({link})"
+                    f"[{urlparse(link).hostname.split('.')[0]}]({link})"
                     for link in links["blockchain_site"]
                     if link
                 ],
@@ -168,18 +168,24 @@ async def send_price(message: Message) -> None:
             for key in ("website", "explorers"):
                 coin_stats.pop(key)
         dataframe = DataFrame(coin_stats_list)
-        columns = {column: titleize(column) for column in dataframe.columns}
-        dataframe = dataframe.rename(columns=columns)
-        fig = fif.create_table(dataframe.rename(columns=columns))
-        fig.update_layout(width=1000)
 
-        await send_photo(
-            chat_id=message.chat.id,
-            caption=reply,
-            photo=BufferedReader(
-                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
-            ),
-        )
+        if not dataframe.empty:
+            columns = {column: titleize(column) for column in dataframe.columns}
+            dataframe = dataframe.rename(columns=columns)
+            fig = fif.create_table(dataframe.rename(columns=columns))
+            fig.update_layout(width=1100)
+
+            await message.reply_photo(
+                caption=reply,
+                photo=BufferedReader(
+                    BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+                ),
+                parse_mode=ParseMode.MARKDOWN,
+            )
+        else:
+            await message.reply(
+                text="Token data not found on CoinGecko nor CoinMarketCap!"
+            )
     except IndexError as e:
         logger.exception(e)
         reply = f"⚠️ Please provide a crypto code: \n{bold('/price')} {italic('COIN')}"
