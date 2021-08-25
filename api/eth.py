@@ -1,16 +1,20 @@
 import json
 import time
 from decimal import Decimal
+from typing import Union
 
+from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
 from uniswap import Uniswap
+from uniswap.exceptions import InsufficientBalance
 from uniswap.types import AddressLike
 from web3 import Web3
 from web3.contract import Contract
+from web3.exceptions import ContractLogicError
 from web3.types import Wei, TxParams
 
 from app import logger
-from config import FERNET_KEY, ETHEREUM_MAIN_NET_URL
+from config import FERNET_KEY, ETHEREUM_MAIN_NET_URL, BUY
 from handlers import ether_scan
 
 CONTRACT_ADDRESSES = {
@@ -18,6 +22,9 @@ CONTRACT_ADDRESSES = {
     "WETH": Web3.toChecksumAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
     "USDC": Web3.toChecksumAddress("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"),
 }
+
+AVERAGE_TRANSACTION_SPEED = "ProposeGasPrice"
+FAST_TRANSACTION_SPEED = "FastGasPrice"
 
 
 class ERC20Like:
@@ -315,3 +322,107 @@ class UniSwap(EthereumChain):
             if as_usdc_per_token
             else Decimal(self.dex.get_price_input(usdc, token, 10 ** 6))
         )
+
+    def swap_tokens(
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
+    ) -> str:
+        """
+        Swaps crypto coins on PancakeSwap
+        Args:
+            token (str): Address of coin to buy/sell
+            amount_to_spend (float): Amount in BNB expected to spend/receive. When selling will read as percentage
+            side (str): Indicates if user wants to buy or sell coins
+            is_snipe (bool): Indicates if swap is for sniping. Utilizes increasingly high gas price to ensure buying
+                token as soon as possible
+
+        Returns: Reply to message
+
+        """
+        logger.info("Swapping tokens")
+        if self.web3.isConnected():
+            token = self.web3.toChecksumAddress(token)
+            weth = CONTRACT_ADDRESSES["WETH"]
+            gas_price = (
+                self.web3.toWei(
+                    self.get_gas_price(speed=AVERAGE_TRANSACTION_SPEED), "gwei"
+                )
+                if not is_snipe
+                else self.web3.toWei(
+                    self.get_gas_price(speed=FAST_TRANSACTION_SPEED), "gwei"
+                )
+            )
+            try:
+                txn = None
+                abi = self.get_contract_abi(abi_type="router")
+                contract = self.web3.eth.contract(
+                    address=self.dex.router_address, abi=abi
+                )
+                if side == BUY:
+                    amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
+                    route = [weth, token]
+                    args = (contract, route, amount_to_spend, gas_price)
+                    swap_methods = [
+                        self._swap_exact_eth_for_tokens,
+                        self._swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens,
+                    ]
+                    balance = self.get_token_balance(
+                        address=self.address, token=CONTRACT_ADDRESSES["ETH"]
+                    )
+                else:
+                    token_abi = self.get_contract_abi(abi_type="sell")
+                    token_contract = self.web3.eth.contract(
+                        address=token, abi=token_abi
+                    )
+                    amount_to_spend = self.get_token_balance(
+                        address=self.address, token=token
+                    )
+                    route = [token, CONTRACT_ADDRESSES["WETH"]]
+                    args = (contract, route, amount_to_spend, gas_price)
+                    swap_methods = [
+                        self._swap_exact_tokens_for_eth,
+                        self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
+                    ]
+                    balance = self.get_token_balance(address=self.address, token=token)
+                    self._check_approval(
+                        contract=token_contract, token=token, balance=balance
+                    )
+
+                if balance < amount_to_spend:
+                    raise InsufficientBalance(had=balance, needed=amount_to_spend)
+
+                for swap_method in swap_methods:
+                    try:
+                        txn = swap_method(*args)
+                        break
+                    except ContractLogicError as e:
+                        logger.exception(e)
+
+                signed_txn = self.web3.eth.account.sign_transaction(
+                    txn, private_key=self.fernet.decrypt(self.key.encode()).decode()
+                )
+                txn_hash = self.web3.toHex(
+                    self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                )
+                logger.info("Transaction completed successfully")
+                txn_hash_url = f"https://etherscan.io/tx/{txn_hash}"
+                reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
+            except InsufficientBalance as e:
+                logger.exception(e)
+                reply = (
+                    "⚠️ Insufficient balance. Top up your token balance and try again. "
+                )
+            except ValueError as e:
+                logger.exception(e)
+                reply = str(e)
+        else:
+            logger.info("Unable to connect to Polygon Network")
+            reply = "⚠ Sorry, I was unable to connect to the Ethereum Network. Try again later."
+        return reply
+
+    @staticmethod
+    def get_gas_price(speed: str):
+        return ether_scan.get_gas_oracle()[speed]
