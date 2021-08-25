@@ -148,7 +148,7 @@ class PancakeSwap(BinanceSmartChain):
             token = self.web3.toChecksumAddress(token)
             wbnb = CONTRACT_ADDRESSES["WBNB"]
             gas_price = (
-                self.web3.toWei("6", "gwei")
+                self.web3.toWei("5", "gwei")
                 if not is_snipe
                 else self.web3.toWei("65", "gwei")
             )
