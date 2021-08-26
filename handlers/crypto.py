@@ -990,9 +990,9 @@ async def send_spy(message: Message):
         network, address = message.get_args().split()
         coin = Coin(address=address, network=network)
 
-        if coin.network == 'BSC':
+        if coin.network == "BSC":
             dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
-        elif coin.network == 'ETH':
+        elif coin.network == "ETH":
             dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
         else:
             dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
