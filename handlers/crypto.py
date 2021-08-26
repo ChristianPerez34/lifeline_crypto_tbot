@@ -20,7 +20,7 @@ from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException
 from web3.exceptions import ContractLogicError
 
-from api.bsc import BinanceSmartChain, PancakeSwap
+from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
@@ -985,13 +985,19 @@ async def send_spy(message: Message):
     counter = 0
     user_id = message.from_user.id
     user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
-    bsc = BinanceSmartChain()
-    args = message.get_args().split()
     account_data_frame = DataFrame()
     try:
-        coin = Coin(address=args[0])
-        account_holdings = await bsc.get_account_token_holdings(address=coin.address)
-        pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+        network, address = message.get_args().split()
+        coin = Coin(address=address, network=network)
+
+        if coin.network == "BSC":
+            dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+        elif coin.network == "ETH":
+            dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
+        else:
+            dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
+        account_holdings = await dex.get_account_token_holdings(address=coin.address)
+
         for k in account_holdings.keys():
             if counter > 5:
                 break
@@ -999,17 +1005,17 @@ async def send_spy(message: Message):
             token = _coin["address"]
 
             # Quantity in wei used to calculate price
-            quantity = bsc.get_token_balance(address=coin.address, token=token)
+            quantity = dex.get_token_balance(address=coin.address, token=token)
             if quantity > 0:
                 try:
-                    token_price = pancake_swap.get_token_price(token=token)
+                    token_price = dex.get_token_price(token=token)
                     price = quantity / token_price
 
                     # Quantity in correct format as seen in wallet
-                    quantity = pancake_swap.get_decimal_representation(
+                    quantity = dex.get_decimal_representation(
                         quantity=quantity, decimals=_coin["decimals"]
                     )
-                    usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
+                    usd_amount = price.quantize(Decimal("0.01"))
                     data_frame = DataFrame(
                         {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]}
                     )
@@ -1022,6 +1028,8 @@ async def send_spy(message: Message):
 
     except (IndexError, ValidationError) as e:
         logger.exception(e)
+    account_data_frame.sort_values(by=["USD"], inplace=True, ascending=False)
+    account_data_frame["USD"] = account_data_frame["USD"].apply("${:,}".format)
     fig = fif.create_table(account_data_frame)
     fig.update_layout(
         autosize=True,
