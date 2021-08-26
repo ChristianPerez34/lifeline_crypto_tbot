@@ -36,11 +36,11 @@ class ERC20Like:
         self.address = None
 
     @staticmethod
-    def get_decimal_representation(quantity: Decimal, decimals: int) -> Decimal:
+    def get_decimal_representation(quantity: Wei, decimals: int) -> Decimal:
         """
         Decimal representation of inputted quantity
         Args:
-            quantity (Decimal): Amount to convert to decimal representation
+            quantity (Wei): Amount to convert to decimal representation
             decimals (int): Amount of decimals for token contract
 
         Returns: Decimal/Normalized representation of inputted quantity
