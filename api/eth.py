@@ -71,7 +71,7 @@ class ERC20Like:
         return abi
 
     def _swap_exact_eth_for_tokens(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact ETH|BNB|MATIC for tokens.
@@ -97,7 +97,7 @@ class ERC20Like:
         )
 
     def _swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact ETH|BNB|MATIC for tokens supporting fee on transfer tokens
@@ -123,7 +123,7 @@ class ERC20Like:
         )
 
     def _swap_exact_tokens_for_eth(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact tokens for ETH|BNB|MATIC
@@ -152,7 +152,7 @@ class ERC20Like:
         )
 
     def _swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact tokens for ETH|BNB|MATIC supporting fee on transfer tokens
@@ -210,7 +210,7 @@ class ERC20Like:
         time.sleep(10)
 
     def _check_approval(
-        self, contract: Contract, token: AddressLike, balance: Wei
+            self, contract: Contract, token: AddressLike, balance: Wei = 0
     ) -> None:
         """
         Validates token is approved for swapping. If not, approves token for swapping.
@@ -221,10 +221,11 @@ class ERC20Like:
 
         """
         logger.info("Verifying token (%s) has approval", token)
-        allowance = contract.functions.allowance(token, self.dex.router_address).call()
+        balance = self.get_token_balance(address=self.address, token=token) if balance == 0 else balance
+        allowance = contract.functions.allowance(self.address, self.dex.router_address).call()
 
         if balance > allowance:
-            self._approve(contract=contract)
+            self.dex.approve(token=token)
 
     def get_token_balance(self, address, token):
         raise NotImplementedError
@@ -304,7 +305,7 @@ class UniSwap(EthereumChain):
         )
 
     def get_token_price(
-        self, token: AddressLike, as_usdc_per_token: bool = False
+            self, token: AddressLike, as_usdc_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in USDC
@@ -324,11 +325,11 @@ class UniSwap(EthereumChain):
         )
 
     def swap_tokens(
-        self,
-        token: str,
-        amount_to_spend: Union[int, float, str, Decimal] = 0,
-        side: str = BUY,
-        is_snipe: bool = False,
+            self,
+            token: str,
+            amount_to_spend: Union[int, float, str, Decimal] = 0,
+            side: str = BUY,
+            is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -373,10 +374,6 @@ class UniSwap(EthereumChain):
                         address=self.address, token=CONTRACT_ADDRESSES["ETH"]
                     )
                 else:
-                    token_abi = self.get_contract_abi(abi_type="sell")
-                    token_contract = self.web3.eth.contract(
-                        address=token, abi=token_abi
-                    )
                     amount_to_spend = self.get_token_balance(
                         address=self.address, token=token
                     )
@@ -387,9 +384,14 @@ class UniSwap(EthereumChain):
                         self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
                     ]
                     balance = self.get_token_balance(address=self.address, token=token)
-                    self._check_approval(
-                        contract=token_contract, token=token, balance=balance
-                    )
+                token_abi = self.get_contract_abi(abi_type="sell")
+                token_contract = self.web3.eth.contract(
+                    address=token, abi=token_abi
+                )
+                self._check_approval(
+                    contract=token_contract, token=token,
+                    balance=self.get_token_balance(address=self.address, token=token)
+                )
 
                 if balance < amount_to_spend:
                     raise InsufficientBalance(had=balance, needed=amount_to_spend)

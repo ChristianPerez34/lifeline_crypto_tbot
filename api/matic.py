@@ -71,7 +71,7 @@ class PolygonChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-            url, headers=HEADERS
+                url, headers=HEADERS
         ) as response:
             data = await response.json()
         erc20_transfers = data["result"]
@@ -124,7 +124,7 @@ class QuickSwap(PolygonChain):
         )
 
     def get_token_price(
-        self, token: AddressLike, as_usdc_per_token: bool = False
+            self, token: AddressLike, as_usdc_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in USDC
@@ -151,11 +151,11 @@ class QuickSwap(PolygonChain):
         return gas_prices[TRANSACTION_SPEEDS[speed]]
 
     def swap_tokens(
-        self,
-        token: str,
-        amount_to_spend: Union[int, float, str, Decimal] = 0,
-        side: str = BUY,
-        is_snipe: bool = False,
+            self,
+            token: str,
+            amount_to_spend: Union[int, float, str, Decimal] = 0,
+            side: str = BUY,
+            is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -200,10 +200,7 @@ class QuickSwap(PolygonChain):
                         address=self.address, token=CONTRACT_ADDRESSES["MATIC"]
                     )
                 else:
-                    token_abi = self.get_contract_abi(abi_type="sell")
-                    token_contract = self.web3.eth.contract(
-                        address=token, abi=token_abi
-                    )
+
                     amount_to_spend = self.get_token_balance(
                         address=self.address, token=token
                     )
@@ -214,9 +211,14 @@ class QuickSwap(PolygonChain):
                         self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
                     ]
                     balance = self.get_token_balance(address=self.address, token=token)
-                    self._check_approval(
-                        contract=token_contract, token=token, balance=balance
-                    )
+                token_abi = self.get_contract_abi(abi_type="sell")
+                token_contract = self.web3.eth.contract(
+                    address=token, abi=token_abi
+                )
+                self._check_approval(
+                    contract=token_contract, token=token,
+                    balance=self.get_token_balance(address=self.address, token=token)
+                )
 
                 if balance < amount_to_spend:
                     raise InsufficientBalance(had=balance, needed=amount_to_spend)
