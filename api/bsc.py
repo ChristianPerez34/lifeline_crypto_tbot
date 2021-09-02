@@ -59,7 +59,7 @@ class BinanceSmartChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         bep20_transfers = data["result"]
@@ -125,11 +125,11 @@ class PancakeSwap(BinanceSmartChain):
         return self.dex.get_token(address=address)
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, str, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -181,12 +181,11 @@ class PancakeSwap(BinanceSmartChain):
                     ]
                     balance = self.get_token_balance(address=self.address, token=token)
                 token_abi = self.get_contract_abi(abi_type="sell")
-                token_contract = self.web3.eth.contract(
-                    address=token, abi=token_abi
-                )
+                token_contract = self.web3.eth.contract(address=token, abi=token_abi)
                 self._check_approval(
-                    contract=token_contract, token=token,
-                    balance=self.get_token_balance(address=self.address, token=token)
+                    contract=token_contract,
+                    token=token,
+                    balance=self.get_token_balance(address=self.address, token=token),
                 )
 
                 if balance < amount_to_spend:
@@ -222,7 +221,7 @@ class PancakeSwap(BinanceSmartChain):
         return reply
 
     def get_token_price(
-            self, token: AddressLike, decimals: int = 18, as_busd_per_token: bool = False
+        self, token: AddressLike, decimals: int = 18, as_busd_per_token: bool = False
     ) -> Decimal:
         """
         Gets token price in BUSD
