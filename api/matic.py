@@ -185,9 +185,12 @@ class QuickSwap(PolygonChain):
             try:
                 txn = None
                 abi = self.get_contract_abi(abi_type="router")
+                token_abi = self.get_contract_abi(abi_type="sell")
                 contract = self.web3.eth.contract(
                     address=self.dex.router_address, abi=abi
                 )
+                token_contract = self.web3.eth.contract(address=token, abi=token_abi)
+
                 if side == BUY:
                     amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
                     route = [wmatic, token]
@@ -200,10 +203,7 @@ class QuickSwap(PolygonChain):
                         address=self.address, token=CONTRACT_ADDRESSES["MATIC"]
                     )
                 else:
-                    token_abi = self.get_contract_abi(abi_type="sell")
-                    token_contract = self.web3.eth.contract(
-                        address=token, abi=token_abi
-                    )
+
                     amount_to_spend = self.get_token_balance(
                         address=self.address, token=token
                     )
@@ -215,7 +215,9 @@ class QuickSwap(PolygonChain):
                     ]
                     balance = self.get_token_balance(address=self.address, token=token)
                     self._check_approval(
-                        contract=token_contract, token=token, balance=balance
+                        contract=token_contract,
+                        token=token,
+                        balance=balance,
                     )
 
                 if balance < amount_to_spend:
@@ -237,6 +239,13 @@ class QuickSwap(PolygonChain):
                 logger.info("Transaction completed successfully")
                 txn_hash_url = f"https://polygonscan.com/tx/{txn_hash}"
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
+
+                # Pre-approve token for future swaps
+                self._check_approval(
+                    contract=token_contract,
+                    token=token,
+                    balance=self.get_token_balance(address=self.address, token=token),
+                )
             except InsufficientBalance as e:
                 logger.exception(e)
                 reply = (

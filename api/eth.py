@@ -210,7 +210,7 @@ class ERC20Like:
         time.sleep(10)
 
     def _check_approval(
-        self, contract: Contract, token: AddressLike, balance: Wei
+        self, contract: Contract, token: AddressLike, balance: Wei = 0
     ) -> None:
         """
         Validates token is approved for swapping. If not, approves token for swapping.
@@ -221,10 +221,17 @@ class ERC20Like:
 
         """
         logger.info("Verifying token (%s) has approval", token)
-        allowance = contract.functions.allowance(token, self.dex.router_address).call()
+        balance = (
+            self.get_token_balance(address=self.address, token=token)
+            if balance == 0
+            else balance
+        )
+        allowance = contract.functions.allowance(
+            self.address, self.dex.router_address
+        ).call()
 
         if balance > allowance:
-            self._approve(contract=contract)
+            self.dex.approve(token=token)
 
     def get_token_balance(self, address, token):
         raise NotImplementedError
@@ -358,9 +365,12 @@ class UniSwap(EthereumChain):
             try:
                 txn = None
                 abi = self.get_contract_abi(abi_type="router")
+                token_abi = self.get_contract_abi(abi_type="sell")
                 contract = self.web3.eth.contract(
                     address=self.dex.router_address, abi=abi
                 )
+                token_contract = self.web3.eth.contract(address=token, abi=token_abi)
+
                 if side == BUY:
                     amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
                     route = [weth, token]
@@ -373,10 +383,6 @@ class UniSwap(EthereumChain):
                         address=self.address, token=CONTRACT_ADDRESSES["ETH"]
                     )
                 else:
-                    token_abi = self.get_contract_abi(abi_type="sell")
-                    token_contract = self.web3.eth.contract(
-                        address=token, abi=token_abi
-                    )
                     amount_to_spend = self.get_token_balance(
                         address=self.address, token=token
                     )
@@ -388,7 +394,9 @@ class UniSwap(EthereumChain):
                     ]
                     balance = self.get_token_balance(address=self.address, token=token)
                     self._check_approval(
-                        contract=token_contract, token=token, balance=balance
+                        contract=token_contract,
+                        token=token,
+                        balance=balance,
                     )
 
                 if balance < amount_to_spend:
@@ -410,6 +418,13 @@ class UniSwap(EthereumChain):
                 logger.info("Transaction completed successfully")
                 txn_hash_url = f"https://etherscan.io/tx/{txn_hash}"
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
+
+                # Pre-approve token for future swaps
+                self._check_approval(
+                    contract=token_contract,
+                    token=token,
+                    balance=self.get_token_balance(address=self.address, token=token),
+                )
             except InsufficientBalance as e:
                 logger.exception(e)
                 reply = (
