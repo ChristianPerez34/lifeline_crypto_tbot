@@ -210,6 +210,7 @@ class PancakeSwap(BinanceSmartChain):
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
 
                 # Pre-approve token for future swaps
+                self.web3.eth.waitForTransactionReceipt(txn_hash, timeout=6000)
                 self._check_approval(
                     contract=token_contract,
                     token=token,

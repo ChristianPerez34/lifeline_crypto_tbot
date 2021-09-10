@@ -17,7 +17,7 @@ from cryptography.fernet import Fernet
 from inflection import titleize
 from pandas import DataFrame, read_html, to_datetime
 from pydantic.error_wrappers import ValidationError
-from requests.exceptions import RequestException
+from requests.exceptions import RequestException, HTTPError
 from web3.exceptions import ContractLogicError
 
 from api.bsc import PancakeSwap
@@ -88,7 +88,7 @@ def get_coin_stats(symbol: str) -> list:
                 "market_cap": "${:,}".format(float(market_data["market_cap"]["usd"])),
             }
             coin_stats_list.append(coin_stats)
-    except IndexError:
+    except (IndexError, HTTPError):
         logger.info(
             "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.", symbol
         )
