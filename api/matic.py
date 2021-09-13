@@ -71,7 +71,7 @@ class PolygonChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-            url, headers=HEADERS
+                url, headers=HEADERS
         ) as response:
             data = await response.json()
         erc20_transfers = data["result"]
@@ -124,24 +124,21 @@ class QuickSwap(PolygonChain):
         )
 
     def get_token_price(
-        self, token: AddressLike, as_usdc_per_token: bool = False
+            self, token: AddressLike, decimals: int = 18
     ) -> Decimal:
         """
         Gets token price in USDC
         Args:
             token (AddressLike): Contract Address of coin
-            as_usdc_per_token (bool): Determines if output should be USDC per token or token per USDC
+            decimals (int): Token decimals
 
-        Returns (Decimal): Tokens per USDC / USDC per tokens
+        Returns (Decimal): Token Price in USDC
 
         """
         logger.info("Retrieving token price in USDC for %s", token)
         usdc = CONTRACT_ADDRESSES["USDC"]
-        return (
-            Decimal(self.dex.get_price_output(usdc, token, 10 ** 6))
-            if as_usdc_per_token
-            else Decimal(self.dex.get_price_input(usdc, token, 10 ** 6))
-        )
+
+        return self.web3.fromWei(self.dex.get_price_output(usdc, token, 10 ** decimals), 'mwei')
 
     @staticmethod
     def get_gas_price(speed: str):
@@ -151,11 +148,11 @@ class QuickSwap(PolygonChain):
         return gas_prices[TRANSACTION_SPEEDS[speed]]
 
     def swap_tokens(
-        self,
-        token: str,
-        amount_to_spend: Union[int, float, str, Decimal] = 0,
-        side: str = BUY,
-        is_snipe: bool = False,
+            self,
+            token: str,
+            amount_to_spend: Union[int, float, str, Decimal] = 0,
+            side: str = BUY,
+            is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap

@@ -18,7 +18,7 @@ from inflection import titleize
 from pandas import DataFrame, read_html, to_datetime
 from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException, HTTPError
-from web3.exceptions import ContractLogicError
+from web3.exceptions import ContractLogicError, BadFunctionCallOutput
 
 from api.bsc import PancakeSwap
 from api.coingecko import CoinGecko
@@ -940,20 +940,20 @@ async def send_balance(message: Message):
     for k in account_holdings.keys():
         coin = account_holdings[k]
         token = coin["address"]
+        token_decimals = coin['decimals']
 
         # Quantity in wei used to calculate price
         quantity = dex.get_token_balance(address=dex.address, token=token)
 
         if quantity > 0:
             try:
-                token_price = dex.get_token_price(token=token)
-                price = quantity / token_price
+                token_price = dex.get_token_price(token=token, decimals=token_decimals)
 
                 # Quantity in correct format as seen in wallet
                 quantity = dex.get_decimal_representation(
                     quantity=quantity, decimals=coin["decimals"]
                 )
-                # usd_amount = "${:,}".format(price.quantize(Decimal("0.01")))
+                price = quantity * token_price
                 usd_amount = price.quantize(Decimal("0.01"))
                 data_frame = DataFrame(
                     {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]}
@@ -961,8 +961,9 @@ async def send_balance(message: Message):
                 account_data_frame = account_data_frame.append(
                     data_frame, ignore_index=True
                 )
-            except ContractLogicError as e:
+            except (ContractLogicError, BadFunctionCallOutput) as e:
                 logger.exception(e)
+    logger.info("Creating Account balance dataframe for user %d", user_id)
     account_data_frame.sort_values(by=["USD"], inplace=True, ascending=False)
     account_data_frame["USD"] = account_data_frame["USD"].apply("${:,}".format)
     fig = fif.create_table(account_data_frame)
@@ -970,6 +971,7 @@ async def send_balance(message: Message):
         autosize=True,
     )
 
+    logger.info("Account balance data sent")
     await send_photo(
         chat_id=user_id,
         caption=f"{network} Account Balance 💲",
