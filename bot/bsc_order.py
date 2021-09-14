@@ -18,7 +18,7 @@ async def limit_order_executor(order: LimitOrder):
     reply = "Limit order executed\n"
     while not order_executed:
         token_price = dex.get_token_price(
-            token=order.address, decimals=token.decimals, as_busd_per_token=True
+            token=order.address, decimals=token.decimals
         )
 
         if trade_direction == BUY and token_price <= target_price:
