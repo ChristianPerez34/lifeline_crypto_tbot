@@ -7,6 +7,7 @@ from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
 from uniswap import Uniswap
 from uniswap.exceptions import InsufficientBalance
+from uniswap.token import ERC20Token
 from uniswap.types import AddressLike
 from web3 import Web3
 from web3.contract import Contract
@@ -236,6 +237,18 @@ class ERC20Like:
     def get_token_balance(self, address, token):
         raise NotImplementedError
 
+    def get_token(self, address: AddressLike) -> ERC20Token:
+        """
+        Retrieves metadata like its name, symbol, and decimals.
+        Args:
+            address (AddressLike): Contract address of a given token
+
+        Returns:
+
+        """
+        logger.info("Retrieving metadata for token: %s", address)
+        return self.dex.get_token(address=address)
+
 
 class EthereumChain(ERC20Like):
     def __init__(self):
@@ -310,24 +323,21 @@ class UniSwap(EthereumChain):
             web3=self.web3,
         )
 
-    def get_token_price(
-        self, token: AddressLike, as_usdc_per_token: bool = False
-    ) -> Decimal:
+    def get_token_price(self, token: AddressLike, decimals: int = 18) -> Decimal:
         """
         Gets token price in USDC
         Args:
             token (AddressLike): Contract Address of coin
-            as_usdc_per_token (bool): Determines if output should be USDC per token or token per USDC
+            decimals (int): Token decimals
 
-        Returns (Decimal): Tokens per USDC / USDC per tokens
+        Returns (Decimal): Token price in USDC
 
         """
         logger.info("Retrieving token price in USDC for %s", token)
         usdc = CONTRACT_ADDRESSES["USDC"]
-        return (
-            Decimal(self.dex.get_price_output(usdc, token, 10 ** 6))
-            if as_usdc_per_token
-            else Decimal(self.dex.get_price_input(usdc, token, 10 ** 6))
+
+        return self.web3.fromWei(
+            self.dex.get_price_output(usdc, token, 10 ** decimals), "mwei"
         )
 
     def swap_tokens(

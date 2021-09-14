@@ -1,5 +1,4 @@
 import asyncio
-from decimal import Decimal
 
 from api.bsc import PancakeSwap
 from config import BUY, SELL, STOP, TELEGRAM_CHAT_ID
@@ -18,10 +17,7 @@ async def limit_order_executor(order: LimitOrder):
     trade_direction = order.trade_direction
     reply = "Limit order executed\n"
     while not order_executed:
-
-        token_price = dex.get_token_price(
-            token=order.address, decimals=token.decimals, as_busd_per_token=True
-        ) * Decimal(10 ** (-18 - (token.decimals % 18)))
+        token_price = dex.get_token_price(token=order.address, decimals=token.decimals)
 
         if trade_direction == BUY and token_price <= target_price:
             reply += dex.swap_tokens(

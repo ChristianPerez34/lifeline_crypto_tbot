@@ -6,7 +6,6 @@ from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
 from uniswap import Uniswap
 from uniswap.exceptions import InsufficientBalance
-from uniswap.token import ERC20Token
 from uniswap.types import AddressLike
 from web3 import Web3
 from web3.exceptions import ContractLogicError
@@ -111,18 +110,6 @@ class PancakeSwap(BinanceSmartChain):
             router_contract_addr=PANCAKE_SWAP_ROUTER_ADDRESS,
             default_slippage=0.15,
         )
-
-    def get_token(self, address: AddressLike) -> ERC20Token:
-        """
-        Retrieves metadata from the BEP20 contract of a given token, like its name, symbol, and decimals.
-        Args:
-            address (AddressLike): Contract address of a given token
-
-        Returns:
-
-        """
-        logger.info("Retrieving metadata for token: %s", address)
-        return self.dex.get_token(address=address)
 
     def swap_tokens(
         self,
@@ -229,28 +216,26 @@ class PancakeSwap(BinanceSmartChain):
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
         return reply
 
-    def get_token_price(
-        self, token: AddressLike, decimals: int = 18, as_busd_per_token: bool = False
-    ) -> Decimal:
+    def get_token_price(self, token: AddressLike, decimals: int = 18) -> Decimal:
         """
         Gets token price in BUSD
         Args:
             token (AddressLike): Contract Address of coin
             decimals (int): Token decimals
-            as_busd_per_token (bool): Determines if output should be BUSD per token or token per BUSD
 
-        Returns (Decimal): Tokens per BUSD / BUSD per tokens
+        Returns (Decimal): Token price in BUSD
 
         """
         logger.info("Retrieving token price in BUSD for %s", token)
         busd = CONTRACT_ADDRESSES["BUSD"]
-        return (
-            Decimal(self.dex.get_price_output(busd, token, 10 ** 18))
-            if as_busd_per_token
-            else Decimal(self.dex.get_price_input(busd, token, 10 ** decimals))
+
+        return self.web3.fromWei(
+            self.dex.get_price_output(busd, token, 10 ** decimals), "ether"
         )
 
-    def get_token_pair_address(self, token) -> str:
+    def get_token_pair_address(
+        self, token_0: AddressLike, token_1: AddressLike = CONTRACT_ADDRESSES["WBNB"]
+    ) -> str:
         """
         Retrieves token pair address
         Args:
@@ -259,6 +244,5 @@ class PancakeSwap(BinanceSmartChain):
         Returns: Pair address
 
         """
-        token = self.web3.toChecksumAddress(token)
         contract = self.dex.factory_contract
-        return contract.functions.getPair(token, CONTRACT_ADDRESSES["WBNB"]).call()
+        return contract.functions.getPair(token_0, token_1).call()
