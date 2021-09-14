@@ -323,9 +323,7 @@ class UniSwap(EthereumChain):
             web3=self.web3,
         )
 
-    def get_token_price(
-            self, token: AddressLike, decimals: int = 18
-    ) -> Decimal:
+    def get_token_price(self, token: AddressLike, decimals: int = 18) -> Decimal:
         """
         Gets token price in USDC
         Args:
@@ -338,7 +336,9 @@ class UniSwap(EthereumChain):
         logger.info("Retrieving token price in USDC for %s", token)
         usdc = CONTRACT_ADDRESSES["USDC"]
 
-        return self.web3.fromWei(self.dex.get_price_output(usdc, token, 10 ** decimals), 'mwei')
+        return self.web3.fromWei(
+            self.dex.get_price_output(usdc, token, 10 ** decimals), "mwei"
+        )
 
     def swap_tokens(
         self,

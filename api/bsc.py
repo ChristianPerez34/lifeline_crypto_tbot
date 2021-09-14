@@ -58,7 +58,7 @@ class BinanceSmartChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         bep20_transfers = data["result"]
@@ -112,11 +112,11 @@ class PancakeSwap(BinanceSmartChain):
         )
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, str, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -216,9 +216,7 @@ class PancakeSwap(BinanceSmartChain):
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
         return reply
 
-    def get_token_price(
-            self, token: AddressLike, decimals: int = 18
-    ) -> Decimal:
+    def get_token_price(self, token: AddressLike, decimals: int = 18) -> Decimal:
         """
         Gets token price in BUSD
         Args:
@@ -231,9 +229,13 @@ class PancakeSwap(BinanceSmartChain):
         logger.info("Retrieving token price in BUSD for %s", token)
         busd = CONTRACT_ADDRESSES["BUSD"]
 
-        return self.web3.fromWei(self.dex.get_price_output(busd, token, 10 ** decimals), 'ether')
+        return self.web3.fromWei(
+            self.dex.get_price_output(busd, token, 10 ** decimals), "ether"
+        )
 
-    def get_token_pair_address(self, token_0: AddressLike, token_1: AddressLike = CONTRACT_ADDRESSES["WBNB"]) -> str:
+    def get_token_pair_address(
+        self, token_0: AddressLike, token_1: AddressLike = CONTRACT_ADDRESSES["WBNB"]
+    ) -> str:
         """
         Retrieves token pair address
         Args:

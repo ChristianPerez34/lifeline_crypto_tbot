@@ -940,7 +940,7 @@ async def send_balance(message: Message):
     for k in account_holdings.keys():
         coin = account_holdings[k]
         token = coin["address"]
-        token_decimals = coin['decimals']
+        token_decimals = coin["decimals"]
 
         # Quantity in wei used to calculate price
         quantity = dex.get_token_balance(address=dex.address, token=token)
