@@ -2,7 +2,7 @@ import asyncio
 
 from aiogram import Dispatcher, executor, types
 
-from app import dp
+from app import dp, chart_cb
 from bot.bsc_order import limit_order_executor
 from config import TELEGRAM_CHAT_ID
 from handlers import init_database
@@ -26,7 +26,7 @@ from handlers.crypto import (
     send_trending,
     send_limit_swap,
     send_active_orders,
-    send_cancel_order,
+    send_cancel_order, chart_inline_query_handler,
 )
 from handlers.error import send_error
 from handlers.user import send_register
@@ -82,6 +82,8 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_message_handler(send_buy, commands=["buy"])
     dispatcher.register_message_handler(send_register, commands=["register"])
     dispatcher.register_message_handler(send_balance, commands=["balance"])
+    dispatcher.register_callback_query_handler(chart_inline_query_handler,
+                                               chart_cb.filter(chart_type=['line', 'candle']))
     dispatcher.register_callback_query_handler(kucoin_inline_query_handler)
     dispatcher.register_message_handler(send_sell, commands=["sell"])
     dispatcher.register_message_handler(send_spy, commands=["spy"])
