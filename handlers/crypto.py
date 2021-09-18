@@ -681,8 +681,7 @@ async def send_chart(message: Message):
     try:
         chart = Chart(ticker=args[0], time_frame=args[1])
         pair = chart.ticker.split("-")
-        symbol = pair[0]
-        base_coin = pair[1]
+        symbol, base_coin = pair
         time_frame = chart.time_frame
 
         coin_ids = coin_gecko.get_coin_ids(symbol)
@@ -737,7 +736,7 @@ async def send_candle_chart(message: Message):
             ticker=args[0], time_frame=args[1], resolution=args[2]
         )
         pair = candle_chart.ticker.split("-")
-        symbol, base_coin = pair[0], pair[1]
+        symbol, base_coin = pair
 
         time_frame = candle_chart.time_frame
         resolution = candle_chart.resolution
