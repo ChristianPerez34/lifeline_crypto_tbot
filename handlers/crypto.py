@@ -11,7 +11,13 @@ import dateutil.parser as dau
 import plotly.figure_factory as fif
 import plotly.graph_objs as go
 import plotly.io as pio
-from aiogram.types import CallbackQuery, Message, ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import (
+    CallbackQuery,
+    Message,
+    ParseMode,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
 from aiogram.utils.emoji import emojize
 from aiogram.utils.markdown import bold, italic, text
 from cryptography.fernet import Fernet
@@ -393,7 +399,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -412,7 +418,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-                "https://coinmarketcap.com/new/", headers=HEADERS
+            "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -441,9 +447,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-                user.kucoin_api_key
-                and user.kucoin_api_secret
-                and user.kucoin_api_passphrase
+            user.kucoin_api_key
+            and user.kucoin_api_secret
+            and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -467,8 +473,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                                position_order["stopPriceType"] == "TP"
-                                and position_order["stop"] == "up"
+                            position_order["stopPriceType"] == "TP"
+                            and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -481,7 +487,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                           or (entry > mark_price and unrealized_pnl < 0)
+                        or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -596,7 +602,9 @@ async def send_sell(message: Message) -> None:
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
-def generate_line_chart(coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str) -> go.Figure:
+def generate_line_chart(
+    coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
+) -> go.Figure:
     logger.info("Creating line chart layout")
     market = coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
 
@@ -645,9 +653,7 @@ def generate_line_chart(coin_gecko: CoinGecko, coin_id: str, symbol: str, time_f
             ticksuffix="  ",
         ),
         title=dict(text=symbol, font=dict(size=26)),
-        legend=dict(
-            orientation="h", yanchor="top", xanchor="center", y=1.05, x=0.45
-        ),
+        legend=dict(orientation="h", yanchor="top", xanchor="center", y=1.05, x=0.45),
         shapes=[
             {
                 "type": "line",
@@ -686,8 +692,13 @@ async def send_chart(message: Message):
 
         coin_ids = coin_gecko.get_coin_ids(symbol)
         if len(coin_ids) == 1:
-            fig = generate_line_chart(coin_gecko=coin_gecko, coin_id=coin_ids[0], symbol=symbol, time_frame=time_frame,
-                                      base_coin=base_coin)
+            fig = generate_line_chart(
+                coin_gecko=coin_gecko,
+                coin_id=coin_ids[0],
+                symbol=symbol,
+                time_frame=time_frame,
+                base_coin=base_coin,
+            )
 
             logger.info("Exporting line chart as image")
             await message.reply_photo(
@@ -700,12 +711,23 @@ async def send_chart(message: Message):
             keyboard_markup = InlineKeyboardMarkup()
             for coin_id in coin_ids:
                 keyboard_markup.row(
-                    InlineKeyboardButton(humanize(coin_id),
-                                         callback_data=chart_cb.new(chart_type='line', coin_id=coin_id, symbol=symbol,
-                                                                    time_frame=time_frame, base_coin=base_coin)))
+                    InlineKeyboardButton(
+                        humanize(coin_id),
+                        callback_data=chart_cb.new(
+                            chart_type="line",
+                            coin_id=coin_id,
+                            symbol=symbol,
+                            time_frame=time_frame,
+                            base_coin=base_coin,
+                        ),
+                    )
+                )
 
-            await message.reply(text="Choose token to display chart", parse_mode=ParseMode.MARKDOWN,
-                                reply_markup=keyboard_markup)
+            await message.reply(
+                text="Choose token to display chart",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=keyboard_markup,
+            )
     except IndexError as e:
         logger.exception(e)
         reply = text(
@@ -892,24 +914,34 @@ async def send_candle_chart(message: Message):
         )
 
 
-async def chart_inline_query_handler(query: CallbackQuery, callback_data: Dict[str, str]):
+async def chart_inline_query_handler(
+    query: CallbackQuery, callback_data: Dict[str, str]
+):
     await query.answer()
-    chart_type = callback_data['chart_type']
+    chart_type = callback_data["chart_type"]
 
-    if chart_type == 'line':
+    if chart_type == "line":
         coin_gecko = CoinGecko()
-        coin_id = callback_data['coin_id']
-        symbol = callback_data['symbol']
-        time_frame = int(callback_data['time_frame'])
-        base_coin = callback_data['base_coin']
-        fig = generate_line_chart(coin_gecko=coin_gecko, coin_id=coin_id, symbol=symbol, time_frame=time_frame,
-                                  base_coin=base_coin)
+        coin_id = callback_data["coin_id"]
+        symbol = callback_data["symbol"]
+        time_frame = int(callback_data["time_frame"])
+        base_coin = callback_data["base_coin"]
+        fig = generate_line_chart(
+            coin_gecko=coin_gecko,
+            coin_id=coin_id,
+            symbol=symbol,
+            time_frame=time_frame,
+            base_coin=base_coin,
+        )
 
         logger.info("Exporting line chart as image")
-        await send_photo(chat_id=TELEGRAM_CHAT_ID, caption="",
-                         photo=BufferedReader(
-                             BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
-                         ))
+        await send_photo(
+            chat_id=TELEGRAM_CHAT_ID,
+            caption="",
+            photo=BufferedReader(
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+            ),
+        )
 
 
 async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
