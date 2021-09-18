@@ -3,6 +3,7 @@ import time
 from decimal import Decimal
 from io import BufferedReader, BytesIO
 from itertools import chain
+from typing import Dict
 from urllib.parse import urlparse
 
 import aiohttp
@@ -10,11 +11,17 @@ import dateutil.parser as dau
 import plotly.figure_factory as fif
 import plotly.graph_objs as go
 import plotly.io as pio
-from aiogram.types import CallbackQuery, Message, ParseMode
+from aiogram.types import (
+    CallbackQuery,
+    Message,
+    ParseMode,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
 from aiogram.utils.emoji import emojize
 from aiogram.utils.markdown import bold, italic, text
 from cryptography.fernet import Fernet
-from inflection import titleize
+from inflection import titleize, humanize
 from pandas import DataFrame, read_html, to_datetime
 from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException, HTTPError
@@ -28,7 +35,7 @@ from api.cryptocompare import CryptoCompare
 from api.eth import UniSwap
 from api.kucoin import KucoinApi
 from api.matic import QuickSwap
-from app import bot, logger
+from app import bot, logger, chart_cb
 from bot import active_orders
 from bot.bsc_order import limit_order_executor
 from bot.bsc_sniper import pancake_swap_sniper
@@ -595,6 +602,77 @@ async def send_sell(message: Message) -> None:
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
+def generate_line_chart(
+    coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
+) -> go.Figure:
+    logger.info("Creating line chart layout")
+    market = coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
+
+    # Volume
+    df_volume = DataFrame(market["total_volumes"], columns=["DateTime", "Volume"])
+    df_volume["DateTime"] = to_datetime(df_volume["DateTime"], unit="ms")
+    volume = go.Scatter(
+        x=df_volume.get("DateTime"), y=df_volume.get("Volume"), name="Volume"
+    )
+
+    # Price
+    df_price = DataFrame(market["prices"], columns=["DateTime", "Price"])
+    df_price["DateTime"] = to_datetime(df_price["DateTime"], unit="ms")
+    price = go.Scatter(
+        x=df_price.get("DateTime"),
+        y=df_price.get("Price"),
+        yaxis="y2",
+        name="Price",
+        line=dict(color="rgb(22, 96, 167)", width=2),
+    )
+
+    margin_l = 140
+    tick_format = "0.8f"
+
+    max_value = df_price["Price"].max()
+    if max_value > 0.9:
+        if max_value > 999:
+            margin_l = 110
+            tick_format = "0,.0f"
+        else:
+            margin_l = 115
+            tick_format = "0.2f"
+
+    layout = go.Layout(
+        paper_bgcolor="rgb(233,233,233)",
+        plot_bgcolor="rgb(233,233,233)",
+        autosize=False,
+        width=800,
+        height=600,
+        margin=go.layout.Margin(l=margin_l, r=50, b=85, t=100, pad=4),
+        yaxis=dict(domain=[0, 0.20]),
+        yaxis2=dict(
+            title=dict(text=base_coin, font=dict(size=18)),
+            domain=[0.25, 1],
+            tickprefix="   ",
+            ticksuffix="  ",
+        ),
+        title=dict(text=symbol, font=dict(size=26)),
+        legend=dict(orientation="h", yanchor="top", xanchor="center", y=1.05, x=0.45),
+        shapes=[
+            {
+                "type": "line",
+                "xref": "paper",
+                "yref": "y2",
+                "x0": 0,
+                "x1": 1,
+                "y0": market["prices"][-1][1],
+                "y1": market["prices"][-1][1],
+                "line": {"color": "rgb(50, 171, 96)", "width": 1, "dash": "dot"},
+            }
+        ],
+    )
+
+    fig = go.Figure(data=[price, volume], layout=layout)
+    fig["layout"]["yaxis2"].update(tickformat=tick_format)
+    return fig
+
+
 async def send_chart(message: Message):
     """Replies to command with coin chart for given crypto symbol and amount of days
 
@@ -609,78 +687,47 @@ async def send_chart(message: Message):
     try:
         chart = Chart(ticker=args[0], time_frame=args[1])
         pair = chart.ticker.split("-")
-        symbol = pair[0]
-        base_coin = pair[1]
+        symbol, base_coin = pair
         time_frame = chart.time_frame
 
-        coin_id = coin_gecko.get_coin_ids(symbol)[0]
-        market = coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
+        coin_ids = coin_gecko.get_coin_ids(symbol)
+        if len(coin_ids) == 1:
+            fig = generate_line_chart(
+                coin_gecko=coin_gecko,
+                coin_id=coin_ids[0],
+                symbol=symbol,
+                time_frame=time_frame,
+                base_coin=base_coin,
+            )
 
-        logger.info("Creating chart layout")
-        # Volume
-        df_volume = DataFrame(market["total_volumes"], columns=["DateTime", "Volume"])
-        df_volume["DateTime"] = to_datetime(df_volume["DateTime"], unit="ms")
-        volume = go.Scatter(
-            x=df_volume.get("DateTime"), y=df_volume.get("Volume"), name="Volume"
-        )
+            logger.info("Exporting line chart as image")
+            await message.reply_photo(
+                photo=BufferedReader(
+                    BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+                ),
+                parse_mode=ParseMode.MARKDOWN,
+            )
+        else:
+            keyboard_markup = InlineKeyboardMarkup()
+            for coin_id in coin_ids:
+                keyboard_markup.row(
+                    InlineKeyboardButton(
+                        humanize(coin_id),
+                        callback_data=chart_cb.new(
+                            chart_type="line",
+                            coin_id=coin_id,
+                            symbol=symbol,
+                            time_frame=time_frame,
+                            base_coin=base_coin,
+                        ),
+                    )
+                )
 
-        # Price
-        df_price = DataFrame(market["prices"], columns=["DateTime", "Price"])
-        df_price["DateTime"] = to_datetime(df_price["DateTime"], unit="ms")
-        price = go.Scatter(
-            x=df_price.get("DateTime"),
-            y=df_price.get("Price"),
-            yaxis="y2",
-            name="Price",
-            line=dict(color="rgb(22, 96, 167)", width=2),
-        )
-
-        margin_l = 140
-        tick_format = "0.8f"
-
-        max_value = df_price["Price"].max()
-        if max_value > 0.9:
-            if max_value > 999:
-                margin_l = 110
-                tick_format = "0,.0f"
-            else:
-                margin_l = 115
-                tick_format = "0.2f"
-
-        layout = go.Layout(
-            paper_bgcolor="rgb(233,233,233)",
-            plot_bgcolor="rgb(233,233,233)",
-            autosize=False,
-            width=800,
-            height=600,
-            margin=go.layout.Margin(l=margin_l, r=50, b=85, t=100, pad=4),
-            yaxis=dict(domain=[0, 0.20]),
-            yaxis2=dict(
-                title=dict(text=base_coin, font=dict(size=18)),
-                domain=[0.25, 1],
-                tickprefix="   ",
-                ticksuffix="  ",
-            ),
-            title=dict(text=symbol, font=dict(size=26)),
-            legend=dict(
-                orientation="h", yanchor="top", xanchor="center", y=1.05, x=0.45
-            ),
-            shapes=[
-                {
-                    "type": "line",
-                    "xref": "paper",
-                    "yref": "y2",
-                    "x0": 0,
-                    "x1": 1,
-                    "y0": market["prices"][-1][1],
-                    "y1": market["prices"][-1][1],
-                    "line": {"color": "rgb(50, 171, 96)", "width": 1, "dash": "dot"},
-                }
-            ],
-        )
-
-        fig = go.Figure(data=[price, volume], layout=layout)
-        fig["layout"]["yaxis2"].update(tickformat=tick_format)
+            await message.reply(
+                text="Choose token to display chart",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=keyboard_markup,
+            )
     except IndexError as e:
         logger.exception(e)
         reply = text(
@@ -694,14 +741,6 @@ async def send_chart(message: Message):
 
     if reply:
         await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
-    else:
-        logger.info("Exporting chart as image")
-        await message.reply_photo(
-            photo=BufferedReader(
-                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
-            ),
-            parse_mode=ParseMode.MARKDOWN,
-        )
 
 
 async def send_candle_chart(message: Message):
@@ -719,7 +758,7 @@ async def send_candle_chart(message: Message):
             ticker=args[0], time_frame=args[1], resolution=args[2]
         )
         pair = candle_chart.ticker.split("-")
-        symbol, base_coin = pair[0], pair[1]
+        symbol, base_coin = pair
 
         time_frame = candle_chart.time_frame
         resolution = candle_chart.resolution
@@ -872,6 +911,36 @@ async def send_candle_chart(message: Message):
                 BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
             ),
             parse_mode=ParseMode.MARKDOWN,
+        )
+
+
+async def chart_inline_query_handler(
+    query: CallbackQuery, callback_data: Dict[str, str]
+):
+    await query.answer()
+    chart_type = callback_data["chart_type"]
+
+    if chart_type == "line":
+        coin_gecko = CoinGecko()
+        coin_id = callback_data["coin_id"]
+        symbol = callback_data["symbol"]
+        time_frame = int(callback_data["time_frame"])
+        base_coin = callback_data["base_coin"]
+        fig = generate_line_chart(
+            coin_gecko=coin_gecko,
+            coin_id=coin_id,
+            symbol=symbol,
+            time_frame=time_frame,
+            base_coin=base_coin,
+        )
+
+        logger.info("Exporting line chart as image")
+        await send_photo(
+            chat_id=TELEGRAM_CHAT_ID,
+            caption="",
+            photo=BufferedReader(
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+            ),
         )
 
 
