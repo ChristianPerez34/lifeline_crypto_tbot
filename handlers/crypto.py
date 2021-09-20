@@ -20,6 +20,7 @@ from aiogram.types import (
 )
 from aiogram.utils.emoji import emojize
 from aiogram.utils.markdown import bold, italic, text
+from coinmarketcapapi import CoinMarketCapAPIError
 from cryptography.fernet import Fernet
 from inflection import titleize, humanize
 from pandas import DataFrame, read_html, to_datetime
@@ -681,6 +682,7 @@ async def send_chart(message: Message):
     """
     logger.info("Searching for coin market data for chart")
     coin_gecko = CoinGecko()
+    coin_market_cap = CoinMarketCap()
     args = message.get_args().split()
     reply = ""
 
@@ -690,7 +692,7 @@ async def send_chart(message: Message):
         symbol, base_coin = pair
         time_frame = chart.time_frame
 
-        coin_ids = coin_gecko.get_coin_ids(symbol)
+        coin_ids = coin_gecko.get_coin_ids(symbol) or coin_market_cap.coin_lookup(symbol=symbol)
         if len(coin_ids) == 1:
             fig = generate_line_chart(
                 coin_gecko=coin_gecko,
@@ -738,6 +740,9 @@ async def send_chart(message: Message):
         logger.exception(e)
         error_message = e.args[0][0].exc
         reply = f"⚠️ {error_message}"
+    except CoinMarketCapAPIError as e:
+        logger.exception(e)
+        reply = "Coin data not found in CoinGecko/CoinMarketCap"
 
     if reply:
         await message.reply(text=emojize(reply), parse_mode=ParseMode.MARKDOWN)
