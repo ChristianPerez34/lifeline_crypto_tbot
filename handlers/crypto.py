@@ -942,7 +942,7 @@ async def chart_inline_query_handler(
         logger.info("Exporting line chart as image")
         await send_photo(
             chat_id=TELEGRAM_CHAT_ID,
-            caption="",
+            caption=coin_id,
             photo=BufferedReader(
                 BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
             ),
