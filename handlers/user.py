@@ -19,7 +19,7 @@ async def register_network(
     if register_type == RegisterTypes.BSC.value:
         data.update(
             {
-                "bsc": BinanceChain(
+                "bsc": BinanceChain(  # type: ignore
                     address=address,
                     private_key=fernet.encrypt(private_key.encode()).decode(),
                     telegram_group_member=user_id,
@@ -29,7 +29,7 @@ async def register_network(
     elif register_type == RegisterTypes.ETH.value:
         data.update(
             {
-                "eth": EthereumChain(
+                "eth": EthereumChain(  # type: ignore
                     address=address,
                     private_key=fernet.encrypt(private_key.encode()).decode(),
                     telegram_group_member=user_id,
@@ -39,7 +39,7 @@ async def register_network(
     else:
         data.update(
             {
-                "matic": MaticChain(
+                "matic": MaticChain(  # type: ignore
                     address=address,
                     private_key=fernet.encrypt(private_key.encode()).decode(),
                     telegram_group_member=user_id,
@@ -66,7 +66,7 @@ async def send_register(message: Message) -> None:
     args = message.get_args().split()
     register_type = args[0].upper()
 
-    exclude = {}
+    exclude = set()
 
     if register_type in (
         RegisterTypes.BSC.value,

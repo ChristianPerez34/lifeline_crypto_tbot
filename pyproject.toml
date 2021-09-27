@@ -34,7 +34,29 @@ inflection = "^0.5.1"
 black = "^21.5b0"
 yapf = "^0.31.0"
 pyinstrument = "^4.0.3"
+mypy = "^0.910"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+install_types = true
+non_interactive = true
+
+[[tool.mypy.overrides]]
+module = [
+    "aiogram.*",
+    "pony.*",
+    "api.*",
+    "pandas",
+    "plotly.*",
+    "coinmarketcapapi",
+    "pycoingecko",
+    "kucoin_futures.*",
+    "etherscan",
+    "lru"
+]
+ignore_missing_imports = true
+
+

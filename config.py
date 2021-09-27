@@ -18,7 +18,7 @@ DEV = "dev"
 PROD = "prod"
 TEST = "test"
 ENV = os.getenv("ENV", DEV).lower()
-FERNET_KEY = os.getenv("FERNET_KEY")
+FERNET_KEY = os.getenv("FERNET_KEY").encode()  # type: ignore
 REGISTER_TYPES = ("BSC", "KUCOIN")
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 "
@@ -84,7 +84,7 @@ DB_CONFIG = {
 KUCOIN_API_KEY = os.getenv("KUCOIN_API_KEY")
 KUCOIN_API_SECRET = os.getenv("KUCOIN_API_SECRET")
 KUCOIN_API_PASSPHRASE = os.getenv("KUCOIN_API_PASSPHRASE")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TELEGRAM_CHAT_ID = int(os.getenv("TELEGRAM_CHAT_ID"))  # type: ignore
 KUCOIN_TASK_NAME = "KUCOIN_BOT"
 
 # CoinMarketCap settings
