@@ -55,7 +55,14 @@ module = [
     "pycoingecko",
     "kucoin_futures.*",
     "etherscan",
-    "lru"
+    "lru",
+    "web3.*",
+    "uniswap.*",
+    "cryptography.*",
+    "aiohttp",
+    "pydantic.*",
+    "inflection",
+    "dotenv"
 ]
 ignore_missing_imports = true
 
