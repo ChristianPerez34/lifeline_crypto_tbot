@@ -49,7 +49,7 @@ async def pancake_swap_sniper(
         has_liquidity = token_has_liquidity(token, pancake_swap)
 
         if has_liquidity:
-            reply = f"Sniped token 🎯.\n\nView token here: https://poocoin.app/tokens/{token}\n\n"
+            reply = f"Sniped token 🎯.\n\nView token here: https://poocoin.app/tokens/{token}\n\n"  # type: ignore
             reply += pancake_swap.swap_tokens(
                 token=token, amount_to_spend=amount, side=BUY, is_snipe=True
             )

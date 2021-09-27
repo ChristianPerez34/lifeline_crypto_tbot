@@ -10,8 +10,8 @@ from schemas import LimitOrder
 async def limit_order_executor(order: LimitOrder):
     order_executed = False
     user = order.telegram_group_member
-    bsc = user.bsc
-    dex = PancakeSwap(address=bsc.address, key=bsc.private_key)
+    bsc = user.bsc  # type: ignore
+    dex = PancakeSwap(address=bsc.address, key=bsc.private_key)  # type: ignore
     token = dex.get_token(address=order.address)
     target_price = order.target_price
     trade_direction = order.trade_direction
@@ -32,5 +32,5 @@ async def limit_order_executor(order: LimitOrder):
             )
             order_executed = True
         await asyncio.sleep(2)
-    Order.get_or_none(primary_key=order.id).remove()
+    Order.get_or_none(primary_key=order.id).remove()  # type: ignore
     await send_message(channel_id=TELEGRAM_CHAT_ID, message=reply)

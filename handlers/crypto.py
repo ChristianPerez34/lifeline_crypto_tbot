@@ -186,7 +186,7 @@ async def send_price(message: Message) -> None:
             await message.reply_photo(
                 caption=reply,
                 photo=BufferedReader(
-                    BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+                    BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
                 ),
                 parse_mode=ParseMode.MARKDOWN,
             )
@@ -241,7 +241,7 @@ async def send_price_address(message: Message) -> None:
                 TelegramGroupMember.get_or_none(primary_key=message.from_user.id)
             )
             pancake_swap = PancakeSwap(
-                address=user.bsc.address, key=user.bsc.private_key
+                address=user.bsc.address, key=user.bsc.private_key  # type: ignore
             )
             token = pancake_swap.get_token(address=address)
             price = "${:,}".format(1 / pancake_swap.get_token_price(token=address))
@@ -268,7 +268,7 @@ async def send_price_address(message: Message) -> None:
             chat_id=message.chat.id,
             caption=reply,
             photo=BufferedReader(
-                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
             ),
         )
 
@@ -375,7 +375,7 @@ async def price_alert_callback(alert: CryptoAlert, delay: int) -> None:
         if send:
 
             price = "${:,}".format(price)
-            spot_price = "${:,}".format(spot_price)
+            spot_price = "${:,}".format(spot_price)  # type: ignore
 
             if dip:
                 response = f":( {crypto} has dipped below {price} and is currently at {spot_price}."
@@ -533,11 +533,11 @@ async def send_buy(message: Message) -> None:
             network = trade.network
 
             if network == "BSC":
-                dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+                dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)  # type: ignore
             elif network == "ETH":
-                dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
+                dex = UniSwap(address=user.eth.address, key=user.eth.private_key)  # type: ignore
             else:
-                dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
+                dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
 
             reply = dex.swap_tokens(
                 token=trade.address, amount_to_spend=trade.amount, side=trade.side
@@ -578,11 +578,11 @@ async def send_sell(message: Message) -> None:
             network = trade.network
 
             if network == "BSC":
-                dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+                dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)  # type: ignore
             elif network == "ETH":
-                dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
+                dex = UniSwap(address=user.eth.address, key=user.eth.private_key)  # type: ignore
             else:
-                dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
+                dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
 
             reply = dex.swap_tokens(
                 token=trade.address, amount_to_spend=trade.amount, side=trade.side
@@ -692,7 +692,9 @@ async def send_chart(message: Message):
         symbol, base_coin = pair
         time_frame = chart.time_frame
 
-        coin_ids = coin_gecko.get_coin_ids(symbol) or coin_market_cap.coin_lookup(symbol=symbol)
+        coin_ids = coin_gecko.get_coin_ids(symbol) or coin_market_cap.coin_lookup(
+            symbol=symbol
+        )
         if len(coin_ids) == 1:
             fig = generate_line_chart(
                 coin_gecko=coin_gecko,
@@ -705,7 +707,7 @@ async def send_chart(message: Message):
             logger.info("Exporting line chart as image")
             await message.reply_photo(
                 photo=BufferedReader(
-                    BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+                    BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
                 ),
                 parse_mode=ParseMode.MARKDOWN,
             )
@@ -812,7 +814,7 @@ async def send_candle_chart(message: Message):
                 cp_ohlc = CoinPaprika().get_list_coins()
 
                 for close in cp_ohlc:
-                    if close["symbol"] == symbol:
+                    if close["symbol"] == symbol:  # type: ignore
 
                         # Current datetime in seconds
                         t_now = time.time()
@@ -822,7 +824,7 @@ async def send_candle_chart(message: Message):
                         t_start = t_now - int(time_frame)
 
                         ohlcv = CoinPaprika().get_historical_ohlc(
-                            close["id"],
+                            close["id"],  # type: ignore
                             int(t_start),
                             end=int(t_now),
                             quote=base_coin.lower(),
@@ -913,7 +915,7 @@ async def send_candle_chart(message: Message):
         logger.info("Exporting chart as image")
         await message.reply_photo(
             photo=BufferedReader(
-                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
             ),
             parse_mode=ParseMode.MARKDOWN,
         )
@@ -944,7 +946,7 @@ async def chart_inline_query_handler(
             chat_id=TELEGRAM_CHAT_ID,
             caption=coin_id,
             photo=BufferedReader(
-                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
             ),
         )
 
@@ -1003,11 +1005,11 @@ async def send_balance(message: Message):
     network = Platform(network=message.get_args()).network
 
     if network == "BSC":
-        dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+        dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)  # type: ignore
     elif network == "ETH":
-        dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
+        dex = UniSwap(address=user.eth.address, key=user.eth.private_key)  # type: ignore
     else:
-        dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
+        dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
     account_holdings = await dex.get_account_token_holdings(address=dex.address)
     account_data_frame = DataFrame()
 
@@ -1050,7 +1052,7 @@ async def send_balance(message: Message):
         chat_id=user_id,
         caption=f"{network} Account Balance 💲",
         photo=BufferedReader(
-            BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+            BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
         ),
     )
     await message.reply(text="Replied privately 🤫")
@@ -1067,11 +1069,11 @@ async def send_spy(message: Message):
         coin = Coin(address=address, network=network)
 
         if coin.network == "BSC":
-            dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+            dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)  # type: ignore
         elif coin.network == "ETH":
-            dex = UniSwap(address=user.eth.address, key=user.eth.private_key)
+            dex = UniSwap(address=user.eth.address, key=user.eth.private_key)  # type: ignore
         else:
-            dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)
+            dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
         account_holdings = await dex.get_account_token_holdings(address=coin.address)
 
         for k in account_holdings.keys():
@@ -1114,7 +1116,7 @@ async def send_spy(message: Message):
         chat_id=message.chat.id,
         caption="👀 Super Spy 👀",
         photo=BufferedReader(
-            BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+            BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
         ),
     )
 
@@ -1128,17 +1130,17 @@ async def send_snipe(message: Message):
     user_id = message.from_user.id
     user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
 
-    pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+    pancake_swap = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)  # type: ignore
     asyncio.create_task(
         pancake_swap_sniper(
             chat_id=message.chat.id,
-            token=trade.address,
+            token=trade.address,  # type: ignore
             amount=trade.amount,
             pancake_swap=pancake_swap,
         )
     )
     await message.reply(
-        text=f"🎯 Sniping {trade.address}...", parse_mode=ParseMode.MARKDOWN
+        text=f"🎯 Sniping {trade.address}...", parse_mode=ParseMode.MARKDOWN  # type: ignore
     )
 
 
@@ -1181,7 +1183,7 @@ async def send_active_orders(message: Message) -> None:
     user_id = message.from_user.id
     orders = []
     user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
-    dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)
+    dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)  # type: ignore
 
     for order in Order.get_orders_by_member_id(telegram_group_member_id=user_id):
         token = dex.get_token(address=order.address)
@@ -1203,7 +1205,7 @@ async def send_active_orders(message: Message) -> None:
 
         await message.reply_photo(
             photo=BufferedReader(
-                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))
+                BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
             ),
             caption="Active Limit Orders",
         )

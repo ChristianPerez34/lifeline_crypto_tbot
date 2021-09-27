@@ -1,1 +1,1 @@
-active_orders = {}
+active_orders = {}  # type: ignore

@@ -22,9 +22,9 @@ class Token(BaseModel):
     address: Union[str, AddressLike] = ""
 
     @validator("address")
-    def check_address(cls, value: Union[str, AddressLike]):
-        if re.match(r"^0x\w+", value) is None:
-            raise ValueError(f"'{value}' is not a valid contract address")
+    def check_address(cls, value: AddressLike):
+        if re.match(r"^0x\w+", value) is None:  # type: ignore
+            raise ValueError(f"'{value}' is not a valid contract address")  # type: ignore
         return Web3.toChecksumAddress(value)
 
 
@@ -53,7 +53,7 @@ class TokenAlert(BaseModel):
     id: Optional[int]
     symbol: str = ""
     sign: str = ""
-    price: Decimal = 0.0
+    price: Decimal = Decimal(0)
 
     _validate_price = validator("price", allow_reuse=True)(is_positive_number)
 

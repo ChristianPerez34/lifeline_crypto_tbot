@@ -53,7 +53,7 @@ class BinanceSmartChain(ERC20Like):
             }
         }
         url = (
-            f"https://api.bscscan.com/api?module=account&action=tokentx&address={address}&sort=desc&"
+            f"https://api.bscscan.com/api?module=account&action=tokentx&address={address}&sort=desc&"  # type: ignore
             f"apikey={BSCSCAN_API_KEY}"
         )
 
@@ -114,7 +114,7 @@ class PancakeSwap(BinanceSmartChain):
     def swap_tokens(
         self,
         token: str,
-        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        amount_to_spend: Union[int, float, Decimal] = 0,
         side: str = BUY,
         is_snipe: bool = False,
     ) -> str:
@@ -161,7 +161,7 @@ class PancakeSwap(BinanceSmartChain):
                     )
                 else:
                     amount_to_spend = self.get_token_balance(
-                        address=self.address, token=token
+                        address=self.address, token=token  # type: ignore
                     )
                     route = [token, CONTRACT_ADDRESSES["WBNB"]]
                     args = (contract, route, amount_to_spend, gas_price)
@@ -169,7 +169,7 @@ class PancakeSwap(BinanceSmartChain):
                         self._swap_exact_tokens_for_eth,
                         self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
                     ]
-                    balance = self.get_token_balance(address=self.address, token=token)
+                    balance = self.get_token_balance(address=self.address, token=token)  # type: ignore
                     self._check_approval(
                         contract=token_contract,
                         token=token,
@@ -177,7 +177,7 @@ class PancakeSwap(BinanceSmartChain):
                     )
 
                 if balance < amount_to_spend:
-                    raise InsufficientBalance(had=balance, needed=amount_to_spend)
+                    raise InsufficientBalance(had=balance, needed=int(amount_to_spend))
 
                 for swap_method in swap_methods:
                     try:
@@ -201,7 +201,7 @@ class PancakeSwap(BinanceSmartChain):
                 self._check_approval(
                     contract=token_contract,
                     token=token,
-                    balance=self.get_token_balance(address=self.address, token=token),
+                    balance=self.get_token_balance(address=self.address, token=token),  # type: ignore
                 )
             except InsufficientBalance as e:
                 logger.exception(e)

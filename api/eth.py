@@ -211,7 +211,7 @@ class ERC20Like:
         time.sleep(10)
 
     def _check_approval(
-        self, contract: Contract, token: AddressLike, balance: Wei = 0
+        self, contract: Contract, token: AddressLike, balance: Wei = 0  # type: ignore
     ) -> None:
         """
         Validates token is approved for swapping. If not, approves token for swapping.
@@ -343,7 +343,7 @@ class UniSwap(EthereumChain):
     def swap_tokens(
         self,
         token: str,
-        amount_to_spend: Union[int, float, str, Decimal] = 0,
+        amount_to_spend: Union[int, float, Decimal] = 0,
         side: str = BUY,
         is_snipe: bool = False,
     ) -> str:
@@ -394,7 +394,7 @@ class UniSwap(EthereumChain):
                     )
                 else:
                     amount_to_spend = self.get_token_balance(
-                        address=self.address, token=token
+                        address=self.address, token=token  # type: ignore
                     )
                     route = [token, CONTRACT_ADDRESSES["WETH"]]
                     args = (contract, route, amount_to_spend, gas_price)
@@ -402,19 +402,19 @@ class UniSwap(EthereumChain):
                         self._swap_exact_tokens_for_eth,
                         self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
                     ]
-                    balance = self.get_token_balance(address=self.address, token=token)
+                    balance = self.get_token_balance(address=self.address, token=token)  # type: ignore
                     self._check_approval(
                         contract=token_contract,
-                        token=token,
+                        token=token,  # type: ignore
                         balance=balance,
                     )
 
                 if balance < amount_to_spend:
-                    raise InsufficientBalance(had=balance, needed=amount_to_spend)
+                    raise InsufficientBalance(had=balance, needed=amount_to_spend)  # type: ignore
 
                 for swap_method in swap_methods:
                     try:
-                        txn = swap_method(*args)
+                        txn = swap_method(*args)  # type: ignore
                         break
                     except ContractLogicError as e:
                         logger.exception(e)
@@ -432,8 +432,8 @@ class UniSwap(EthereumChain):
                 # Pre-approve token for future swaps
                 self._check_approval(
                     contract=token_contract,
-                    token=token,
-                    balance=self.get_token_balance(address=self.address, token=token),
+                    token=token,  # type: ignore
+                    balance=self.get_token_balance(address=self.address, token=token),  # type: ignore
                 )
             except InsufficientBalance as e:
                 logger.exception(e)
