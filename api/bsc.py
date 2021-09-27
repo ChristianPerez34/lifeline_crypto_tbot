@@ -58,7 +58,7 @@ class BinanceSmartChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         bep20_transfers = data["result"]
@@ -112,11 +112,11 @@ class PancakeSwap(BinanceSmartChain):
         )
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -234,7 +234,7 @@ class PancakeSwap(BinanceSmartChain):
         )
 
     def get_token_pair_address(
-            self, token_0: AddressLike, token_1: AddressLike = CONTRACT_ADDRESSES["WBNB"]
+        self, token_0: AddressLike, token_1: AddressLike = CONTRACT_ADDRESSES["WBNB"]
     ) -> str:
         """
         Retrieves token pair address
