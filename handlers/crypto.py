@@ -76,19 +76,21 @@ def get_coin_explorers(platforms: dict, links: dict) -> list:
     ]
 
     for chain, address in platforms.items():
-        explorer = ''
+        explorer = ""
 
-        if 'ethereum' in chain:
+        if "ethereum" in chain:
             address = Web3.toChecksumAddress(address)
             explorer = f"[etherscan](https://etherscan.io/token/{address})"
-        elif 'binance' in chain:
+        elif "binance" in chain:
             address = Web3.toChecksumAddress(address)
             explorer = f"[bscscan](https://bscscan.com/token/{address})"
-        elif 'polygon' in chain:
+        elif "polygon" in chain:
             address = Web3.toChecksumAddress(address)
             explorer = f"[polygonscan](https://polygonscan.com/token/{address})"
-        elif 'solana' in chain:
-            explorer = f"[explorer.solana](https://explorer.solana.com/address/{address})"
+        elif "solana" in chain:
+            explorer = (
+                f"[explorer.solana](https://explorer.solana.com/address/{address})"
+            )
 
         if explorer and explorer not in explorers:
             explorers.append(explorer)
@@ -117,7 +119,7 @@ def get_coin_stats(symbol: str) -> list:
             data = coin_gecko.coin_lookup(ids=coin_id)
             market_data = data["market_data"]
             links = data["links"]
-            platforms = data['platforms']
+            platforms = data["platforms"]
             explorers = get_coin_explorers(platforms=platforms, links=links)
             coin_stats = {
                 "token_name": data["name"],
@@ -436,7 +438,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -455,7 +457,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-                "https://coinmarketcap.com/new/", headers=HEADERS
+            "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -484,9 +486,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-                user.kucoin_api_key
-                and user.kucoin_api_secret
-                and user.kucoin_api_passphrase
+            user.kucoin_api_key
+            and user.kucoin_api_secret
+            and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -510,8 +512,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                                position_order["stopPriceType"] == "TP"
-                                and position_order["stop"] == "up"
+                            position_order["stopPriceType"] == "TP"
+                            and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -524,7 +526,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                           or (entry > mark_price and unrealized_pnl < 0)
+                        or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -640,7 +642,7 @@ async def send_sell(message: Message) -> None:
 
 
 def generate_line_chart(
-        coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
+    coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
 ) -> go.Figure:
     logger.info("Creating line chart layout")
     market = coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
@@ -958,7 +960,7 @@ async def send_candle_chart(message: Message):
 
 
 async def chart_inline_query_handler(
-        query: CallbackQuery, callback_data: Dict[str, str]
+    query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.answer()
     chart_type = callback_data["chart_type"]
