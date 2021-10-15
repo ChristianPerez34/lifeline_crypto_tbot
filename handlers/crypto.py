@@ -26,6 +26,7 @@ from inflection import titleize, humanize
 from pandas import DataFrame, read_html, to_datetime
 from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException, HTTPError
+from web3 import Web3
 from web3.exceptions import ContractLogicError, BadFunctionCallOutput
 
 from api.bsc import PancakeSwap
@@ -58,6 +59,44 @@ from utils import all_same
 from . import ether_scan
 
 
+def get_coin_explorers(platforms: dict, links: dict) -> list:
+    """
+    Locates token explorers and stores them in a list
+    Args:
+        platforms (dict): Chains where token is available
+        links (dict): Blockchain sites
+
+    Returns (list): List of all available explorers
+
+    """
+    explorers = [
+        f"[{urlparse(link).hostname.split('.')[0]}]({link})"
+        for link in links["blockchain_site"]
+        if link
+    ]
+
+    for chain, address in platforms.items():
+        explorer = ""
+
+        if "ethereum" in chain:
+            address = Web3.toChecksumAddress(address)
+            explorer = f"[etherscan](https://etherscan.io/token/{address})"
+        elif "binance" in chain:
+            address = Web3.toChecksumAddress(address)
+            explorer = f"[bscscan](https://bscscan.com/token/{address})"
+        elif "polygon" in chain:
+            address = Web3.toChecksumAddress(address)
+            explorer = f"[polygonscan](https://polygonscan.com/token/{address})"
+        elif "solana" in chain:
+            explorer = (
+                f"[explorer.solana](https://explorer.solana.com/address/{address})"
+            )
+
+        if explorer and explorer not in explorers:
+            explorers.append(explorer)
+    return explorers
+
+
 def get_coin_stats(symbol: str) -> list:
     """Retrieves coin stats from connected services crypto services
 
@@ -76,17 +115,16 @@ def get_coin_stats(symbol: str) -> list:
         coin_ids = coin_gecko.get_coin_ids(symbol=symbol)
 
         for coin_id in coin_ids:
+            explorers = []
             data = coin_gecko.coin_lookup(ids=coin_id)
             market_data = data["market_data"]
             links = data["links"]
+            platforms = data["platforms"]
+            explorers = get_coin_explorers(platforms=platforms, links=links)
             coin_stats = {
                 "token_name": data["name"],
                 "website": links["homepage"][0],
-                "explorers": [
-                    f"[{urlparse(link).hostname.split('.')[0]}]({link})"
-                    for link in links["blockchain_site"]
-                    if link
-                ],
+                "explorers": explorers,
                 "price": "${:,}".format(float(market_data["current_price"]["usd"])),
                 "ath": "${:,}".format(float(market_data["ath"]["usd"])),
                 "24h_change": f"{market_data['price_change_percentage_24h']}%",
