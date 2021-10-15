@@ -88,6 +88,8 @@ class CoinGecko:
             for coin in coins:
                 coin_id = coin["id"]
                 coin_ids.append(coin_id)
-                coingecko_coin_lookup_cache[symbol] = coin_id
+
+            if len(coin_ids) == 1:
+                coingecko_coin_lookup_cache[symbol] = coin_ids[0]
 
         return coin_ids
