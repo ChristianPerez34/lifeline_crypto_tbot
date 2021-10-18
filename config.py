@@ -89,3 +89,6 @@ KUCOIN_TASK_NAME = "KUCOIN_BOT"
 
 # CoinMarketCap settings
 COIN_MARKET_CAP_API_KEY = os.getenv("COIN_MARKET_CAP_API_KEY")
+
+# NGROK Settings
+NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")

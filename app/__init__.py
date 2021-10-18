@@ -6,7 +6,12 @@ from aiogram.utils.callback_data import CallbackData
 
 from config import TELEGRAM_BOT_API_KEY
 
-log_file = str(Path.home().joinpath("logs/lifeline_crypto_tbot.log"))
+log_folder = Path.home().joinpath("logs")
+Path(log_folder).mkdir(parents=True, exist_ok=True)
+log_file = log_folder.joinpath("lifeline_crypto_tbot.log")
+
+if not log_file.exists():
+    open(log_file, "w").close()
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
