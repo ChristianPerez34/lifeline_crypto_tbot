@@ -6,9 +6,27 @@ from app import dp, bot, chart_cb
 from config import NGROK_AUTH_TOKEN, TELEGRAM_BOT_API_KEY, TELEGRAM_CHAT_ID
 from handlers import init_database
 from handlers.base import send_welcome, send_greeting, send_message
-from handlers.crypto import send_price, send_gas, send_price_address, send_trending, send_chart, send_candle_chart, \
-    send_price_alert, send_latest_listings, send_restart_kucoin_bot, send_buy, send_balance, chart_inline_query_handler, \
-    kucoin_inline_query_handler, send_sell, send_spy, send_snipe, send_limit_swap, send_active_orders, send_cancel_order
+from handlers.crypto import (
+    send_price,
+    send_gas,
+    send_price_address,
+    send_trending,
+    send_chart,
+    send_candle_chart,
+    send_price_alert,
+    send_latest_listings,
+    send_restart_kucoin_bot,
+    send_buy,
+    send_balance,
+    chart_inline_query_handler,
+    kucoin_inline_query_handler,
+    send_sell,
+    send_spy,
+    send_snipe,
+    send_limit_swap,
+    send_active_orders,
+    send_cancel_order,
+)
 from handlers.error import send_error
 from handlers.user import send_register
 
@@ -26,9 +44,7 @@ async def on_startup():
 
     webhook_info = await bot.get_webhook_info()
     if webhook_info.url != WEBHOOK_URL:
-        await bot.set_webhook(
-            url=WEBHOOK_URL
-        )
+        await bot.set_webhook(url=WEBHOOK_URL)
     setup_handlers(dp)
     await send_message(channel_id=TELEGRAM_CHAT_ID, message="Up and running! 👾")
 
