@@ -1,9 +1,5 @@
-import os
-
 from fastapi import FastAPI
 
-print(os.getcwd())
-print(os.listdir())
 from app.routers.webhook import router
 
 app = FastAPI()
