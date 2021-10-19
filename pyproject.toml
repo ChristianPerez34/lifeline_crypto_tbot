@@ -20,7 +20,6 @@ emoji = "^1.2.0"
 kucoin-futures-python = "^1.0.3"
 cryptography = "^3.4.7"
 web3 = "^5.19.0"
-uniswap-python = { git = "https://github.com/uniswap-python/uniswap-python.git" }
 plotly = "^4.14.3"
 psutil = "^5.8.0"
 kaleido = [{ version = "<=0.2.1", platform = "win32" }, { version = "0.2.1.post1", platform = "linux" }]
@@ -33,6 +32,7 @@ fastapi = "^0.70.0"
 uvicorn = "^0.15.0"
 pyngrok = "^5.1.0"
 bs4 = "^0.0.1"
+uniswap-python = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b0"
