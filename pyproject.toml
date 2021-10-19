@@ -23,7 +23,7 @@ web3 = "^5.19.0"
 uniswap-python = { git = "https://github.com/uniswap-python/uniswap-python.git" }
 plotly = "^4.14.3"
 psutil = "^5.8.0"
-kaleido = [{ version = "<=0.2.1", platform = "win32" }, { version = ">0.2", platform = "linux" }]
+kaleido = [{ version = "<=0.2.1", platform = "win32" }, { version = ">0.2", platform = "linux2" }]
 pydantic = "^1.8.2"
 toml = "^0.10.2"
 pony = "^0.7.14"
