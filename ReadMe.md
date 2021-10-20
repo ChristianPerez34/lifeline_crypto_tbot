@@ -67,13 +67,20 @@ KUCOIN_API_KEY
 KUCOIN_API_SECRET
 KUCOIN_API_PASSPHRASE
 
+# NGROK settings
+NGROK_AUTH_TOKEN
+
+# PGADMIN service settings
+PGADMIN_EMAIL
+PGADMIN_PASSWORD
+
 ```
 
 ### Running The Bot
 
 ```shell
 # Ensure current working directory is project root
-poetry run python app/lifeline_crypto_tbot.py
+docker-compose up -d
 ```
 
 
