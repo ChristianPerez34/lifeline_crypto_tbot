@@ -362,15 +362,14 @@ async def send_price_alert(message: Message) -> None:
         alert = TokenAlert(
             symbol=args[0].upper(), sign=args[1], price=args[2].replace(",", "")
         )
+
         crypto = alert.symbol
         price = alert.price
 
         coin_stats = get_coin_stats(symbol=crypto)[0]
-
-        crypto_alert = CryptoAlert.create(data=alert.dict())
-
-        asyncio.create_task(price_alert_callback(alert=crypto_alert, delay=15))
+        CryptoAlert.create(data=alert.dict())
         target_price = "${:,}".format(price.quantize(Decimal("0.01")))
+
         current_price = coin_stats["price"]
         reply = f"⏳ I will send you a message when the price of {crypto} reaches {target_price}\n"
         reply += f"The current price of {crypto} is {current_price}"
@@ -383,47 +382,6 @@ async def send_price_alert(message: Message) -> None:
         reply = f"⚠️ {error_message}"
     await message.reply(text=reply)
 
-
-async def price_alert_callback(alert: CryptoAlert, delay: int) -> None:
-    """Repetitive task that continues monitoring market for alerted coin mark price until alert is displayed
-
-    Args:
-        alert (CryptoAlert): CryptoAlert model
-        delay (int): Interval of time to wait in seconds
-    """
-    crypto = alert.symbol
-    sign = alert.sign
-    price = alert.price
-
-    send = False
-    dip = False
-
-    while not send:
-        coin_stats = get_coin_stats(symbol=crypto)[0]
-
-        spot_price = Decimal(coin_stats["price"].replace("$", "").replace(",", ""))
-
-        if sign == "<":
-            if price >= spot_price:
-                send = True
-                dip = True
-        elif price <= spot_price:
-            send = True
-
-        if send:
-
-            price = "${:,}".format(price)
-            spot_price = "${:,}".format(spot_price)  # type: ignore
-
-            if dip:
-                response = f":( {crypto} has dipped below {price} and is currently at {spot_price}."
-            else:
-                response = f"👋 {crypto} has surpassed {price} and has just reached {spot_price}!"
-
-            alert.remove()
-            await send_message(channel_id=TELEGRAM_CHAT_ID, message=response)
-
-        await asyncio.sleep(delay)
 
 
 async def send_latest_listings(message: Message) -> None:

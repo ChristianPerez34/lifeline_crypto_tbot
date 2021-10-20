@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import types, Dispatcher, Bot
 from fastapi import APIRouter
 from pyngrok import ngrok
@@ -29,6 +31,7 @@ from handlers.crypto import (
 )
 from handlers.error import send_error
 from handlers.user import send_register
+from services.alerts import price_alert_callback
 
 router = APIRouter()
 
@@ -46,6 +49,7 @@ async def on_startup():
     if webhook_info.url != WEBHOOK_URL:
         await bot.set_webhook(url=WEBHOOK_URL)
     setup_handlers(dp)
+    asyncio.create_task(price_alert_callback(delay=15))
     await send_message(channel_id=TELEGRAM_CHAT_ID, message="Up and running! 👾")
 
 
