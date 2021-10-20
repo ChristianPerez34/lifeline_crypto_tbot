@@ -383,7 +383,6 @@ async def send_price_alert(message: Message) -> None:
     await message.reply(text=reply)
 
 
-
 async def send_latest_listings(message: Message) -> None:
     """Replies to command with latest crypto listings
 
