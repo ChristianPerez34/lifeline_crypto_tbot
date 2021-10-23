@@ -68,7 +68,10 @@ module = [
     "dotenv",
     "fastapi",
     "app.*",
-    "pyngrok"
+    "pyngrok",
+    "aioetherscan",
+    "ethereum_gasprice.*",
+    "aiocoingecko"
 ]
 ignore_missing_imports = true
 

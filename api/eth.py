@@ -40,6 +40,7 @@ class ERC20Like:
         self.fernet = None
         self.web3 = None
         self.address = None
+        self.router_address = None
 
     @staticmethod
     def get_decimal_representation(quantity: Wei, decimals: int) -> Decimal:
