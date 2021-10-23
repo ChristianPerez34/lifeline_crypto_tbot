@@ -4,6 +4,7 @@ from ethereum_gasprice.providers import EtherscanProvider
 from lru import LRU
 
 from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_USER, ETHERSCAN_API_KEY
+
 # Enable logging
 from models import db
 

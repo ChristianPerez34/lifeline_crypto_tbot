@@ -55,7 +55,9 @@ class CoinGecko:
             trending_coins = await cg.get_search_trending()
         return trending_coins["coins"]
 
-    async def coin_market_lookup(self, ids: str, time_frame: int, base_coin: str) -> dict:
+    async def coin_market_lookup(
+        self, ids: str, time_frame: int, base_coin: str
+    ) -> dict:
         """Coin lookup in CoinGecko API for Market Chart
 
         Args:

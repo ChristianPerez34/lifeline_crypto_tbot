@@ -35,7 +35,10 @@ def token_has_liquidity(token, pancake_swap) -> bool:
 
 
 async def pancake_swap_sniper(
-        chat_id: int, token: Union[Address, ChecksumAddress, str], amount: Decimal, pancake_swap: PancakeSwap
+    chat_id: int,
+    token: Union[Address, ChecksumAddress, str],
+    amount: Decimal,
+    pancake_swap: PancakeSwap,
 ) -> None:
     """
     Snipes token on PancakeSwap
