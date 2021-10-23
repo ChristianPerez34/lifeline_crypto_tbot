@@ -719,7 +719,7 @@ async def send_chart(message: Message):
             symbol=symbol
         )
         if len(coin_ids) == 1:
-            fig = generate_line_chart(
+            fig = await generate_line_chart(
                 coin_gecko=coin_gecko,
                 coin_id=coin_ids[0],
                 symbol=symbol,
@@ -957,7 +957,7 @@ async def chart_inline_query_handler(
         symbol = callback_data["symbol"]
         time_frame = int(callback_data["time_frame"])
         base_coin = callback_data["base_coin"]
-        fig = generate_line_chart(
+        fig = await generate_line_chart(
             coin_gecko=coin_gecko,
             coin_id=coin_id,
             symbol=symbol,
