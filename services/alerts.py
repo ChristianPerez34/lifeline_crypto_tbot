@@ -49,7 +49,7 @@ async def price_alert_callback(delay: int) -> None:
                 alert.remove()
                 await send_message(channel_id=TELEGRAM_CHAT_ID, message=response)
                 await asyncio.sleep(2)
-        await asyncio.sleep(60)
+        await asyncio.sleep(delay)
 
 # if __name__ == '__main__':
 #     loop = asyncio.get_event_loop()

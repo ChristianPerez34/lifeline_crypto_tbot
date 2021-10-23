@@ -47,7 +47,7 @@ async def on_startup():
     if webhook_info.url != WEBHOOK_URL:
         await bot.set_webhook(url=WEBHOOK_URL)
     setup_handlers(dp)
-    asyncio.create_task(price_alert_callback(delay=15))
+    asyncio.create_task(price_alert_callback(delay=60))
     await send_message(channel_id=TELEGRAM_CHAT_ID, message="Up and running! 👾")
 
 

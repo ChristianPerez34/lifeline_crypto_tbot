@@ -426,7 +426,7 @@ class UniSwap(EthereumChain):
                     )
 
                 if balance < amount_to_spend:
-                    raise InsufficientBalance(had=balance, needed=amount_to_spend)  # type: ignore
+                    raise ValueError(f"Insufficient balance. Had {balance}, needed {amount_to_spend}")  # type: ignore
 
                 for swap_method in swap_methods:
                     try:
