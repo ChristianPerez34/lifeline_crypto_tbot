@@ -630,7 +630,7 @@ def generate_line_chart(
     coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
 ) -> go.Figure:
     logger.info("Creating line chart layout")
-    market = coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
+    market = await coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
 
     # Volume
     df_volume = DataFrame(market["total_volumes"], columns=["DateTime", "Volume"])
