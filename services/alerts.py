@@ -25,7 +25,11 @@ async def price_alert_callback(delay: int) -> None:
             send = False
             dip = False
 
-            coin_stats = [coin for coin in await get_coin_stats(symbol=crypto) if coin["token_name"] == token_name][0]
+            coin_stats = [
+                coin
+                for coin in await get_coin_stats(symbol=crypto)
+                if coin["token_name"] == token_name
+            ][0]
 
             spot_price = Decimal(coin_stats["price"].replace("$", "").replace(",", ""))
 
