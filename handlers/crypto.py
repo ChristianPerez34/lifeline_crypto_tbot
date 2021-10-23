@@ -626,8 +626,8 @@ async def send_sell(message: Message) -> None:
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
-def generate_line_chart(
-    coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
+async def generate_line_chart(
+        coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
 ) -> go.Figure:
     logger.info("Creating line chart layout")
     market = await coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
