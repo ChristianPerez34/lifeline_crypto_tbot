@@ -4,8 +4,8 @@ from aiogram import types, Dispatcher, Bot
 from fastapi import APIRouter
 from pyngrok import ngrok
 
-from app import dp, bot, chart_cb
-from config import NGROK_AUTH_TOKEN, TELEGRAM_BOT_API_KEY, TELEGRAM_CHAT_ID
+from app import dp, bot, chart_cb, alert_cb
+from config import NGROK_AUTH_TOKEN, TELEGRAM_CHAT_ID, WEBHOOK_PATH
 from handlers import init_database
 from handlers.base import send_welcome, send_greeting, send_message
 from handlers.crypto import (
@@ -25,9 +25,8 @@ from handlers.crypto import (
     send_sell,
     send_spy,
     send_snipe,
-    send_limit_swap,
     send_active_orders,
-    send_cancel_order,
+    send_cancel_order, alert_inline_query_handler,
 )
 from handlers.error import send_error
 from handlers.user import send_register
@@ -35,7 +34,6 @@ from services.alerts import price_alert_callback
 
 router = APIRouter()
 
-WEBHOOK_PATH = f"/bot/{TELEGRAM_BOT_API_KEY}"
 ngrok.set_auth_token(NGROK_AUTH_TOKEN)
 https_tunnel = ngrok.connect(addr=8000, bind_tls=True)
 WEBHOOK_URL = f"{https_tunnel.public_url}{WEBHOOK_PATH}"
@@ -66,6 +64,12 @@ async def bot_webhook(update: dict):
     await dp.process_update(telegram_update)
 
 
+# @router.post("/webhook/price_alert", tags=["webhooks"], status_code=201)
+# async def price_alert(data: dict):
+#     await send_message(channel_id=TELEGRAM_CHAT_ID, message=data['msg'])
+#     return {"msg": "ok"}
+
+
 def setup_handlers(dispatcher: Dispatcher) -> None:
     """Registers handlers
 
@@ -92,11 +96,14 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_callback_query_handler(
         chart_inline_query_handler, chart_cb.filter(chart_type=["line", "candle"])
     )
+    dispatcher.register_callback_query_handler(
+        alert_inline_query_handler, alert_cb.filter(alert_type=["price"])
+    )
     dispatcher.register_callback_query_handler(kucoin_inline_query_handler)
     dispatcher.register_message_handler(send_sell, commands=["sell"])
     dispatcher.register_message_handler(send_spy, commands=["spy"])
     dispatcher.register_message_handler(send_snipe, commands=["snipe"])
-    dispatcher.register_message_handler(send_limit_swap, commands=["limit"])
+    # dispatcher.register_message_handler(send_limit_swap, commands=["limit"])
     dispatcher.register_message_handler(send_active_orders, commands=["active_orders"])
     dispatcher.register_message_handler(send_cancel_order, commands=["cancel_order"])
 

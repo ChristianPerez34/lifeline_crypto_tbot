@@ -5,8 +5,8 @@ from typing import Optional, Union
 
 from pydantic import BaseModel
 from pydantic.class_validators import root_validator, validator
-from uniswap.types import AddressLike
 from web3 import Web3
+from web3.types import Address, ChecksumAddress
 
 from config import BUY, SELL, STOP
 from models import TelegramGroupMember
@@ -19,10 +19,12 @@ def is_positive_number(value: Real):
 
 
 class Token(BaseModel):
-    address: Union[str, AddressLike] = ""
+    address: Union[Address, ChecksumAddress, str] = ""
 
     @validator("address")
-    def check_address(cls, value: AddressLike):
+    def check_address(cls, value: Union[Address, ChecksumAddress, str]):
+        if isinstance(value, bytes):
+            value = value.decode()
         if re.match(r"^0x\w+", value) is None:  # type: ignore
             raise ValueError(f"'{value}' is not a valid contract address")  # type: ignore
         return Web3.toChecksumAddress(value)

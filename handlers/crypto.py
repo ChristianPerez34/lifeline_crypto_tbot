@@ -37,7 +37,7 @@ from api.cryptocompare import CryptoCompare
 from api.eth import UniSwap
 from api.kucoin import KucoinApi
 from api.matic import QuickSwap
-from app import bot, logger, chart_cb
+from app import bot, logger, chart_cb, alert_cb
 from bot import active_orders
 from bot.bsc_order import limit_order_executor
 from bot.bsc_sniper import pancake_swap_sniper
@@ -56,7 +56,7 @@ from schemas import (
     Platform,
 )
 from utils import all_same
-from . import ether_scan
+from . import gas_tracker
 
 
 def get_coin_explorers(platforms: dict, links: dict) -> list:
@@ -97,7 +97,7 @@ def get_coin_explorers(platforms: dict, links: dict) -> list:
     return explorers
 
 
-def get_coin_stats(symbol: str) -> list:
+async def get_coin_stats(symbol: str) -> list:
     """Retrieves coin stats from connected services crypto services
 
     Args:
@@ -112,11 +112,11 @@ def get_coin_stats(symbol: str) -> list:
     coin_gecko = CoinGecko()
     coin_market_cap = CoinMarketCap()
     try:
-        coin_ids = coin_gecko.get_coin_ids(symbol=symbol)
+        coin_ids = await coin_gecko.get_coin_ids(symbol=symbol)
 
         for coin_id in coin_ids:
             explorers = []
-            data = coin_gecko.coin_lookup(ids=coin_id)
+            data = await coin_gecko.coin_lookup(ids=coin_id)
             market_data = data["market_data"]
             links = data["links"]
             platforms = data["platforms"]
@@ -202,7 +202,7 @@ async def send_price(message: Message) -> None:
     try:
         coin = Coin(symbol=args[0].upper())
         symbol = coin.symbol
-        coin_stats_list = get_coin_stats(symbol=symbol)
+        coin_stats_list = await get_coin_stats(symbol=symbol)
         for coin_stats in coin_stats_list:
             explorers = "\n".join(coin_stats["explorers"])
             reply += (
@@ -250,12 +250,12 @@ async def send_gas(message: Message) -> None:
         message (Message): Message to reply to
     """
     logger.info("ETH gas price command executed")
-    gas_price = ether_scan.get_gas_oracle()
+    gas_price = await gas_tracker.get_gasprices()
     reply = (
         "ETH Gas Prices ⛽️\n"
-        f"Slow: {gas_price['SafeGasPrice']}\n"
-        f"Average: {gas_price['ProposeGasPrice']}\n"
-        f"Fast: {gas_price['FastGasPrice']}\n"
+        f"Slow: {Web3.fromWei(gas_price['regular'], 'gwei')}\n"
+        f"Average: {Web3.fromWei(gas_price['fast'], 'gwei')}\n"
+        f"Fast: {Web3.fromWei(gas_price['fastest'], 'gwei')}\n"
     )
     await message.reply(text=reply)
 
@@ -334,7 +334,7 @@ async def send_trending(message: Message) -> None:
     coin_market_cap = CoinMarketCap()
     coin_gecko_trending_coins = "\n".join(
         f"{coin['item']['name']} ({coin['item']['symbol']})"
-        for coin in coin_gecko.get_trending_coins()
+        for coin in await coin_gecko.get_trending_coins()
     )
 
     coin_market_cap_trending_coins = "\n".join(
@@ -366,21 +366,47 @@ async def send_price_alert(message: Message) -> None:
         crypto = alert.symbol
         price = alert.price
 
-        coin_stats = get_coin_stats(symbol=crypto)[0]
-        CryptoAlert.create(data=alert.dict())
-        target_price = "${:,}".format(price.quantize(Decimal("0.01")))
+        coin_stats = await get_coin_stats(symbol=crypto)
 
-        current_price = coin_stats["price"]
-        reply = f"⏳ I will send you a message when the price of {crypto} reaches {target_price}\n"
-        reply += f"The current price of {crypto} is {current_price}"
+        if len(coin_stats) == 1:
+            coin_stats = coin_stats[0]
+            CryptoAlert.create(data=alert.dict())
+            target_price = "${:,}".format(price.quantize(Decimal("0.01")))
+
+            current_price = coin_stats["price"]
+            reply = f"⏳ I will send you a message when the price of {crypto} reaches {target_price}\n"
+            reply += f"The current price of {crypto} is {current_price}"
+            await message.reply(text=reply)
+        else:
+            keyboard_markup = InlineKeyboardMarkup()
+            for stats in coin_stats:
+                keyboard_markup.row(
+                    InlineKeyboardButton(
+                        stats["token_name"],
+                        callback_data=alert_cb.new(
+                            alert_type="price",
+                            symbol=crypto,
+                            sign=alert.sign,
+                            target_price=price,
+                        ),
+
+                    )
+                )
+
+            await message.reply(
+                text="Choose token to create alert",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=keyboard_markup,
+            )
     except IndexError as e:
         logger.exception(e)
         reply = "⚠️ Please provide a crypto code and a price value: /alert [COIN] [<,>] [PRICE]"
+        await message.reply(text=reply)
     except ValidationError as e:
         logger.exception(e)
         error_message = e.args[0][0].exc
         reply = f"⚠️ {error_message}"
-    await message.reply(text=reply)
+        await message.reply(text=reply)
 
 
 async def send_latest_listings(message: Message) -> None:
@@ -395,7 +421,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -414,7 +440,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-            "https://coinmarketcap.com/new/", headers=HEADERS
+                "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -443,9 +469,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-            user.kucoin_api_key
-            and user.kucoin_api_secret
-            and user.kucoin_api_passphrase
+                user.kucoin_api_key
+                and user.kucoin_api_secret
+                and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -469,8 +495,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                            position_order["stopPriceType"] == "TP"
-                            and position_order["stop"] == "up"
+                                position_order["stopPriceType"] == "TP"
+                                and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -483,7 +509,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                        or (entry > mark_price and unrealized_pnl < 0)
+                           or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -599,7 +625,7 @@ async def send_sell(message: Message) -> None:
 
 
 def generate_line_chart(
-    coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
+        coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
 ) -> go.Figure:
     logger.info("Creating line chart layout")
     market = coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
@@ -917,9 +943,10 @@ async def send_candle_chart(message: Message):
 
 
 async def chart_inline_query_handler(
-    query: CallbackQuery, callback_data: Dict[str, str]
+        query: CallbackQuery, callback_data: Dict[str, str]
 ):
-    await query.answer()
+    await query.message.delete_reply_markup()
+    await query.answer("Generating chart")
     chart_type = callback_data["chart_type"]
 
     if chart_type == "line":
@@ -944,6 +971,21 @@ async def chart_inline_query_handler(
                 BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
             ),
         )
+
+
+async def alert_inline_query_handler(
+        query: CallbackQuery, callback_data: Dict[str, str]
+):
+    await query.message.delete_reply_markup()
+    await query.answer("Creating alert!")
+
+    alert = TokenAlert(
+        symbol=callback_data["symbol"], sign=callback_data["sign"], price=callback_data["target_price"]
+    )
+    CryptoAlert.create(data=alert.dict())
+    target_price = "${:,}".format(alert.price.quantize(Decimal("0.01")))
+    reply = f"⏳ I will send you a message when the price of {alert.symbol} reaches {target_price}\n"
+    await query.message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
 async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
@@ -1005,6 +1047,7 @@ async def send_balance(message: Message):
         dex = UniSwap(address=user.eth.address, key=user.eth.private_key)  # type: ignore
     else:
         dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
+
     account_holdings = await dex.get_account_token_holdings(address=dex.address)
     account_data_frame = DataFrame()
 

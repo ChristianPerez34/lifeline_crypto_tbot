@@ -5,23 +5,14 @@ import aiohttp
 import requests
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
-from uniswap import Uniswap
-from uniswap.exceptions import InsufficientBalance
-from uniswap.types import AddressLike
 from web3 import Web3
 from web3.exceptions import ContractLogicError
-from web3.types import Wei
+from web3.types import Wei, Address, ChecksumAddress
 
 from api.eth import ERC20Like
 from app import logger
 from config import FERNET_KEY, POLYGONSCAN_API_KEY, HEADERS, BUY
 
-QUICK_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
-    "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
-)
-QUICK_SWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
-    "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
-)
 CONTRACT_ADDRESSES = {
     "MATIC": Web3.toChecksumAddress("0x0000000000000000000000000000000000000000"),
     "WMATIC": Web3.toChecksumAddress("0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"),
@@ -47,8 +38,14 @@ class PolygonChain(ERC20Like):
         self.web3 = Web3(
             Web3.HTTPProvider(MATIC_CHAIN_URL, request_kwargs={"timeout": 60})
         )
+        self.factory_address = self.web3.toChecksumAddress(
+            "0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32"
+        )
+        self.router_address = self.web3.toChecksumAddress(
+            "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
+        )
 
-    async def get_account_token_holdings(self, address: AddressLike) -> dict:
+    async def get_account_token_holdings(self, address: Union[Address, ChecksumAddress, str]) -> dict:
         """
         Retrieves account holding for wallet address
         Args:
@@ -71,7 +68,7 @@ class PolygonChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-            url, headers=HEADERS
+                url, headers=HEADERS
         ) as response:
             data = await response.json()
         erc20_transfers = data["result"]
@@ -89,7 +86,8 @@ class PolygonChain(ERC20Like):
             )
         return account_holdings
 
-    def get_token_balance(self, address: AddressLike, token: AddressLike) -> Wei:
+    def get_token_balance(self, address: Union[Address, ChecksumAddress, str],
+                          token: Union[Address, ChecksumAddress, str]) -> Wei:
         """
         Retrieves amount of tokens in address
         Args:
@@ -114,16 +112,12 @@ class QuickSwap(PolygonChain):
         self.address = self.web3.toChecksumAddress(address)
         self.key = key
         self.fernet = Fernet(FERNET_KEY)
-        self.dex = Uniswap(
-            self.address,
-            self.fernet.decrypt(key.encode()).decode(),
-            version=2,
-            web3=self.web3,
-            factory_contract_addr=QUICK_SWAP_FACTORY_ADDRESS,
-            router_contract_addr=QUICK_SWAP_ROUTER_ADDRESS,
-        )
+        self.router_contract = self.web3.eth.contract(address=self.router_address,
+                                                      abi=self.get_contract_abi(abi_type='router'))
+        self.factory_contract = self.web3.eth.contract(address=self.factory_address,
+                                                       abi=self.get_contract_abi(abi_type='factory'))
 
-    def get_token_price(self, token: AddressLike, decimals: int = 18) -> Decimal:
+    def get_token_price(self, token: Union[Address, ChecksumAddress, str], decimals: int = 18) -> Decimal:
         """
         Gets token price in USDC
         Args:
@@ -135,10 +129,16 @@ class QuickSwap(PolygonChain):
         """
         logger.info("Retrieving token price in USDC for %s", token)
         usdc = CONTRACT_ADDRESSES["USDC"]
+        matic = CONTRACT_ADDRESSES["MATIC"]
+        wmatic = CONTRACT_ADDRESSES["WMATIC"]
+        route = [usdc, wmatic, token] if token not in (matic, wmatic) else [usdc, wmatic]
+        qty = 10 ** decimals
 
-        return self.web3.fromWei(
-            self.dex.get_price_output(usdc, token, 10 ** decimals), "mwei"
-        )
+        try:
+            token_price = self.web3.fromWei(self.router_contract.functions.getAmountsIn(qty, route).call()[0], 'mwei')
+        except ContractLogicError:
+            token_price = 0
+        return token_price
 
     @staticmethod
     def get_gas_price(speed: str):
@@ -148,11 +148,11 @@ class QuickSwap(PolygonChain):
         return gas_prices[TRANSACTION_SPEEDS[speed]]
 
     def swap_tokens(
-        self,
-        token: str,
-        amount_to_spend: Union[int, float, Decimal] = 0,
-        side: str = BUY,
-        is_snipe: bool = False,
+            self,
+            token: str,
+            amount_to_spend: Union[int, float, Decimal] = 0,
+            side: str = BUY,
+            is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -184,7 +184,7 @@ class QuickSwap(PolygonChain):
                 abi = self.get_contract_abi(abi_type="router")
                 token_abi = self.get_contract_abi(abi_type="sell")
                 contract = self.web3.eth.contract(
-                    address=self.dex.router_address, abi=abi
+                    address=self.router_address, abi=abi
                 )
                 token_contract = self.web3.eth.contract(address=token, abi=token_abi)
 
@@ -218,7 +218,7 @@ class QuickSwap(PolygonChain):
                     )
 
                 if balance < amount_to_spend:
-                    raise InsufficientBalance(had=balance, needed=int(amount_to_spend))
+                    raise ValueError(f"Insufficient balance. Had {balance}, neded {amount_to_spend}")
 
                 for swap_method in swap_methods:
                     try:
@@ -242,11 +242,6 @@ class QuickSwap(PolygonChain):
                     contract=token_contract,
                     token=token,
                     balance=self.get_token_balance(address=self.address, token=token),  # type: ignore
-                )
-            except InsufficientBalance as e:
-                logger.exception(e)
-                reply = (
-                    "⚠️ Insufficient balance. Top up your token balance and try again. "
                 )
             except ValueError as e:
                 logger.exception(e)

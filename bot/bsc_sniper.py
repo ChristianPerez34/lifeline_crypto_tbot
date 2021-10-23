@@ -1,8 +1,9 @@
 import asyncio
 from decimal import Decimal
+from typing import Union
 
-from uniswap.types import AddressLike
 from web3.exceptions import BadFunctionCallOutput
+from web3.types import Address, ChecksumAddress
 
 from api.bsc import PancakeSwap
 from app import logger
@@ -34,7 +35,7 @@ def token_has_liquidity(token, pancake_swap) -> bool:
 
 
 async def pancake_swap_sniper(
-    chat_id: int, token: AddressLike, amount: Decimal, pancake_swap: PancakeSwap
+        chat_id: int, token: Union[Address, ChecksumAddress, str], amount: Decimal, pancake_swap: PancakeSwap
 ) -> None:
     """
     Snipes token on PancakeSwap
