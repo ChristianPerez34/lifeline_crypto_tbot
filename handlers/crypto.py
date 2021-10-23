@@ -715,7 +715,7 @@ async def send_chart(message: Message):
         symbol, base_coin = pair
         time_frame = chart.time_frame
 
-        coin_ids = coin_gecko.get_coin_ids(symbol) or coin_market_cap.coin_lookup(
+        coin_ids = await coin_gecko.get_coin_ids(symbol) or coin_market_cap.coin_lookup(
             symbol=symbol
         )
         if len(coin_ids) == 1:
