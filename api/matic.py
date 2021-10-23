@@ -45,7 +45,9 @@ class PolygonChain(ERC20Like):
             "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
         )
 
-    async def get_account_token_holdings(self, address: Union[Address, ChecksumAddress, str]) -> dict:
+    async def get_account_token_holdings(
+        self, address: Union[Address, ChecksumAddress, str]
+    ) -> dict:
         """
         Retrieves account holding for wallet address
         Args:
@@ -68,7 +70,7 @@ class PolygonChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         erc20_transfers = data["result"]
@@ -86,8 +88,11 @@ class PolygonChain(ERC20Like):
             )
         return account_holdings
 
-    def get_token_balance(self, address: Union[Address, ChecksumAddress, str],
-                          token: Union[Address, ChecksumAddress, str]) -> Wei:
+    def get_token_balance(
+        self,
+        address: Union[Address, ChecksumAddress, str],
+        token: Union[Address, ChecksumAddress, str],
+    ) -> Wei:
         """
         Retrieves amount of tokens in address
         Args:
@@ -112,12 +117,16 @@ class QuickSwap(PolygonChain):
         self.address = self.web3.toChecksumAddress(address)
         self.key = key
         self.fernet = Fernet(FERNET_KEY)
-        self.router_contract = self.web3.eth.contract(address=self.router_address,
-                                                      abi=self.get_contract_abi(abi_type='router'))
-        self.factory_contract = self.web3.eth.contract(address=self.factory_address,
-                                                       abi=self.get_contract_abi(abi_type='factory'))
+        self.router_contract = self.web3.eth.contract(
+            address=self.router_address, abi=self.get_contract_abi(abi_type="router")
+        )
+        self.factory_contract = self.web3.eth.contract(
+            address=self.factory_address, abi=self.get_contract_abi(abi_type="factory")
+        )
 
-    def get_token_price(self, token: Union[Address, ChecksumAddress, str], decimals: int = 18) -> Decimal:
+    def get_token_price(
+        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+    ) -> Decimal:
         """
         Gets token price in USDC
         Args:
@@ -131,11 +140,16 @@ class QuickSwap(PolygonChain):
         usdc = CONTRACT_ADDRESSES["USDC"]
         matic = CONTRACT_ADDRESSES["MATIC"]
         wmatic = CONTRACT_ADDRESSES["WMATIC"]
-        route = [usdc, wmatic, token] if token not in (matic, wmatic) else [usdc, wmatic]
+        route = (
+            [usdc, wmatic, token] if token not in (matic, wmatic) else [usdc, wmatic]
+        )
         qty = 10 ** decimals
 
         try:
-            token_price = self.web3.fromWei(self.router_contract.functions.getAmountsIn(qty, route).call()[0], 'mwei')
+            token_price = self.web3.fromWei(
+                self.router_contract.functions.getAmountsIn(qty, route).call()[0],
+                "mwei",
+            )
         except ContractLogicError:
             token_price = 0
         return token_price
@@ -148,11 +162,11 @@ class QuickSwap(PolygonChain):
         return gas_prices[TRANSACTION_SPEEDS[speed]]
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -183,9 +197,7 @@ class QuickSwap(PolygonChain):
                 txn = None
                 abi = self.get_contract_abi(abi_type="router")
                 token_abi = self.get_contract_abi(abi_type="sell")
-                contract = self.web3.eth.contract(
-                    address=self.router_address, abi=abi
-                )
+                contract = self.web3.eth.contract(address=self.router_address, abi=abi)
                 token_contract = self.web3.eth.contract(address=token, abi=token_abi)
 
                 if side == BUY:
@@ -218,7 +230,9 @@ class QuickSwap(PolygonChain):
                     )
 
                 if balance < amount_to_spend:
-                    raise ValueError(f"Insufficient balance. Had {balance}, neded {amount_to_spend}")
+                    raise ValueError(
+                        f"Insufficient balance. Had {balance}, neded {amount_to_spend}"
+                    )
 
                 for swap_method in swap_methods:
                     try:

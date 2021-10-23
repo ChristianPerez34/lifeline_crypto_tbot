@@ -51,6 +51,7 @@ async def price_alert_callback(delay: int) -> None:
                 await asyncio.sleep(2)
         await asyncio.sleep(delay)
 
+
 # if __name__ == '__main__':
 #     loop = asyncio.get_event_loop()
 #     try:

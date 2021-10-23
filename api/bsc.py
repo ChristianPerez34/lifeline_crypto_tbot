@@ -33,7 +33,9 @@ class BinanceSmartChain(ERC20Like):
             "0x10ED43C718714eb63d5aA57B78B54704E256024E"
         )
 
-    async def get_account_token_holdings(self, address: Union[Address, ChecksumAddress, str]) -> dict:
+    async def get_account_token_holdings(
+        self, address: Union[Address, ChecksumAddress, str]
+    ) -> dict:
         """
         Retrieves account holding for wallet address
         Args:
@@ -55,7 +57,7 @@ class BinanceSmartChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         bep20_transfers = data["result"]
@@ -73,8 +75,11 @@ class BinanceSmartChain(ERC20Like):
             )
         return account_holdings
 
-    def get_token_balance(self, address: Union[Address, ChecksumAddress, str],
-                          token: Union[Address, ChecksumAddress, str]) -> Wei:
+    def get_token_balance(
+        self,
+        address: Union[Address, ChecksumAddress, str],
+        token: Union[Address, ChecksumAddress, str],
+    ) -> Wei:
         """
         Retrieves amount of tokens in address
         Args:
@@ -107,11 +112,11 @@ class PancakeSwap(BinanceSmartChain):
         )
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -138,9 +143,7 @@ class PancakeSwap(BinanceSmartChain):
                 txn = None
                 abi = self.get_contract_abi(abi_type="router")
                 token_abi = self.get_contract_abi(abi_type="sell")
-                contract = self.web3.eth.contract(
-                    address=self.router_address, abi=abi
-                )
+                contract = self.web3.eth.contract(address=self.router_address, abi=abi)
                 token_contract = self.web3.eth.contract(address=token, abi=token_abi)
 
                 if side == BUY:
@@ -172,7 +175,9 @@ class PancakeSwap(BinanceSmartChain):
                     )
 
                 if balance < amount_to_spend:
-                    raise ValueError(f"Insufficient balance. Had {balance}, needed {amount_to_spend}")
+                    raise ValueError(
+                        f"Insufficient balance. Had {balance}, needed {amount_to_spend}"
+                    )
 
                 for swap_method in swap_methods:
                     try:
@@ -206,7 +211,9 @@ class PancakeSwap(BinanceSmartChain):
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
         return reply
 
-    def get_token_price(self, token: Union[Address, ChecksumAddress, str], decimals: int = 18) -> Decimal:
+    def get_token_price(
+        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+    ) -> Decimal:
         """
         Gets token price in BUSD
         Args:
@@ -225,14 +232,18 @@ class PancakeSwap(BinanceSmartChain):
         qty = 10 ** decimals
 
         try:
-            token_price = self.web3.fromWei(self.router_contract.functions.getAmountsIn(qty, route).call()[0], 'ether')
+            token_price = self.web3.fromWei(
+                self.router_contract.functions.getAmountsIn(qty, route).call()[0],
+                "ether",
+            )
         except ContractLogicError:
             token_price = 0
         return token_price
 
     def get_token_pair_address(
-            self, token_0: Union[Address, ChecksumAddress, str],
-            token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"]
+        self,
+        token_0: Union[Address, ChecksumAddress, str],
+        token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"],
     ) -> str:
         """
         Retrieves token pair address
