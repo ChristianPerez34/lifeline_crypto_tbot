@@ -20,11 +20,16 @@ async def price_alert_callback(delay: int) -> None:
             crypto = alert.symbol
             sign = alert.sign
             price = alert.price
+            token_name = alert.token_name
 
             send = False
             dip = False
 
-            coin_stats = get_coin_stats(symbol=crypto)[0]
+            coin_stats = [
+                coin
+                for coin in await get_coin_stats(symbol=crypto)
+                if coin["token_name"] == token_name
+            ][0]
 
             spot_price = Decimal(coin_stats["price"].replace("$", "").replace(",", ""))
 
@@ -47,5 +52,14 @@ async def price_alert_callback(delay: int) -> None:
 
                 alert.remove()
                 await send_message(channel_id=TELEGRAM_CHAT_ID, message=response)
-
+                await asyncio.sleep(2)
         await asyncio.sleep(delay)
+
+
+# if __name__ == '__main__':
+#     loop = asyncio.get_event_loop()
+#     try:
+#         loop.run_until_complete(price_alert_callback(delay=15))
+#     finally:
+#         loop.run_until_complete(loop.shutdown_asyncgens())
+#         loop.close()

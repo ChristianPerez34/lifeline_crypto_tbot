@@ -4,23 +4,14 @@ from typing import Union
 import aiohttp
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
-from uniswap import Uniswap
-from uniswap.exceptions import InsufficientBalance
-from uniswap.types import AddressLike
 from web3 import Web3
 from web3.exceptions import ContractLogicError
-from web3.types import Wei
+from web3.types import Wei, Address, ChecksumAddress
 
 from api.eth import ERC20Like
 from app import logger
 from config import BSCSCAN_API_KEY, BUY, FERNET_KEY, HEADERS
 
-PANCAKE_SWAP_FACTORY_ADDRESS = Web3.toChecksumAddress(
-    "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
-)
-PANCAKE_SWAP_ROUTER_ADDRESS = Web3.toChecksumAddress(
-    "0x10ED43C718714eb63d5aA57B78B54704E256024E"
-)
 CONTRACT_ADDRESSES = {
     "BNB": Web3.toChecksumAddress("0x0000000000000000000000000000000000000000"),
     "WBNB": Web3.toChecksumAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"),
@@ -35,8 +26,16 @@ class BinanceSmartChain(ERC20Like):
         self.web3 = Web3(
             Web3.HTTPProvider(BINANCE_SMART_CHAIN_URL, request_kwargs={"timeout": 60})
         )
+        self.factory_address = self.web3.toChecksumAddress(
+            "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+        )
+        self.router_address = self.web3.toChecksumAddress(
+            "0x10ED43C718714eb63d5aA57B78B54704E256024E"
+        )
 
-    async def get_account_token_holdings(self, address: AddressLike) -> dict:
+    async def get_account_token_holdings(
+        self, address: Union[Address, ChecksumAddress, str]
+    ) -> dict:
         """
         Retrieves account holding for wallet address
         Args:
@@ -76,7 +75,11 @@ class BinanceSmartChain(ERC20Like):
             )
         return account_holdings
 
-    def get_token_balance(self, address: AddressLike, token: AddressLike) -> Wei:
+    def get_token_balance(
+        self,
+        address: Union[Address, ChecksumAddress, str],
+        token: Union[Address, ChecksumAddress, str],
+    ) -> Wei:
         """
         Retrieves amount of tokens in address
         Args:
@@ -101,14 +104,11 @@ class PancakeSwap(BinanceSmartChain):
         self.address = self.web3.toChecksumAddress(address)
         self.key = key
         self.fernet = Fernet(FERNET_KEY)
-        self.dex = Uniswap(
-            self.address,
-            self.fernet.decrypt(key.encode()).decode(),
-            version=2,
-            web3=self.web3,
-            factory_contract_addr=PANCAKE_SWAP_FACTORY_ADDRESS,
-            router_contract_addr=PANCAKE_SWAP_ROUTER_ADDRESS,
-            default_slippage=0.15,
+        self.router_contract = self.web3.eth.contract(
+            address=self.router_address, abi=self.get_contract_abi(abi_type="router")
+        )
+        self.factory_contract = self.web3.eth.contract(
+            address=self.factory_address, abi=self.get_contract_abi(abi_type="factory")
         )
 
     def swap_tokens(
@@ -143,9 +143,7 @@ class PancakeSwap(BinanceSmartChain):
                 txn = None
                 abi = self.get_contract_abi(abi_type="router")
                 token_abi = self.get_contract_abi(abi_type="sell")
-                contract = self.web3.eth.contract(
-                    address=self.dex.router_address, abi=abi
-                )
+                contract = self.web3.eth.contract(address=self.router_address, abi=abi)
                 token_contract = self.web3.eth.contract(address=token, abi=token_abi)
 
                 if side == BUY:
@@ -177,7 +175,9 @@ class PancakeSwap(BinanceSmartChain):
                     )
 
                 if balance < amount_to_spend:
-                    raise InsufficientBalance(had=balance, needed=int(amount_to_spend))
+                    raise ValueError(
+                        f"Insufficient balance. Had {balance}, needed {amount_to_spend}"
+                    )
 
                 for swap_method in swap_methods:
                     try:
@@ -203,20 +203,17 @@ class PancakeSwap(BinanceSmartChain):
                     token=token,
                     balance=self.get_token_balance(address=self.address, token=token),  # type: ignore
                 )
-            except InsufficientBalance as e:
-                logger.exception(e)
-                reply = (
-                    "⚠️ Insufficient balance. Top up your token balance and try again. "
-                )
             except ValueError as e:
                 logger.exception(e)
-                reply = e.args[0]["message"]
+                reply = str(e)
         else:
             logger.info("Unable to connect to Binance Smart Chain")
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
         return reply
 
-    def get_token_price(self, token: AddressLike, decimals: int = 18) -> Decimal:
+    def get_token_price(
+        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+    ) -> Decimal:
         """
         Gets token price in BUSD
         Args:
@@ -228,21 +225,33 @@ class PancakeSwap(BinanceSmartChain):
         """
         logger.info("Retrieving token price in BUSD for %s", token)
         busd = CONTRACT_ADDRESSES["BUSD"]
+        bnb = CONTRACT_ADDRESSES["BNB"]
+        wbnb = CONTRACT_ADDRESSES["WBNB"]
 
-        return self.web3.fromWei(
-            self.dex.get_price_output(busd, token, 10 ** decimals), "ether"
-        )
+        route = [busd, wbnb, token] if token not in (bnb, wbnb) else [busd, bnb]
+        qty = 10 ** decimals
+
+        try:
+            token_price = self.web3.fromWei(
+                self.router_contract.functions.getAmountsIn(qty, route).call()[0],
+                "ether",
+            )
+        except ContractLogicError:
+            token_price = 0
+        return token_price
 
     def get_token_pair_address(
-        self, token_0: AddressLike, token_1: AddressLike = CONTRACT_ADDRESSES["WBNB"]
+        self,
+        token_0: Union[Address, ChecksumAddress, str],
+        token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"],
     ) -> str:
         """
         Retrieves token pair address
         Args:
-            token: BEP20 token
+            token_0: BEP20 token address
+            token_1: BEP20 token address
 
         Returns: Pair address
 
         """
-        contract = self.dex.factory_contract
-        return contract.functions.getPair(token_0, token_1).call()
+        return self.factory_contract.functions.getPair(token_0, token_1).call()

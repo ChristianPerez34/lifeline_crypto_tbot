@@ -1,4 +1,6 @@
-from etherscan import Etherscan
+from aioetherscan import Client
+from ethereum_gasprice import AsyncGaspriceController
+from ethereum_gasprice.providers import EtherscanProvider
 from lru import LRU
 
 from config import DB_HOST, DB_NAME, DB_PASSWORD, DB_USER, ETHERSCAN_API_KEY
@@ -8,7 +10,10 @@ from models import db
 
 coingecko_coin_lookup_cache = LRU(5)
 
-ether_scan = Etherscan(ETHERSCAN_API_KEY)
+ether_scan = Client(ETHERSCAN_API_KEY)
+gas_tracker = AsyncGaspriceController(
+    settings={EtherscanProvider.title: ETHERSCAN_API_KEY},
+)
 
 
 async def init_database():
