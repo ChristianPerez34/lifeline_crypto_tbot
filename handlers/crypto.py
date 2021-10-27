@@ -276,7 +276,7 @@ async def send_price(message: Message) -> None:
                     f"{'📈' if percent_change_24h > 0 else '📉'} 24H Change: {percent_change_24h}%\n"
                     f"{'📈' if percent_change_7d > 0 else '📉'} 7D Change: {percent_change_7d}%\n"
                     f"{'📈' if percent_change_30d > 0 else '📉'} 30D Change: {percent_change_30d}%\n"
-                    f"{'📈' if percent_change_ath > 0 else '📉'} 30D Change: {percent_change_ath}%\n"
+                    f"{'📈' if percent_change_ath > 0 else '📉'} ATH Change: {percent_change_ath}%\n"
                 )
             else:
                 reply = (
