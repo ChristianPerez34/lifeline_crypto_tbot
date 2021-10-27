@@ -11,6 +11,7 @@ import dateutil.parser as dau
 import plotly.figure_factory as fif
 import plotly.graph_objs as go
 import plotly.io as pio
+from aiocoingecko.errors import HTTPException
 from aiogram.types import (
     CallbackQuery,
     Message,
@@ -37,7 +38,7 @@ from api.cryptocompare import CryptoCompare
 from api.eth import UniSwap
 from api.kucoin import KucoinApi
 from api.matic import QuickSwap
-from app import bot, logger, chart_cb, alert_cb
+from app import bot, logger, chart_cb, alert_cb, price_cb
 from bot import active_orders
 from bot.bsc_order import limit_order_executor
 from bot.bsc_sniper import pancake_swap_sniper
@@ -97,66 +98,110 @@ def get_coin_explorers(platforms: dict, links: dict) -> list:
     return explorers
 
 
-async def get_coin_stats(symbol: str) -> list:
+async def get_coin_ids(symbol: str) -> list:
+    """
+    Retrieves coin IDs from supported market aggregators
+    Args:
+        symbol: Token symbol
+
+    Returns: List of matching symbols
+
+    """
+    coin_gecko = CoinGecko()
+    coin_market_cap = CoinMarketCap()
+    try:
+        coin_ids = await coin_gecko.get_coin_ids(symbol=symbol)
+    except (IndexError, HTTPError):
+        coin_ids = coin_market_cap.get_coin_ids(symbol=symbol)
+    return coin_ids
+
+
+async def get_coin_stats(coin_id: str) -> str:
     """Retrieves coin stats from connected services crypto services
 
     Args:
-        symbol (str): Cryptocurrency symbol of coin to lookup
+        coin_id (str): ID of coin to lookup in cryptocurrency market aggregators
 
     Returns:
         dict: Cryptocurrency coin statistics
     """
     # Search CoinGecko API first
-    logger.info("Getting coin stats for %s", symbol)
-    coin_stats_list = []
+    logger.info("Getting coin stats for %s", coin_id)
     coin_gecko = CoinGecko()
     coin_market_cap = CoinMarketCap()
+    coin_stats = ""
     try:
-        coin_ids = await coin_gecko.get_coin_ids(symbol=symbol)
+        data = await coin_gecko.coin_lookup(ids=coin_id)
 
-        for coin_id in coin_ids:
-            explorers = []
-            data = await coin_gecko.coin_lookup(ids=coin_id)
-            market_data = data["market_data"]
-            links = data["links"]
-            platforms = data["platforms"]
-            explorers = get_coin_explorers(platforms=platforms, links=links)
-            coin_stats = {
-                "token_name": data["name"],
-                "website": links["homepage"][0],
-                "explorers": explorers,
-                "price": "${:,}".format(float(market_data["current_price"]["usd"])),
-                "ath": "${:,}".format(float(market_data["ath"]["usd"])),
-                "24h_change": f"{market_data['price_change_percentage_24h']}%",
-                "7d_change": f"{market_data['price_change_percentage_7d']}%",
-                "30d_change": f"{market_data['price_change_percentage_30d']}%",
-                "ath_change": f"{market_data['ath_change_percentage']['usd']}%",
-                "market_cap": "${:,}".format(float(market_data["market_cap"]["usd"])),
-            }
-            coin_stats_list.append(coin_stats)
-    except (IndexError, HTTPError):
-        logger.info(
-            "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.", symbol
+        market_data = data["market_data"]
+        links = data["links"]
+        platforms = data["platforms"]
+
+        explorers = get_coin_explorers(platforms=platforms, links=links)
+        price = "${:,}".format(float(market_data["current_price"]["usd"]))
+        all_time_high = "${:,}".format(float(market_data["ath"]["usd"]))
+        market_cap = "${:,}".format(float(market_data["market_cap"]["usd"]))
+        volume = "${:,}".format(float(market_data["total_volume"]["usd"]))
+
+        percent_change_24h = market_data['price_change_percentage_24h']
+        percent_change_7d = market_data['price_change_percentage_7d']
+        percent_change_30d = market_data['price_change_percentage_30d']
+        percent_change_ath = market_data['ath_change_percentage']['usd']
+        market_cap_rank = market_data['market_cap_rank']
+
+        coin_stats = (
+            f"💲 {data['name']} ({data['symbol'].upper()})\n"
+            f"💻 Website: {links['homepage'][0]}\n"
+            f"🔍 Explorers: {', '.join(explorers)}\n\n"
+            f"💵 Price: {price}\n"
+            f"🔜 ATH: {all_time_high}\n\n"
+            f"🏅 Market Cap Rank: {market_cap_rank}\n"
+            f"🏦 Market Cap: {market_cap}\n"
+            f"💰 Volume: {volume}\n\n"
+            f"{'📈' if percent_change_24h > 0 else '📉'} 24H Change: {percent_change_24h}%\n"
+            f"{'📈' if percent_change_7d > 0 else '📉'} 7D Change: {percent_change_7d}%\n"
+            f"{'📈' if percent_change_30d > 0 else '📉'} 30D Change: {percent_change_30d}%\n"
+            f"{'📈' if percent_change_ath > 0 else '📉'} 30D Change: {percent_change_ath}%\n"
         )
-        coin_lookup = coin_market_cap.coin_lookup(symbol)
+    except (IndexError, HTTPError, HTTPException):
+        logger.info(
+            "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.", coin_id
+        )
+        ids = coin_id[0]
+        coin_lookup = coin_market_cap.coin_lookup(ids=ids)
+        meta_data = coin_market_cap.get_coin_metadata(ids=ids)[ids]
+        data = coin_lookup[ids]
+        urls = meta_data['urls']
+        quote = data["quote"]["USD"]
+        explorers = [
+            f"[{urlparse(link).hostname.split('.')[0]}]({link})"
+            for link in urls["explorer"]
+            if link
+        ]
 
-        for coin in coin_lookup:
-            data = coin_lookup[coin]
-            quote = data["quote"]["USD"]
+        for key in quote:
+            if quote[key] is None:
+                quote[key] = 0
+        price = "${:,}".format(quote["price"])
+        market_cap = "${:,}".format(quote["market_cap"])
+        volume = "${:,}".format(quote["volume_24h"])
+        percent_change_24h = quote['percent_change_24h']
+        percent_change_7d = quote['percent_change_7d']
+        percent_change_30d = quote['percent_change_30d']
 
-            for key in quote:
-                if quote[key] is None:
-                    quote[key] = 0
-            coin_stats = {
-                "token_name": data["name"],
-                "price": "${:,}".format(quote["price"]),
-                "24h_change": f"{quote['percent_change_24h']}%",
-                "7d_change": f"{quote['percent_change_7d']}%",
-                "30d_change": f"{quote['percent_change_30d']}%",
-                "market_cap": "${:,}".format(quote["market_cap"]),
-            }
-            coin_stats_list.append(coin_stats)
-    return coin_stats_list
+        coin_stats = (
+            f"💲 {data['name']} ({data['symbol']})\n"
+            f"💻 Website: {urls['website'][0]}\n"
+            f"🔍 Explorers: {', '.join(explorers)}\n\n"
+            f"💵 Price: {price}\n\n"
+            f"🏅 Market Cap Rank: {data['cmc_rank']}\n"
+            f"🏦 Market Cap: {market_cap}\n"
+            f"💰 Volume: {volume}\n\n"
+            f"{'📈' if percent_change_24h > 0 else '📈'} 24H Change: {percent_change_24h}%\n"
+            f"{'📈' if percent_change_7d > 0 else '📈'} 7D Change: {percent_change_7d}%\n"
+            f"{'📈' if percent_change_30d > 0 else '📈'} 30D Change: {percent_change_30d}%\n"
+        )
+    return coin_stats
 
 
 def get_coin_stats_by_address(address: str) -> dict:
@@ -202,35 +247,31 @@ async def send_price(message: Message) -> None:
     try:
         coin = Coin(symbol=args[0].upper())
         symbol = coin.symbol
-        coin_stats_list = await get_coin_stats(symbol=symbol)
-        for coin_stats in coin_stats_list:
-            explorers = "\n".join(coin_stats["explorers"])
-            reply += (
-                f"{coin_stats['token_name']} ({symbol})\n\n"
-                f"Website\n{coin_stats['website']}\n\n"
-                f"Explorers\n{explorers}\n\n"
-            )
-
-            for key in ("website", "explorers"):
-                coin_stats.pop(key)
-        dataframe = DataFrame(coin_stats_list)
-
-        if not dataframe.empty:
-            columns = {column: titleize(column) for column in dataframe.columns}
-            dataframe = dataframe.rename(columns=columns)
-            fig = fif.create_table(dataframe.rename(columns=columns))
-            fig.update_layout(width=1100)
-
-            await message.reply_photo(
-                caption=reply,
-                photo=BufferedReader(
-                    BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
-                ),
-                parse_mode=ParseMode.MARKDOWN,
-            )
+        coin_ids = await get_coin_ids(symbol=symbol)
+        if len(coin_ids) == 1:
+            coin_stats = await get_coin_stats(coin_id=coin_ids[0])
+            await message.reply(text=coin_stats, parse_mode=ParseMode.MARKDOWN)
         else:
+            keyboard_markup = InlineKeyboardMarkup()
+            for coin_id in coin_ids:
+                if isinstance(coin_id, tuple):
+                    ids, token_name = coin_id
+                else:
+                    ids = token_name = coin_id
+                keyboard_markup.row(
+                    InlineKeyboardButton(
+                        token_name,
+                        callback_data=price_cb.new(
+                            command="price",
+                            coin_id=ids
+                        ),
+                    )
+                )
+
             await message.reply(
-                text="Token data not found on CoinGecko nor CoinMarketCap!"
+                text="Choose token to create alert",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=keyboard_markup,
             )
     except IndexError as e:
         logger.exception(e)
@@ -423,7 +464,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -442,7 +483,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-            "https://coinmarketcap.com/new/", headers=HEADERS
+                "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -471,9 +512,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-            user.kucoin_api_key
-            and user.kucoin_api_secret
-            and user.kucoin_api_passphrase
+                user.kucoin_api_key
+                and user.kucoin_api_secret
+                and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -497,8 +538,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                            position_order["stopPriceType"] == "TP"
-                            and position_order["stop"] == "up"
+                                position_order["stopPriceType"] == "TP"
+                                and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -511,7 +552,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                        or (entry > mark_price and unrealized_pnl < 0)
+                           or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -945,7 +986,7 @@ async def send_candle_chart(message: Message):
 
 
 async def chart_inline_query_handler(
-    query: CallbackQuery, callback_data: Dict[str, str]
+        query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Generating chart")
@@ -976,7 +1017,7 @@ async def chart_inline_query_handler(
 
 
 async def alert_inline_query_handler(
-    query: CallbackQuery, callback_data: Dict[str, str]
+        query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Creating alert!")
@@ -991,6 +1032,14 @@ async def alert_inline_query_handler(
     target_price = "${:,}".format(alert.price.quantize(Decimal("0.01")))
     reply = f"⏳ I will send you a message when the price of {alert.symbol} reaches {target_price}\n"
     await query.message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+
+
+async def price_inline_query_handler(query: CallbackQuery, callback_data: Dict[str, str]):
+    await query.message.delete_reply_markup()
+    await query.answer("Retrieving price data")
+    coin_id = callback_data['coin_id']
+    coin_stats = await get_coin_stats(coin_id=coin_id)
+    await query.message.reply(text=coin_stats, parse_mode=ParseMode.MARKDOWN)
 
 
 async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
