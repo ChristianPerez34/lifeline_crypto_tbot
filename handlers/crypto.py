@@ -116,7 +116,7 @@ async def get_coin_ids(symbol: str) -> list:
     return coin_ids
 
 
-async def get_coin_stats(coin_id: str) -> str:
+async def get_coin_stats(coin_id: str) -> dict:
     """Retrieves coin stats from connected services crypto services
 
     Args:
@@ -129,7 +129,7 @@ async def get_coin_stats(coin_id: str) -> str:
     logger.info("Getting coin stats for %s", coin_id)
     coin_gecko = CoinGecko()
     coin_market_cap = CoinMarketCap()
-    coin_stats = ""
+    coin_stats = {}
     try:
         data = await coin_gecko.coin_lookup(ids=coin_id)
 
@@ -149,20 +149,21 @@ async def get_coin_stats(coin_id: str) -> str:
         percent_change_ath = market_data['ath_change_percentage']['usd']
         market_cap_rank = market_data['market_cap_rank']
 
-        coin_stats = (
-            f"💲 {data['name']} ({data['symbol'].upper()})\n"
-            f"💻 Website: {links['homepage'][0]}\n"
-            f"🔍 Explorers: {', '.join(explorers)}\n\n"
-            f"💵 Price: {price}\n"
-            f"🔜 ATH: {all_time_high}\n\n"
-            f"🏅 Market Cap Rank: {market_cap_rank}\n"
-            f"🏦 Market Cap: {market_cap}\n"
-            f"💰 Volume: {volume}\n\n"
-            f"{'📈' if percent_change_24h > 0 else '📉'} 24H Change: {percent_change_24h}%\n"
-            f"{'📈' if percent_change_7d > 0 else '📉'} 7D Change: {percent_change_7d}%\n"
-            f"{'📈' if percent_change_30d > 0 else '📉'} 30D Change: {percent_change_30d}%\n"
-            f"{'📈' if percent_change_ath > 0 else '📉'} 30D Change: {percent_change_ath}%\n"
-        )
+        coin_stats.update({
+            "name": data['name'],
+            "symbol": data['symbol'].upper(),
+            'website': links['homepage'][0],
+            'explorers': explorers,
+            'price': price,
+            'ath': all_time_high,
+            'market_cap_rank': market_cap_rank,
+            'market_cap': market_cap,
+            'volume': volume,
+            'percent_change_24h': percent_change_24h,
+            'percent_change_7d': percent_change_7d,
+            'percent_change_30d': percent_change_30d,
+            'percent_change_ath': percent_change_ath,
+        })
     except (IndexError, HTTPError, HTTPException):
         logger.info(
             "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.", coin_id
@@ -189,18 +190,19 @@ async def get_coin_stats(coin_id: str) -> str:
         percent_change_7d = quote['percent_change_7d']
         percent_change_30d = quote['percent_change_30d']
 
-        coin_stats = (
-            f"💲 {data['name']} ({data['symbol']})\n"
-            f"💻 Website: {urls['website'][0]}\n"
-            f"🔍 Explorers: {', '.join(explorers)}\n\n"
-            f"💵 Price: {price}\n\n"
-            f"🏅 Market Cap Rank: {data['cmc_rank']}\n"
-            f"🏦 Market Cap: {market_cap}\n"
-            f"💰 Volume: {volume}\n\n"
-            f"{'📈' if percent_change_24h > 0 else '📈'} 24H Change: {percent_change_24h}%\n"
-            f"{'📈' if percent_change_7d > 0 else '📈'} 7D Change: {percent_change_7d}%\n"
-            f"{'📈' if percent_change_30d > 0 else '📈'} 30D Change: {percent_change_30d}%\n"
-        )
+        coin_stats.update({
+            "name": data['name'],
+            "symbol": data['symbol'],
+            'website': urls['website'][0],
+            'explorers': explorers,
+            'price': price,
+            'market_cap_rank': data['cmc_rank'],
+            'market_cap': market_cap,
+            'volume': volume,
+            'percent_change_24h': percent_change_24h,
+            'percent_change_7d': percent_change_7d,
+            'percent_change_30d': percent_change_30d,
+        })
     return coin_stats
 
 
@@ -244,13 +246,48 @@ async def send_price(message: Message) -> None:
     logger.info("Crypto command executed")
     reply = ""
     args = message.get_args().split()
+
     try:
         coin = Coin(symbol=args[0].upper())
         symbol = coin.symbol
         coin_ids = await get_coin_ids(symbol=symbol)
+
         if len(coin_ids) == 1:
             coin_stats = await get_coin_stats(coin_id=coin_ids[0])
-            await message.reply(text=coin_stats, parse_mode=ParseMode.MARKDOWN)
+            percent_change_24h = coin_stats['percent_change_24h']
+            percent_change_7d = coin_stats['percent_change_7d']
+            percent_change_30d = coin_stats['percent_change_30d']
+
+            if 'ath' in coin_stats:
+                percent_change_ath = coin_stats['percent_change_ath']
+                reply = (
+                    f"💲 {coin_stats['name']} ({coin_stats['symbol']})\n"
+                    f"💻 Website: {coin_stats['website']}\n"
+                    f"🔍 Explorers: {', '.join(coin_stats['explorers'])}\n\n"
+                    f"💵 Price: {coin_stats['price']}\n"
+                    f"🔜 ATH: {coin_stats['ath']}\n\n"
+                    f"🏅 Market Cap Rank: {coin_stats['market_cap_rank']}\n"
+                    f"🏦 Market Cap: {coin_stats['market_cap']}\n"
+                    f"💰 Volume: {coin_stats['volume']}\n\n"
+                    f"{'📈' if percent_change_24h > 0 else '📉'} 24H Change: {percent_change_24h}%\n"
+                    f"{'📈' if percent_change_7d > 0 else '📉'} 7D Change: {percent_change_7d}%\n"
+                    f"{'📈' if percent_change_30d > 0 else '📉'} 30D Change: {percent_change_30d}%\n"
+                    f"{'📈' if percent_change_ath > 0 else '📉'} 30D Change: {percent_change_ath}%\n"
+                )
+            else:
+                reply = (
+                    f"💲 {coin_stats['name']} ({coin_stats['symbol']})\n"
+                    f"💻 Website: {coin_stats['website']}\n"
+                    f"🔍 Explorers: {', '.join(coin_stats['explorers'])}\n\n"
+                    f"💵 Price: {coin_stats['price']}\n\n"
+                    f"🏅 Market Cap Rank: {coin_stats['market_cap_rank']}\n"
+                    f"🏦 Market Cap: {coin_stats['market_cap']}\n"
+                    f"💰 Volume: {coin_stats['volume']}\n\n"
+                    f"{'📈' if percent_change_24h > 0 else '📉'} 24H Change: {percent_change_24h}%\n"
+                    f"{'📈' if percent_change_7d > 0 else '📉'} 7D Change: {percent_change_7d}%\n"
+                    f"{'📈' if percent_change_30d > 0 else '📉'} 30D Change: {percent_change_30d}%\n"
+                )
+            await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
         else:
             keyboard_markup = InlineKeyboardMarkup()
             for coin_id in coin_ids:
@@ -407,10 +444,10 @@ async def send_price_alert(message: Message) -> None:
         crypto = alert.symbol
         price = alert.price
 
-        coin_stats = await get_coin_stats(symbol=crypto)
+        coin_ids = await get_coin_ids(symbol=crypto)
 
-        if len(coin_stats) == 1:
-            stats: dict = coin_stats[0]
+        if len(coin_ids) == 1:
+            stats: dict = await get_coin_stats(coin_id=coin_ids[0])
             alert.token_name = stats["token_name"]
             CryptoAlert.create(data=alert.dict())
             target_price = "${:,}".format(price.quantize(Decimal("0.01")))
@@ -421,8 +458,8 @@ async def send_price_alert(message: Message) -> None:
             await message.reply(text=reply)
         else:
             keyboard_markup = InlineKeyboardMarkup()
-            for stats in coin_stats:
-                token_name = stats["token_name"]
+            for coin_id in coin_ids:
+                token_name = coin_id[1] if isinstance(coin_id, tuple) else coin_id
                 keyboard_markup.row(
                     InlineKeyboardButton(
                         token_name,
@@ -756,7 +793,7 @@ async def send_chart(message: Message):
         symbol, base_coin = pair
         time_frame = chart.time_frame
 
-        coin_ids = await coin_gecko.get_coin_ids(symbol) or coin_market_cap.coin_lookup(
+        coin_ids = await coin_gecko.get_coin_ids(symbol) or coin_market_cap.get_coin_ids(
             symbol=symbol
         )
         if len(coin_ids) == 1:
@@ -1037,9 +1074,44 @@ async def alert_inline_query_handler(
 async def price_inline_query_handler(query: CallbackQuery, callback_data: Dict[str, str]):
     await query.message.delete_reply_markup()
     await query.answer("Retrieving price data")
+
     coin_id = callback_data['coin_id']
     coin_stats = await get_coin_stats(coin_id=coin_id)
-    await query.message.reply(text=coin_stats, parse_mode=ParseMode.MARKDOWN)
+
+    percent_change_24h = coin_stats['percent_change_24h']
+    percent_change_7d = coin_stats['percent_change_7d']
+    percent_change_30d = coin_stats['percent_change_30d']
+
+    if 'ath' in coin_stats:
+        percent_change_ath = coin_stats['percent_change_ath']
+        reply = (
+            f"💲 {coin_stats['name']} ({coin_stats['symbol']})\n"
+            f"💻 Website: {coin_stats['website']}\n"
+            f"🔍 Explorers: {', '.join(coin_stats['explorers'])}\n\n"
+            f"💵 Price: {coin_stats['price']}\n"
+            f"🔜 ATH: {coin_stats['ath']}\n\n"
+            f"🏅 Market Cap Rank: {coin_stats['market_cap_rank']}\n"
+            f"🏦 Market Cap: {coin_stats['market_cap']}\n"
+            f"💰 Volume: {coin_stats['volume']}\n\n"
+            f"{'📈' if percent_change_24h > 0 else '📉'} 24H Change: {percent_change_24h}%\n"
+            f"{'📈' if percent_change_7d > 0 else '📉'} 7D Change: {percent_change_7d}%\n"
+            f"{'📈' if percent_change_30d > 0 else '📉'} 30D Change: {percent_change_30d}%\n"
+            f"{'📈' if percent_change_ath > 0 else '📉'} 30D Change: {percent_change_ath}%\n"
+        )
+    else:
+        reply = (
+            f"💲 {coin_stats['name']} ({coin_stats['symbol']})\n"
+            f"💻 Website: {coin_stats['website']}\n"
+            f"🔍 Explorers: {', '.join(coin_stats['explorers'])}\n\n"
+            f"💵 Price: {coin_stats['price']}\n\n"
+            f"🏅 Market Cap Rank: {coin_stats['market_cap_rank']}\n"
+            f"🏦 Market Cap: {coin_stats['market_cap']}\n"
+            f"💰 Volume: {coin_stats['volume']}\n\n"
+            f"{'📈' if percent_change_24h > 0 else '📉'} 24H Change: {percent_change_24h}%\n"
+            f"{'📈' if percent_change_7d > 0 else '📉'} 7D Change: {percent_change_7d}%\n"
+            f"{'📈' if percent_change_30d > 0 else '📉'} 30D Change: {percent_change_30d}%\n"
+        )
+    await query.message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
 async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
