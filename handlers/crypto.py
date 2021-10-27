@@ -461,6 +461,10 @@ async def send_price_alert(message: Message) -> None:
         else:
             keyboard_markup = InlineKeyboardMarkup()
             for coin_id in coin_ids:
+                if isinstance(coin_id, tuple):
+                    ids, token_name = coin_id
+                else:
+                    ids = token_name = coin_id
                 token_name = coin_id[1] if isinstance(coin_id, tuple) else coin_id
                 keyboard_markup.row(
                     InlineKeyboardButton(
@@ -470,7 +474,7 @@ async def send_price_alert(message: Message) -> None:
                             symbol=crypto,
                             sign=alert.sign,
                             target_price=price,
-                            token_name=token_name,
+                            coin_id=ids,
                         ),
                     )
                 )
@@ -1065,7 +1069,7 @@ async def alert_inline_query_handler(
         symbol=callback_data["symbol"],
         sign=callback_data["sign"],
         price=callback_data["target_price"],
-        token_name=callback_data["token_name"],
+        coin_id=callback_data["coin_id"],
     )
     CryptoAlert.create(data=alert.dict())
     target_price = "${:,}".format(alert.price.quantize(Decimal("0.01")))
