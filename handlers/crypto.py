@@ -448,8 +448,9 @@ async def send_price_alert(message: Message) -> None:
         coin_ids = await get_coin_ids(symbol=crypto)
 
         if len(coin_ids) == 1:
-            stats: dict = await get_coin_stats(coin_id=coin_ids[0])
-            alert.token_name = stats["token_name"]
+            coin_id = coin_ids[0][0] if isinstance(coin_ids[0], tuple) else coin_ids[0]
+            stats: dict = await get_coin_stats(coin_id=coin_id)
+            alert.coin_id = coin_id
             CryptoAlert.create(data=alert.dict())
             target_price = "${:,}".format(price.quantize(Decimal("0.01")))
 

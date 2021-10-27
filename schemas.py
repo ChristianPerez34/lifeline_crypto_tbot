@@ -53,7 +53,7 @@ class Coin(Token, Platform):
 
 class TokenAlert(BaseModel):
     id: Optional[int]
-    token_name: Optional[str]
+    coin_id: Optional[str]
     symbol: str = ""
     sign: str = ""
     price: Decimal = Decimal(0)

@@ -148,7 +148,7 @@ class MaticNetwork(db.Entity):  # type: ignore
 class CryptoAlert(db.Entity):  # type: ignore
     id = orm.PrimaryKey(int, auto=True)
     symbol = orm.Required(str)
-    token_name = orm.Required(str)
+    coin_id = orm.Required(str)
     sign = orm.Required(str)
     price = orm.Required(Decimal, 36, 18)
 
