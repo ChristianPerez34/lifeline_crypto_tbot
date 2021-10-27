@@ -4,7 +4,7 @@ from aiogram import types, Dispatcher, Bot
 from fastapi import APIRouter
 from pyngrok import ngrok
 
-from app import dp, bot, chart_cb, alert_cb
+from app import dp, bot, chart_cb, alert_cb, price_cb
 from bot.bsc_order import limit_order_executor
 from config import NGROK_AUTH_TOKEN, TELEGRAM_CHAT_ID, WEBHOOK_PATH
 from handlers import init_database
@@ -28,7 +28,9 @@ from handlers.crypto import (
     send_snipe,
     send_active_orders,
     send_cancel_order,
-    alert_inline_query_handler, send_limit_swap,
+    alert_inline_query_handler,
+    send_limit_swap,
+    price_inline_query_handler,
 )
 from handlers.error import send_error
 from handlers.user import send_register
@@ -106,6 +108,9 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     )
     dispatcher.register_callback_query_handler(
         alert_inline_query_handler, alert_cb.filter(alert_type=["price"])
+    )
+    dispatcher.register_callback_query_handler(
+        price_inline_query_handler, price_cb.filter(command=["price"])
     )
     dispatcher.register_callback_query_handler(kucoin_inline_query_handler)
     dispatcher.register_message_handler(send_sell, commands=["sell"])

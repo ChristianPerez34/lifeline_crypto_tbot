@@ -10,19 +10,42 @@ class CoinMarketCap:
     def __init__(self):
         self.cmc = CoinMarketCapAPI(COIN_MARKET_CAP_API_KEY)
 
-    def coin_lookup(self, symbol: str) -> dict:
+    def get_coin_ids(self, symbol: str) -> list:
+        """
+        Retrieves coin ids for matching symbol
+        Args:
+            symbol (str): Token symbol
+
+        Returns (list): List of token ids
+
+        """
+        logger.info("Looking up token ids for %s in CoinMarketCap API", symbol)
+        return [
+            (str(item["id"]), item["name"])
+            for item in self.cmc.cryptocurrency_map(symbol=symbol).data
+        ]
+
+    def get_coin_metadata(self, ids: str) -> dict:
+        """
+        Retrieves coin metadata
+        Args:
+            ids (str): Token id
+
+        Returns (list): Metadata for provided coin ids
+
+        """
+        return self.cmc.cryptocurrency_info(id=ids).data
+
+    def coin_lookup(self, ids: str) -> dict:
         """Coin lookup in CoinMarketCap API
 
         Args:
-            symbol (str): Symbol of coin to lookup
+            ids (str): CoinMarketCap token ids
 
         Returns:
             dict: Results of coin lookup
         """
-        logger.info("Looking up price for %s in CoinMarketCap API", symbol)
-        ids = ",".join(
-            str(item["id"]) for item in self.cmc.cryptocurrency_map(symbol=symbol).data
-        )
+        logger.info("Looking up price for %s in CoinMarketCap API", ids)
         return self.cmc.cryptocurrency_quotes_latest(id=ids, convert="usd").data
 
     @staticmethod
