@@ -143,27 +143,29 @@ async def get_coin_stats(coin_id: str) -> dict:
         market_cap = "${:,}".format(float(market_data["market_cap"]["usd"]))
         volume = "${:,}".format(float(market_data["total_volume"]["usd"]))
 
-        percent_change_24h = market_data['price_change_percentage_24h']
-        percent_change_7d = market_data['price_change_percentage_7d']
-        percent_change_30d = market_data['price_change_percentage_30d']
-        percent_change_ath = market_data['ath_change_percentage']['usd']
-        market_cap_rank = market_data['market_cap_rank']
+        percent_change_24h = market_data["price_change_percentage_24h"]
+        percent_change_7d = market_data["price_change_percentage_7d"]
+        percent_change_30d = market_data["price_change_percentage_30d"]
+        percent_change_ath = market_data["ath_change_percentage"]["usd"]
+        market_cap_rank = market_data["market_cap_rank"]
 
-        coin_stats.update({
-            "name": data['name'],
-            "symbol": data['symbol'].upper(),
-            'website': links['homepage'][0],
-            'explorers': explorers,
-            'price': price,
-            'ath': all_time_high,
-            'market_cap_rank': market_cap_rank,
-            'market_cap': market_cap,
-            'volume': volume,
-            'percent_change_24h': percent_change_24h,
-            'percent_change_7d': percent_change_7d,
-            'percent_change_30d': percent_change_30d,
-            'percent_change_ath': percent_change_ath,
-        })
+        coin_stats.update(
+            {
+                "name": data["name"],
+                "symbol": data["symbol"].upper(),
+                "website": links["homepage"][0],
+                "explorers": explorers,
+                "price": price,
+                "ath": all_time_high,
+                "market_cap_rank": market_cap_rank,
+                "market_cap": market_cap,
+                "volume": volume,
+                "percent_change_24h": percent_change_24h,
+                "percent_change_7d": percent_change_7d,
+                "percent_change_30d": percent_change_30d,
+                "percent_change_ath": percent_change_ath,
+            }
+        )
     except (IndexError, HTTPError, HTTPException):
         logger.info(
             "%s not found in CoinGecko. Initiated lookup on CoinMarketCap.", coin_id
@@ -172,7 +174,7 @@ async def get_coin_stats(coin_id: str) -> dict:
         coin_lookup = coin_market_cap.coin_lookup(ids=ids)
         meta_data = coin_market_cap.get_coin_metadata(ids=ids)[ids]
         data = coin_lookup[ids]
-        urls = meta_data['urls']
+        urls = meta_data["urls"]
         quote = data["quote"]["USD"]
         explorers = [
             f"[{urlparse(link).hostname.split('.')[0]}]({link})"
@@ -186,23 +188,25 @@ async def get_coin_stats(coin_id: str) -> dict:
         price = "${:,}".format(quote["price"])
         market_cap = "${:,}".format(quote["market_cap"])
         volume = "${:,}".format(quote["volume_24h"])
-        percent_change_24h = quote['percent_change_24h']
-        percent_change_7d = quote['percent_change_7d']
-        percent_change_30d = quote['percent_change_30d']
+        percent_change_24h = quote["percent_change_24h"]
+        percent_change_7d = quote["percent_change_7d"]
+        percent_change_30d = quote["percent_change_30d"]
 
-        coin_stats.update({
-            "name": data['name'],
-            "symbol": data['symbol'],
-            'website': urls['website'][0],
-            'explorers': explorers,
-            'price': price,
-            'market_cap_rank': data['cmc_rank'],
-            'market_cap': market_cap,
-            'volume': volume,
-            'percent_change_24h': percent_change_24h,
-            'percent_change_7d': percent_change_7d,
-            'percent_change_30d': percent_change_30d,
-        })
+        coin_stats.update(
+            {
+                "name": data["name"],
+                "symbol": data["symbol"],
+                "website": urls["website"][0],
+                "explorers": explorers,
+                "price": price,
+                "market_cap_rank": data["cmc_rank"],
+                "market_cap": market_cap,
+                "volume": volume,
+                "percent_change_24h": percent_change_24h,
+                "percent_change_7d": percent_change_7d,
+                "percent_change_30d": percent_change_30d,
+            }
+        )
     return coin_stats
 
 
@@ -254,12 +258,12 @@ async def send_price(message: Message) -> None:
 
         if len(coin_ids) == 1:
             coin_stats = await get_coin_stats(coin_id=coin_ids[0])
-            percent_change_24h = coin_stats['percent_change_24h']
-            percent_change_7d = coin_stats['percent_change_7d']
-            percent_change_30d = coin_stats['percent_change_30d']
+            percent_change_24h = coin_stats["percent_change_24h"]
+            percent_change_7d = coin_stats["percent_change_7d"]
+            percent_change_30d = coin_stats["percent_change_30d"]
 
-            if 'ath' in coin_stats:
-                percent_change_ath = coin_stats['percent_change_ath']
+            if "ath" in coin_stats:
+                percent_change_ath = coin_stats["percent_change_ath"]
                 reply = (
                     f"💲 {coin_stats['name']} ({coin_stats['symbol']})\n"
                     f"💻 Website: {coin_stats['website']}\n"
@@ -298,10 +302,7 @@ async def send_price(message: Message) -> None:
                 keyboard_markup.row(
                     InlineKeyboardButton(
                         token_name,
-                        callback_data=price_cb.new(
-                            command="price",
-                            coin_id=ids
-                        ),
+                        callback_data=price_cb.new(command="price", coin_id=ids),
                     )
                 )
 
@@ -501,7 +502,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -520,7 +521,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-                "https://coinmarketcap.com/new/", headers=HEADERS
+            "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -549,9 +550,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-                user.kucoin_api_key
-                and user.kucoin_api_secret
-                and user.kucoin_api_passphrase
+            user.kucoin_api_key
+            and user.kucoin_api_secret
+            and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -575,8 +576,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                                position_order["stopPriceType"] == "TP"
-                                and position_order["stop"] == "up"
+                            position_order["stopPriceType"] == "TP"
+                            and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -589,7 +590,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                           or (entry > mark_price and unrealized_pnl < 0)
+                        or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -705,7 +706,7 @@ async def send_sell(message: Message) -> None:
 
 
 async def generate_line_chart(
-        coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
+    coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
 ) -> go.Figure:
     logger.info("Creating line chart layout")
     market = await coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
@@ -793,9 +794,9 @@ async def send_chart(message: Message):
         symbol, base_coin = pair
         time_frame = chart.time_frame
 
-        coin_ids = await coin_gecko.get_coin_ids(symbol) or coin_market_cap.get_coin_ids(
-            symbol=symbol
-        )
+        coin_ids = await coin_gecko.get_coin_ids(
+            symbol
+        ) or coin_market_cap.get_coin_ids(symbol=symbol)
         if len(coin_ids) == 1:
             fig = await generate_line_chart(
                 coin_gecko=coin_gecko,
@@ -1023,7 +1024,7 @@ async def send_candle_chart(message: Message):
 
 
 async def chart_inline_query_handler(
-        query: CallbackQuery, callback_data: Dict[str, str]
+    query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Generating chart")
@@ -1054,7 +1055,7 @@ async def chart_inline_query_handler(
 
 
 async def alert_inline_query_handler(
-        query: CallbackQuery, callback_data: Dict[str, str]
+    query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Creating alert!")
@@ -1071,19 +1072,21 @@ async def alert_inline_query_handler(
     await query.message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
 
-async def price_inline_query_handler(query: CallbackQuery, callback_data: Dict[str, str]):
+async def price_inline_query_handler(
+    query: CallbackQuery, callback_data: Dict[str, str]
+):
     await query.message.delete_reply_markup()
     await query.answer("Retrieving price data")
 
-    coin_id = callback_data['coin_id']
+    coin_id = callback_data["coin_id"]
     coin_stats = await get_coin_stats(coin_id=coin_id)
 
-    percent_change_24h = coin_stats['percent_change_24h']
-    percent_change_7d = coin_stats['percent_change_7d']
-    percent_change_30d = coin_stats['percent_change_30d']
+    percent_change_24h = coin_stats["percent_change_24h"]
+    percent_change_7d = coin_stats["percent_change_7d"]
+    percent_change_30d = coin_stats["percent_change_30d"]
 
-    if 'ath' in coin_stats:
-        percent_change_ath = coin_stats['percent_change_ath']
+    if "ath" in coin_stats:
+        percent_change_ath = coin_stats["percent_change_ath"]
         reply = (
             f"💲 {coin_stats['name']} ({coin_stats['symbol']})\n"
             f"💻 Website: {coin_stats['website']}\n"

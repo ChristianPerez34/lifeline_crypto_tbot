@@ -28,7 +28,9 @@ from handlers.crypto import (
     send_snipe,
     send_active_orders,
     send_cancel_order,
-    alert_inline_query_handler, send_limit_swap, price_inline_query_handler,
+    alert_inline_query_handler,
+    send_limit_swap,
+    price_inline_query_handler,
 )
 from handlers.error import send_error
 from handlers.user import send_register

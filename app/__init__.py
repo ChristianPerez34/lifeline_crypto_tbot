@@ -23,9 +23,7 @@ logger = logging.getLogger(__name__)
 
 bot = Bot(token=TELEGRAM_BOT_API_KEY)
 dp = Dispatcher(bot)
-price_cb = CallbackData(
-    "price", "command", "coin_id"
-)
+price_cb = CallbackData("price", "command", "coin_id")
 alert_cb = CallbackData(
     "alert", "alert_type", "symbol", "sign", "target_price", "token_name"
 )

@@ -20,7 +20,10 @@ class CoinMarketCap:
 
         """
         logger.info("Looking up token ids for %s in CoinMarketCap API", symbol)
-        return [(str(item["id"]), item["name"]) for item in self.cmc.cryptocurrency_map(symbol=symbol).data]
+        return [
+            (str(item["id"]), item["name"])
+            for item in self.cmc.cryptocurrency_map(symbol=symbol).data
+        ]
 
     def get_coin_metadata(self, ids: str) -> dict:
         """
@@ -55,7 +58,7 @@ class CoinMarketCap:
         logger.info("Retrieving trending coins from CoinMarketCap")
         coins = []
         async with aiohttp.ClientSession() as session, session.get(
-                "https://coinmarketcap.com/trending-cryptocurrencies/", headers=HEADERS
+            "https://coinmarketcap.com/trending-cryptocurrencies/", headers=HEADERS
         ) as response:
             df = pd.read_html(await response.text(), flavor="bs4")[0]
 
