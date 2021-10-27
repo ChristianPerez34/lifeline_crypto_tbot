@@ -71,7 +71,7 @@ module = [
     "pyngrok",
     "aioetherscan",
     "ethereum_gasprice.*",
-    "aiocoingecko",
+    "aiocoingecko.*",
     "services.alerts"
 ]
 ignore_missing_imports = true
