@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from pyngrok import ngrok
 
 from app import dp, bot, chart_cb, alert_cb
+from bot.bsc_order import limit_order_executor
 from config import NGROK_AUTH_TOKEN, TELEGRAM_CHAT_ID, WEBHOOK_PATH
 from handlers import init_database
 from handlers.base import send_welcome, send_greeting, send_message
@@ -31,6 +32,8 @@ from handlers.crypto import (
 )
 from handlers.error import send_error
 from handlers.user import send_register
+from models import Order
+from schemas import LimitOrder
 from services.alerts import price_alert_callback
 
 router = APIRouter()
@@ -49,6 +52,10 @@ async def on_startup():
         await bot.set_webhook(url=WEBHOOK_URL)
     setup_handlers(dp)
     asyncio.create_task(price_alert_callback(delay=60))
+
+    for order in Order.all():
+        limit_order = LimitOrder.from_orm(order)
+        asyncio.create_task(limit_order_executor(order=limit_order))
     await send_message(channel_id=TELEGRAM_CHAT_ID, message="Up and running! 👾")
 
 
