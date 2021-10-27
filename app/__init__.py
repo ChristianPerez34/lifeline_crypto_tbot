@@ -25,7 +25,7 @@ bot = Bot(token=TELEGRAM_BOT_API_KEY)
 dp = Dispatcher(bot)
 price_cb = CallbackData("price", "command", "coin_id")
 alert_cb = CallbackData(
-    "alert", "alert_type", "symbol", "sign", "target_price", "token_name"
+    "alert", "alert_type", "symbol", "sign", "target_price", "coin_id"
 )
 chart_cb = CallbackData(
     "chart", "chart_type", "coin_id", "symbol", "time_frame", "base_coin"
