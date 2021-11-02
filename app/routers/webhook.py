@@ -51,7 +51,7 @@ async def on_startup():
 
     webhook_info = await bot.get_webhook_info()
     if webhook_info.url != WEBHOOK_URL:
-        await bot.set_webhook(url=WEBHOOK_URL)
+        await bot.set_webhook(url=WEBHOOK_URL, drop_pending_updates=True)
     setup_handlers(dp)
     asyncio.create_task(price_alert_callback(delay=60))
 
