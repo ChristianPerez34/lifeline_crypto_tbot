@@ -18,6 +18,12 @@ def is_positive_number(value: Real):
     return value
 
 
+def check_telegram_group_member(cls, value: Union[int, TelegramGroupMember]):
+    if isinstance(value, int):
+        return value
+    return value.id
+
+
 class Token(BaseModel):
     address: Union[Address, ChecksumAddress, str] = ""
 
@@ -75,11 +81,8 @@ class Network(Token):
     private_key: str = ""
     telegram_group_member: int
 
-    @validator("telegram_group_member", pre=True)
-    def check_telegram_group_member(cls, value: Union[int, TelegramGroupMember]):
-        if isinstance(value, int):
-            return value
-        return value.id
+    _check_telegram_group_member = validator("telegram_group_member", allow_reuse=True, pre=True)(
+        check_telegram_group_member)
 
 
 class BinanceChain(Network):
@@ -97,6 +100,20 @@ class MaticChain(Network):
         orm_mode = True
 
 
+class CoinBaseExchange(BaseModel):
+    id: Optional[int]
+    api_key: str
+    api_secret: str
+    api_passphrase: str
+    telegram_group_member: int
+
+    class Config:
+        orm_mode = True
+
+    _check_telegram_group_member = validator("telegram_group_member", allow_reuse=True, pre=True)(
+        check_telegram_group_member)
+
+
 class User(BaseModel):
     id: int
     kucoin_api_key: Optional[str] = ""
@@ -106,6 +123,7 @@ class User(BaseModel):
     bsc: Optional[BinanceChain]
     eth: Optional[EthereumChain]
     matic: Optional[MaticChain]
+    coinbase: Optional[CoinBaseExchange]
 
     class Config:
         orm_mode = True
