@@ -81,8 +81,9 @@ class Network(Token):
     private_key: str = ""
     telegram_group_member: int
 
-    _check_telegram_group_member = validator("telegram_group_member", allow_reuse=True, pre=True)(
-        check_telegram_group_member)
+    _check_telegram_group_member = validator(
+        "telegram_group_member", allow_reuse=True, pre=True
+    )(check_telegram_group_member)
 
 
 class BinanceChain(Network):
@@ -110,8 +111,9 @@ class CoinBaseExchange(BaseModel):
     class Config:
         orm_mode = True
 
-    _check_telegram_group_member = validator("telegram_group_member", allow_reuse=True, pre=True)(
-        check_telegram_group_member)
+    _check_telegram_group_member = validator(
+        "telegram_group_member", allow_reuse=True, pre=True
+    )(check_telegram_group_member)
 
 
 class User(BaseModel):

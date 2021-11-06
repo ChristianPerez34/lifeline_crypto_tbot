@@ -29,11 +29,11 @@ class TelegramGroupMember(db.Entity):  # type: ignore
                         for member in TelegramGroupMember  # type: ignore
                         if member.id == primary_key
                     )
-                        .prefetch(BinanceNetwork)
-                        .prefetch(EthereumNetwork)
-                        .prefetch(MaticNetwork)
-                        .prefetch(CoinBase)
-                        .first()
+                    .prefetch(BinanceNetwork)
+                    .prefetch(EthereumNetwork)
+                    .prefetch(MaticNetwork)
+                    .prefetch(CoinBase)
+                    .first()
                 )
             except orm.ObjectNotFound:
                 return None
@@ -198,11 +198,11 @@ class Order(db.Entity):  # type: ignore
             try:
                 return (
                     orm.select(order for order in Order if order.id == primary_key)  # type: ignore
-                        .prefetch(TelegramGroupMember)
-                        .prefetch(TelegramGroupMember.bsc)
-                        .prefetch(TelegramGroupMember.eth)
-                        .prefetch(TelegramGroupMember.matic)
-                        .first()
+                    .prefetch(TelegramGroupMember)
+                    .prefetch(TelegramGroupMember.bsc)
+                    .prefetch(TelegramGroupMember.eth)
+                    .prefetch(TelegramGroupMember.matic)
+                    .first()
                 )
             except orm.ObjectNotFound:
                 return None
@@ -220,10 +220,10 @@ class Order(db.Entity):  # type: ignore
                         for order in Order  # type: ignore
                         if order.telegram_group_member.id == telegram_group_member_id
                     )
-                        .prefetch(TelegramGroupMember)
-                        .prefetch(TelegramGroupMember.bsc)
-                        .prefetch(TelegramGroupMember.eth)
-                        .prefetch(TelegramGroupMember.matic)
+                    .prefetch(TelegramGroupMember)
+                    .prefetch(TelegramGroupMember.bsc)
+                    .prefetch(TelegramGroupMember.eth)
+                    .prefetch(TelegramGroupMember.matic)
                 )
             )
 
@@ -239,10 +239,10 @@ class Order(db.Entity):  # type: ignore
         with orm.db_session:
             return list(
                 Order.select()
-                    .prefetch(TelegramGroupMember)
-                    .prefetch(TelegramGroupMember.bsc)
-                    .prefetch(TelegramGroupMember.eth)
-                    .prefetch(TelegramGroupMember.matic)
+                .prefetch(TelegramGroupMember)
+                .prefetch(TelegramGroupMember.bsc)
+                .prefetch(TelegramGroupMember.eth)
+                .prefetch(TelegramGroupMember.matic)
             )
 
     @orm.db_session

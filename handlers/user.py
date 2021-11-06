@@ -12,7 +12,7 @@ from schemas import BinanceChain, User, EthereumChain, MaticChain, CoinBaseExcha
 
 
 async def register_network(
-        register_type: str, address: str, private_key: str, user_id: int
+    register_type: str, address: str, private_key: str, user_id: int
 ) -> dict:
     fernet = Fernet(FERNET_KEY)
     data = {"id": user_id}
@@ -70,9 +70,9 @@ async def send_register(message: Message) -> None:
     user_id = telegram_user.id
 
     if register_type in (
-            RegisterTypes.BSC.value,
-            RegisterTypes.ETH.value,
-            RegisterTypes.MATIC.value,
+        RegisterTypes.BSC.value,
+        RegisterTypes.ETH.value,
+        RegisterTypes.MATIC.value,
     ):
         address, private_key = tuple(args[1:])
         data = await register_network(
@@ -100,7 +100,7 @@ async def send_register(message: Message) -> None:
                         api_key=fernet.encrypt(api_key.encode()).decode(),
                         api_secret=fernet.encrypt(api_secret.encode()).decode(),
                         api_passphrase=fernet.encrypt(api_passphrase.encode()).decode(),
-                        telegram_group_member=user_id
+                        telegram_group_member=user_id,
                     ),
                 }
             )
