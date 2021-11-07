@@ -100,14 +100,6 @@ class BinanceNetwork(db.Entity):  # type: ignore
     telegram_group_member = orm.Required(lambda: TelegramGroupMember)
 
     @staticmethod
-    def get_or_none(primary_key: int) -> db.Entity:  # type: ignore
-        with orm.db_session:
-            try:
-                return BinanceNetwork[primary_key]
-            except orm.ObjectNotFound:
-                return None
-
-    @staticmethod
     def get_by_telegram_member_id(telegram_member_id: int) -> db.Entity:  # type: ignore
         with orm.db_session:
             try:
