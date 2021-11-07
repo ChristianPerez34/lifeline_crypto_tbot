@@ -36,6 +36,9 @@ async def send_welcome(message: Message) -> None:
         rf"{bold('/register')} {bold('kucoin')} {italic('API')}\_{italic('KEY')} {italic('API')}\_{italic('SECRET')} "
         rf"{italic('API')}\_{italic('PASSPHRASE')} to register KuCoin account and follow signals"
         "\n\n"
+        rf"{bold('/register')} {bold('coinbase')} {italic('API')}\_{italic('KEY')} {italic('API')}\_{italic('SECRET')} "
+        rf"{italic('API')}\_{italic('PASSPHRASE')} to register CoinBase account"
+        "\n\n"
         rf"{bold('/buy')} {italic('NETWORK')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to buy coins on "
         "supported DEX's. Valid Networks are bsc|eth|matic\n\n",
         f"{bold('/sell')} {italic('NETWORK')} {italic('ADDRESS')} to sell coins on supported DEX's. Valid Networks are "

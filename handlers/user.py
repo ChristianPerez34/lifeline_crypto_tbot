@@ -8,7 +8,7 @@ from app import logger
 from config import FERNET_KEY, RegisterTypes
 from handlers.base import send_message
 from models import TelegramGroupMember
-from schemas import BinanceChain, User, EthereumChain, MaticChain
+from schemas import BinanceChain, User, EthereumChain, MaticChain, CoinBaseExchange
 
 
 async def register_network(
@@ -67,6 +67,7 @@ async def send_register(message: Message) -> None:
     register_type = args[0].upper()
 
     exclude = set()
+    user_id = telegram_user.id
 
     if register_type in (
         RegisterTypes.BSC.value,
@@ -78,9 +79,32 @@ async def send_register(message: Message) -> None:
             register_type=register_type,
             address=address,
             private_key=private_key,
-            user_id=telegram_user.id,
+            user_id=user_id,
         )
         exclude = {"kucoin_api_key", "kucoin_api_secret", "kucoin_api_passphrase"}
+    elif register_type == RegisterTypes.COINBASE.value:
+        if len(args) != 4:
+            is_error = True
+            text = (
+                "⚠️ Please provide CoinBase Pro API Key, Secret and Passphrase: /register coinbase [API_KEY] "
+                "[API_SECRET] [API_PASSPHRASE]"
+            )
+        else:
+            fernet = Fernet(FERNET_KEY)
+            api_key, api_secret, api_passphrase = args[1:]
+
+            data.update(
+                {
+                    "id": user_id,
+                    "coinbase": CoinBaseExchange(  # type: ignore
+                        api_key=fernet.encrypt(api_key.encode()).decode(),
+                        api_secret=fernet.encrypt(api_secret.encode()).decode(),
+                        api_passphrase=fernet.encrypt(api_passphrase.encode()).decode(),
+                        telegram_group_member=user_id,
+                    ),
+                }
+            )
+            exclude = {"kucoin_api_key", "kucoin_api_secret", "kucoin_api_passphrase"}
     elif register_type == RegisterTypes.KUCOIN.value:
         if len(args) != 4:
             is_error = True
@@ -93,7 +117,7 @@ async def send_register(message: Message) -> None:
             api_key, api_secret, api_passphrase = tuple(args[1:])
             data.update(
                 {
-                    "id": telegram_user.id,
+                    "id": user_id,
                     "kucoin_api_key": fernet.encrypt(api_key.encode()).decode(),
                     "kucoin_api_secret": fernet.encrypt(api_secret.encode()).decode(),
                     "kucoin_api_passphrase": fernet.encrypt(

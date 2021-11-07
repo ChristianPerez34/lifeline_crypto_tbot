@@ -9,6 +9,7 @@ class RegisterTypes(Enum):
     ETH = "ETH"
     MATIC = "MATIC"
     KUCOIN = "KUCOIN"
+    COINBASE = "COINBASE"
 
 
 load_dotenv()

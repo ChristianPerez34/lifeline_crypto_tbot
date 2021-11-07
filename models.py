@@ -16,6 +16,7 @@ class TelegramGroupMember(db.Entity):  # type: ignore
     bsc = orm.Optional(lambda: BinanceNetwork)
     eth = orm.Optional(lambda: EthereumNetwork)
     matic = orm.Optional(lambda: MaticNetwork)
+    coinbase = orm.Optional(lambda: CoinBase)
     orders = orm.Set(lambda: Order)
 
     @staticmethod
@@ -31,6 +32,7 @@ class TelegramGroupMember(db.Entity):  # type: ignore
                     .prefetch(BinanceNetwork)
                     .prefetch(EthereumNetwork)
                     .prefetch(MaticNetwork)
+                    .prefetch(CoinBase)
                     .first()
                 )
             except orm.ObjectNotFound:
@@ -38,49 +40,54 @@ class TelegramGroupMember(db.Entity):  # type: ignore
 
     @staticmethod
     def create_or_update(data: dict) -> db.Entity:  # type: ignore
-        _id = data.get("id")
+        member_id = data["id"]
         bsc_data = data.pop("bsc")
         eth_data = data.pop("eth")
         matic_data = data.pop("matic")
+        coinbase_data = data.pop("coinbase")
 
         with orm.db_session:
-            member = TelegramGroupMember.get_or_none(primary_key=_id)  # type: ignore
-            if member:
-                data.pop("id")
-                if bsc_data:
-                    bsc = BinanceNetwork.get_by_telegram_member_id(
-                        telegram_member_id=member.id
-                    )
-                    if bsc:
-                        bsc_data.pop("id")
-                        bsc.set(**bsc_data)
-                    else:
-                        bsc = BinanceNetwork(**bsc_data)
-                    data["bsc"] = bsc
-                elif eth_data:
-                    eth = EthereumNetwork.get_by_telegram_member_id(
-                        telegram_member_id=member.id
-                    )
-                    if eth:
-                        eth_data.pop("id")
-                        eth.set(**eth_data)
-                    else:
-                        eth = EthereumNetwork(**eth_data)
-                    data["eth"] = eth
-                elif matic_data:
-                    matic = MaticNetwork.get_by_telegram_member_id(
-                        telegram_member_id=member.id
-                    )
-                    if matic:
-                        matic_data.pop("id")
-                        matic.set(**matic_data)
-                    else:
-                        matic = MaticNetwork(**matic_data)
-                    data["matic"] = matic
-                member.set(**data)
-            else:
+            member = TelegramGroupMember.get_or_none(primary_key=member_id)  # type: ignore
+
+            if not member:
                 member = TelegramGroupMember(**data)
-                member.bsc = BinanceNetwork(**bsc_data)
+
+            if bsc_data:
+                bsc_id = bsc_data.pop("id")
+                bsc = BinanceNetwork.get(id=bsc_id)
+
+                if bsc:
+                    bsc.set(**bsc_data)
+                else:
+                    bsc = BinanceNetwork(**bsc_data)
+                data["bsc"] = bsc
+            elif eth_data:
+                eth_id = eth_data.pop("id")
+                eth = EthereumNetwork.get(id=eth_id)
+
+                if eth:
+                    eth.set(**eth_data)
+                else:
+                    eth = EthereumNetwork(**eth_data)
+                data["eth"] = eth
+            elif matic_data:
+                matic_id = matic_data.pop("id")
+                matic = MaticNetwork.get(id=matic_id)
+
+                if matic:
+                    matic.set(**matic_data)
+                else:
+                    matic = MaticNetwork(**matic_data)
+                data["matic"] = matic
+            elif coinbase_data:
+                coinbase_id = coinbase_data.pop("id")
+                coinbase = CoinBase.get(id=coinbase_id)
+
+                if coinbase:
+                    coinbase.set(**coinbase_data)
+                else:
+                    coinbase = CoinBase(**coinbase_data)
+                data["coinbase"] = coinbase
 
         return member
 
@@ -234,3 +241,24 @@ class Order(db.Entity):  # type: ignore
     def remove(self) -> None:
         logger.info("Deleting order with id: %d", self.id)
         Order[self.id].delete()  # type: ignore
+
+
+class CoinBase(db.Entity):  # type: ignore
+    id = orm.PrimaryKey(int, auto=True)
+    api_key = orm.Required(str)
+    api_secret = orm.Required(str)
+    api_passphrase = orm.Required(str)
+
+    telegram_group_member = orm.Required(lambda: TelegramGroupMember)
+
+    @staticmethod
+    def get_by_telegram_member_id(telegram_member_id: int) -> db.Entity:  # type: ignore
+        with orm.db_session:
+            try:
+                return orm.select(
+                    coinbase
+                    for coinbase in CoinBase  # type: ignore
+                    if coinbase.telegram_group_member.id == telegram_member_id
+                ).first()
+            except orm.ObjectNotFound:
+                return None
