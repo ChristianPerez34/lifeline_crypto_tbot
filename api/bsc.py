@@ -4,8 +4,9 @@ from typing import Union
 import aiohttp
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
+from pandas import DataFrame
 from web3 import Web3
-from web3.exceptions import ContractLogicError
+from web3.exceptions import ContractLogicError, BadFunctionCallOutput
 from web3.types import Wei, Address, ChecksumAddress
 
 from api.eth import ERC20Like
@@ -34,8 +35,8 @@ class BinanceSmartChain(ERC20Like):
         )
 
     async def get_account_token_holdings(
-        self, address: Union[Address, ChecksumAddress, str]
-    ) -> dict:
+            self, address: Union[Address, ChecksumAddress, str] = None
+    ) -> DataFrame:
         """
         Retrieves account holding for wallet address
         Args:
@@ -44,8 +45,11 @@ class BinanceSmartChain(ERC20Like):
         Returns (dict): User account holdings
 
         """
+        if not address:
+            address = self.address
         logger.info("Gathering account holdings for %s", address)
-        account_holdings = {
+        account_holdings = []
+        holdings = {
             "BNB": {
                 "address": self.web3.toChecksumAddress(CONTRACT_ADDRESSES["BNB"]),
                 "decimals": 18,
@@ -57,13 +61,13 @@ class BinanceSmartChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-            url, headers=HEADERS
+                url, headers=HEADERS
         ) as response:
             data = await response.json()
         bep20_transfers = data["result"]
 
         for transfer in bep20_transfers:
-            account_holdings.update(
+            holdings.update(
                 {
                     transfer["tokenSymbol"]: {
                         "address": self.web3.toChecksumAddress(
@@ -73,12 +77,34 @@ class BinanceSmartChain(ERC20Like):
                     }
                 }
             )
-        return account_holdings
+        for k in holdings.keys():
+            coin = holdings[k]
+            token = coin["address"]
+            token_decimals = coin["decimals"]
+
+            # Quantity in wei used to calculate price
+            quantity = self.get_token_balance(address=self.address, token=token)
+
+            if quantity > 0:
+                try:
+                    token_price = self.get_token_price(token=token, decimals=token_decimals)
+
+                    # Quantity in correct format as seen in wallet
+                    quantity = self.get_decimal_representation(
+                        quantity=quantity, decimals=coin["decimals"]
+                    )
+                    price = quantity * token_price
+                    usd_amount = price.quantize(Decimal("0.01"))
+                    account_holdings.append({"Symbol": k, "Balance": quantity, "USD": usd_amount})
+
+                except (ContractLogicError, BadFunctionCallOutput) as e:
+                    logger.exception(e)
+        return DataFrame(account_holdings)
 
     def get_token_balance(
-        self,
-        address: Union[Address, ChecksumAddress, str],
-        token: Union[Address, ChecksumAddress, str],
+            self,
+            address: Union[Address, ChecksumAddress, str],
+            token: Union[Address, ChecksumAddress, str],
     ) -> Wei:
         """
         Retrieves amount of tokens in address
@@ -97,6 +123,9 @@ class BinanceSmartChain(ERC20Like):
         contract = self.web3.eth.contract(address=token, abi=abi)
         return contract.functions.balanceOf(address).call()
 
+    def get_token_price(self, token, decimals):
+        raise NotImplementedError
+
 
 class PancakeSwap(BinanceSmartChain):
     def __init__(self, address: str, key: str):
@@ -112,11 +141,11 @@ class PancakeSwap(BinanceSmartChain):
         )
 
     def swap_tokens(
-        self,
-        token: str,
-        amount_to_spend: Union[int, float, Decimal] = 0,
-        side: str = BUY,
-        is_snipe: bool = False,
+            self,
+            token: str,
+            amount_to_spend: Union[int, float, Decimal] = 0,
+            side: str = BUY,
+            is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -212,7 +241,7 @@ class PancakeSwap(BinanceSmartChain):
         return reply
 
     def get_token_price(
-        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+            self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
     ) -> Decimal:
         """
         Gets token price in BUSD
@@ -241,9 +270,9 @@ class PancakeSwap(BinanceSmartChain):
         return token_price
 
     def get_token_pair_address(
-        self,
-        token_0: Union[Address, ChecksumAddress, str],
-        token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"],
+            self,
+            token_0: Union[Address, ChecksumAddress, str],
+            token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"],
     ) -> str:
         """
         Retrieves token pair address

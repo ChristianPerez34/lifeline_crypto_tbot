@@ -5,10 +5,11 @@ from typing import Union
 
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
+from pandas import DataFrame
 from pydantic.main import BaseModel
 from web3 import Web3
 from web3.contract import Contract
-from web3.exceptions import ContractLogicError
+from web3.exceptions import ContractLogicError, BadFunctionCallOutput
 from web3.types import Address, ChecksumAddress
 from web3.types import Wei, TxParams
 
@@ -80,7 +81,7 @@ class ERC20Like:
         return abi
 
     def _swap_exact_eth_for_tokens(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact ETH|BNB|MATIC for tokens.
@@ -106,7 +107,7 @@ class ERC20Like:
         )
 
     def _swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact ETH|BNB|MATIC for tokens supporting fee on transfer tokens
@@ -132,7 +133,7 @@ class ERC20Like:
         )
 
     def _swap_exact_tokens_for_eth(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact tokens for ETH|BNB|MATIC
@@ -161,7 +162,7 @@ class ERC20Like:
         )
 
     def _swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens(
-        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact tokens for ETH|BNB|MATIC supporting fee on transfer tokens
@@ -220,7 +221,7 @@ class ERC20Like:
         logger.info("Approved token for swap")
 
     def _check_approval(
-        self, contract: Contract, token: Union[Address, ChecksumAddress, str], balance: Wei = 0  # type: ignore
+            self, contract: Contract, token: Union[Address, ChecksumAddress, str], balance: Wei = 0  # type: ignore
     ) -> None:
         """
         Validates token is approved for swapping. If not, approves token for swapping.
@@ -279,18 +280,19 @@ class EthereumChain(ERC20Like):
         )
 
     async def get_account_token_holdings(
-        self, address: Union[Address, ChecksumAddress, str]
-    ) -> dict:
+            self, address: Union[Address, ChecksumAddress, str] = None
+    ) -> DataFrame:
         """
         Retrieves account holding for wallet address
-        Args:
-            address (AddressLike): Wallet address of user
 
         Returns (dict): User account holdings
 
         """
+        if not address:
+            address = self.address
         logger.info("Gathering account holdings for %s", address)
-        account_holdings = {
+        account_holdings = []
+        holdings = {
             "ETH": {
                 "address": self.web3.toChecksumAddress(CONTRACT_ADDRESSES["ETH"]),
                 "decimals": 18,
@@ -301,7 +303,7 @@ class EthereumChain(ERC20Like):
         )
 
         for transfer in erc20_transfers:
-            account_holdings.update(
+            holdings.update(
                 {
                     transfer["tokenSymbol"]: {
                         "address": self.web3.toChecksumAddress(
@@ -311,12 +313,34 @@ class EthereumChain(ERC20Like):
                     }
                 }
             )
-        return account_holdings
+        for k in holdings.keys():
+            coin = holdings[k]
+            token = coin["address"]
+            token_decimals = coin["decimals"]
+
+            # Quantity in wei used to calculate price
+            quantity = self.get_token_balance(address=address, token=token)
+
+            if quantity > 0:
+                try:
+                    token_price = self.get_token_price(token=token, decimals=token_decimals)
+
+                    # Quantity in correct format as seen in wallet
+                    quantity = self.get_decimal_representation(
+                        quantity=quantity, decimals=coin["decimals"]
+                    )
+                    price = quantity * token_price
+                    usd_amount = price.quantize(Decimal("0.01"))
+                    account_holdings.append({"Symbol": k, "Balance": quantity, "USD": usd_amount})
+
+                except (ContractLogicError, BadFunctionCallOutput) as e:
+                    logger.exception(e)
+        return DataFrame(account_holdings)
 
     def get_token_balance(
-        self,
-        address: Union[Address, ChecksumAddress, str],
-        token: Union[Address, ChecksumAddress, str],
+            self,
+            address: Union[Address, ChecksumAddress, str],
+            token: Union[Address, ChecksumAddress, str],
     ) -> Wei:
         """
         Retrieves amount of tokens in address
@@ -335,6 +359,9 @@ class EthereumChain(ERC20Like):
         contract = self.web3.eth.contract(address=token, abi=abi)
         return contract.functions.balanceOf(address).call()
 
+    def get_token_price(self, token, decimals):
+        raise NotImplementedError
+
 
 class UniSwap(EthereumChain):
     def __init__(self, address: str, key: str):
@@ -347,7 +374,7 @@ class UniSwap(EthereumChain):
         )
 
     def get_token_price(
-        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+            self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
     ) -> Decimal:
         """
         Gets token price in USDC
@@ -375,11 +402,11 @@ class UniSwap(EthereumChain):
         return token_price
 
     async def swap_tokens(
-        self,
-        token: str,
-        amount_to_spend: Union[int, float, Decimal] = 0,
-        side: str = BUY,
-        is_snipe: bool = False,
+            self,
+            token: str,
+            amount_to_spend: Union[int, float, Decimal] = 0,
+            side: str = BUY,
+            is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap

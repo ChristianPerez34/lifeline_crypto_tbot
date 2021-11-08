@@ -5,8 +5,9 @@ import aiohttp
 import requests
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
+from pandas import DataFrame
 from web3 import Web3
-from web3.exceptions import ContractLogicError
+from web3.exceptions import ContractLogicError, BadFunctionCallOutput
 from web3.types import Wei, Address, ChecksumAddress
 
 from api.eth import ERC20Like
@@ -29,7 +30,7 @@ TRANSACTION_SPEEDS = {
     "fastest": "fastest",
 }
 
-MATIC_CHAIN_URL = "https://rpc-mainnet.matic.network"
+MATIC_CHAIN_URL = "https://polygon-rpc.com"
 
 
 class PolygonChain(ERC20Like):
@@ -46,8 +47,8 @@ class PolygonChain(ERC20Like):
         )
 
     async def get_account_token_holdings(
-        self, address: Union[Address, ChecksumAddress, str]
-    ) -> dict:
+            self, address: Union[Address, ChecksumAddress, str] = None
+    ) -> DataFrame:
         """
         Retrieves account holding for wallet address
         Args:
@@ -56,8 +57,11 @@ class PolygonChain(ERC20Like):
         Returns (dict): User account holdings
 
         """
+        if not address:
+            address = self.address
         logger.info("Gathering account holdings for %s", address)
-        account_holdings = {
+        account_holdings = []
+        holdings = {
             "MATIC": {
                 "address": self.web3.toChecksumAddress(CONTRACT_ADDRESSES["MATIC"]),
                 "decimals": 18,
@@ -76,7 +80,7 @@ class PolygonChain(ERC20Like):
         erc20_transfers = data["result"]
 
         for transfer in erc20_transfers:
-            account_holdings.update(
+            holdings.update(
                 {
                     transfer["tokenSymbol"]: {
                         "address": self.web3.toChecksumAddress(
@@ -86,7 +90,29 @@ class PolygonChain(ERC20Like):
                     }
                 }
             )
-        return account_holdings
+        for k in holdings.keys():
+            coin = holdings[k]
+            token = coin["address"]
+            token_decimals = coin["decimals"]
+
+            # Quantity in wei used to calculate price
+            quantity = self.get_token_balance(address=address, token=token)
+
+            if quantity > 0:
+                try:
+                    token_price = self.get_token_price(token=token, decimals=token_decimals)
+
+                    # Quantity in correct format as seen in wallet
+                    quantity = self.get_decimal_representation(
+                        quantity=quantity, decimals=coin["decimals"]
+                    )
+                    price = quantity * token_price
+                    usd_amount = price.quantize(Decimal("0.01"))
+                    account_holdings.append({"Symbol": k, "Balance": quantity, "USD": usd_amount})
+
+                except (ContractLogicError, BadFunctionCallOutput) as e:
+                    logger.exception(e)
+        return DataFrame(account_holdings)
 
     def get_token_balance(
         self,
@@ -109,6 +135,9 @@ class PolygonChain(ERC20Like):
         abi = self.get_contract_abi(abi_type="sell")
         contract = self.web3.eth.contract(address=token, abi=abi)
         return contract.functions.balanceOf(address).call()
+
+    def get_token_price(self, token, decimals):
+        raise NotImplementedError
 
 
 class QuickSwap(PolygonChain):

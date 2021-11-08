@@ -42,7 +42,7 @@ class Platform(BaseModel):
     @validator("network")
     def check_platform(cls, value: str):
         value = value.upper()
-        if value and value not in ("BSC", "ETH", "MATIC"):
+        if value and value not in ("BSC", "ETH", "MATIC", "COINBASE"):
             raise ValueError("Invalid network. Expected one of eth|bsc|matic")
         return value
 

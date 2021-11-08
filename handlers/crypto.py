@@ -28,9 +28,10 @@ from pandas import DataFrame, read_html, to_datetime
 from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException, HTTPError
 from web3 import Web3
-from web3.exceptions import ContractLogicError, BadFunctionCallOutput
+from web3.exceptions import ContractLogicError
 
 from api.bsc import PancakeSwap
+from api.coinbase import CoinBaseApi
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
@@ -507,7 +508,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -526,7 +527,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-            "https://coinmarketcap.com/new/", headers=HEADERS
+                "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -555,9 +556,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-            user.kucoin_api_key
-            and user.kucoin_api_secret
-            and user.kucoin_api_passphrase
+                user.kucoin_api_key
+                and user.kucoin_api_secret
+                and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -581,8 +582,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                            position_order["stopPriceType"] == "TP"
-                            and position_order["stop"] == "up"
+                                position_order["stopPriceType"] == "TP"
+                                and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -595,7 +596,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                        or (entry > mark_price and unrealized_pnl < 0)
+                           or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -711,7 +712,7 @@ async def send_sell(message: Message) -> None:
 
 
 async def generate_line_chart(
-    coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
+        coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
 ) -> go.Figure:
     logger.info("Creating line chart layout")
     market = await coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
@@ -1029,7 +1030,7 @@ async def send_candle_chart(message: Message):
 
 
 async def chart_inline_query_handler(
-    query: CallbackQuery, callback_data: Dict[str, str]
+        query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Generating chart")
@@ -1060,7 +1061,7 @@ async def chart_inline_query_handler(
 
 
 async def alert_inline_query_handler(
-    query: CallbackQuery, callback_data: Dict[str, str]
+        query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Creating alert!")
@@ -1078,7 +1079,7 @@ async def alert_inline_query_handler(
 
 
 async def price_inline_query_handler(
-    query: CallbackQuery, callback_data: Dict[str, str]
+        query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Retrieving price data")
@@ -1176,45 +1177,22 @@ async def send_balance(message: Message):
     network = Platform(network=message.get_args()).network
 
     if network == "BSC":
-        dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)  # type: ignore
+        exchange = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)  # type: ignore
     elif network == "ETH":
-        dex = UniSwap(address=user.eth.address, key=user.eth.private_key)  # type: ignore
+        exchange = UniSwap(address=user.eth.address, key=user.eth.private_key)  # type: ignore
+    elif network == "MATIC":
+        exchange = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
     else:
-        dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
+        coinbase = user.coinbase
+        exchange = CoinBaseApi(api_key=coinbase.api_key, api_secret=coinbase.api_secret,
+                               api_passphrase=coinbase.api_passphrase)
 
-    account_holdings = await dex.get_account_token_holdings(address=dex.address)
-    account_data_frame = DataFrame()
-
-    for k in account_holdings.keys():
-        coin = account_holdings[k]
-        token = coin["address"]
-        token_decimals = coin["decimals"]
-
-        # Quantity in wei used to calculate price
-        quantity = dex.get_token_balance(address=dex.address, token=token)
-
-        if quantity > 0:
-            try:
-                token_price = dex.get_token_price(token=token, decimals=token_decimals)
-
-                # Quantity in correct format as seen in wallet
-                quantity = dex.get_decimal_representation(
-                    quantity=quantity, decimals=coin["decimals"]
-                )
-                price = quantity * token_price
-                usd_amount = price.quantize(Decimal("0.01"))
-                data_frame = DataFrame(
-                    {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]}
-                )
-                account_data_frame = account_data_frame.append(
-                    data_frame, ignore_index=True
-                )
-            except (ContractLogicError, BadFunctionCallOutput) as e:
-                logger.exception(e)
     logger.info("Creating Account balance dataframe for user %d", user_id)
-    account_data_frame.sort_values(by=["USD"], inplace=True, ascending=False)
-    account_data_frame["USD"] = account_data_frame["USD"].apply("${:,}".format)
-    fig = fif.create_table(account_data_frame)
+    account_holdings = await exchange.get_account_token_holdings()
+
+    account_holdings.sort_values(by=["USD"], inplace=True, ascending=False)
+    account_holdings["USD"] = account_holdings["USD"].apply("${:,}".format)
+    fig = fif.create_table(account_holdings)
     fig.update_layout(
         autosize=True,
     )
@@ -1224,7 +1202,7 @@ async def send_balance(message: Message):
         chat_id=user_id,
         caption=f"{network} Account Balance 💲",
         photo=BufferedReader(
-            BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
+            BytesIO(pio.to_image(fig, format="png", engine="kaleido"))  # type: ignore
         ),
     )
     await message.reply(text="Replied privately 🤫")
