@@ -28,9 +28,10 @@ from pandas import DataFrame, read_html, to_datetime
 from pydantic.error_wrappers import ValidationError
 from requests.exceptions import RequestException, HTTPError
 from web3 import Web3
-from web3.exceptions import ContractLogicError, BadFunctionCallOutput
+from web3.exceptions import ContractLogicError
 
 from api.bsc import PancakeSwap
+from api.coinbase import CoinBaseApi
 from api.coingecko import CoinGecko
 from api.coinmarketcap import CoinMarketCap
 from api.coinpaprika import CoinPaprika
@@ -1176,45 +1177,25 @@ async def send_balance(message: Message):
     network = Platform(network=message.get_args()).network
 
     if network == "BSC":
-        dex = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)  # type: ignore
+        exchange = PancakeSwap(address=user.bsc.address, key=user.bsc.private_key)  # type: ignore
     elif network == "ETH":
-        dex = UniSwap(address=user.eth.address, key=user.eth.private_key)  # type: ignore
+        exchange = UniSwap(address=user.eth.address, key=user.eth.private_key)  # type: ignore
+    elif network == "MATIC":
+        exchange = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
     else:
-        dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
+        coinbase = user.coinbase
+        exchange = CoinBaseApi(
+            api_key=coinbase.api_key,
+            api_secret=coinbase.api_secret,
+            api_passphrase=coinbase.api_passphrase,
+        )
 
-    account_holdings = await dex.get_account_token_holdings(address=dex.address)
-    account_data_frame = DataFrame()
-
-    for k in account_holdings.keys():
-        coin = account_holdings[k]
-        token = coin["address"]
-        token_decimals = coin["decimals"]
-
-        # Quantity in wei used to calculate price
-        quantity = dex.get_token_balance(address=dex.address, token=token)
-
-        if quantity > 0:
-            try:
-                token_price = dex.get_token_price(token=token, decimals=token_decimals)
-
-                # Quantity in correct format as seen in wallet
-                quantity = dex.get_decimal_representation(
-                    quantity=quantity, decimals=coin["decimals"]
-                )
-                price = quantity * token_price
-                usd_amount = price.quantize(Decimal("0.01"))
-                data_frame = DataFrame(
-                    {"Symbol": [k], "Balance": [quantity], "USD": [usd_amount]}
-                )
-                account_data_frame = account_data_frame.append(
-                    data_frame, ignore_index=True
-                )
-            except (ContractLogicError, BadFunctionCallOutput) as e:
-                logger.exception(e)
     logger.info("Creating Account balance dataframe for user %d", user_id)
-    account_data_frame.sort_values(by=["USD"], inplace=True, ascending=False)
-    account_data_frame["USD"] = account_data_frame["USD"].apply("${:,}".format)
-    fig = fif.create_table(account_data_frame)
+    account_holdings = await exchange.get_account_token_holdings()
+
+    account_holdings.sort_values(by=["USD"], inplace=True, ascending=False)
+    account_holdings["USD"] = account_holdings["USD"].apply("${:,}".format)
+    fig = fif.create_table(account_holdings)
     fig.update_layout(
         autosize=True,
     )
@@ -1224,7 +1205,7 @@ async def send_balance(message: Message):
         chat_id=user_id,
         caption=f"{network} Account Balance 💲",
         photo=BufferedReader(
-            BytesIO(pio.to_image(fig, format="jpeg", engine="kaleido"))  # type: ignore
+            BytesIO(pio.to_image(fig, format="png", engine="kaleido"))  # type: ignore
         ),
     )
     await message.reply(text="Replied privately 🤫")

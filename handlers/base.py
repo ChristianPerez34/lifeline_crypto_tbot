@@ -48,7 +48,7 @@ async def send_welcome(message: Message) -> None:
         rf"{bold('/candle')} {italic('COIN')}-{italic('BASECOIN')} {italic('NUM')}\_{italic('TIME')} {italic('LETTER')}"
         " to display coin candle chart. If BaseCoin not specified, will default to USD\n\n",
         f"{bold('/balance')} {italic('NETWORK')} to display binance smart chain balance. Responds privately."
-        " Valid networks eth|bsc|matic\n\n",
+        " Valid networks eth|bsc|matic|coinbase\n\n",
         f"{bold('/spy')} {italic('ADDRESS')} to display some of the accounts holdings.\n\n",
         rf"{bold('/snipe')} {italic('ADDRESS')} {italic('BNB')}\_{italic('AMOUNT')} to snipe token."
         " Uses high gas!\n\n",

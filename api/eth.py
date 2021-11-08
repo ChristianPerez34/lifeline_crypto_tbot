@@ -5,10 +5,11 @@ from typing import Union
 
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
+from pandas import DataFrame
 from pydantic.main import BaseModel
 from web3 import Web3
 from web3.contract import Contract
-from web3.exceptions import ContractLogicError
+from web3.exceptions import ContractLogicError, BadFunctionCallOutput
 from web3.types import Address, ChecksumAddress
 from web3.types import Wei, TxParams
 
@@ -279,18 +280,19 @@ class EthereumChain(ERC20Like):
         )
 
     async def get_account_token_holdings(
-        self, address: Union[Address, ChecksumAddress, str]
-    ) -> dict:
+        self, address: Union[Address, ChecksumAddress, str] = None
+    ) -> DataFrame:
         """
         Retrieves account holding for wallet address
-        Args:
-            address (AddressLike): Wallet address of user
 
         Returns (dict): User account holdings
 
         """
+        if not address:
+            address = self.address
         logger.info("Gathering account holdings for %s", address)
-        account_holdings = {
+        account_holdings = []
+        holdings = {
             "ETH": {
                 "address": self.web3.toChecksumAddress(CONTRACT_ADDRESSES["ETH"]),
                 "decimals": 18,
@@ -301,7 +303,7 @@ class EthereumChain(ERC20Like):
         )
 
         for transfer in erc20_transfers:
-            account_holdings.update(
+            holdings.update(
                 {
                     transfer["tokenSymbol"]: {
                         "address": self.web3.toChecksumAddress(
@@ -311,7 +313,33 @@ class EthereumChain(ERC20Like):
                     }
                 }
             )
-        return account_holdings
+        for k in holdings.keys():
+            coin = holdings[k]
+            token = coin["address"]
+            token_decimals = coin["decimals"]
+
+            # Quantity in wei used to calculate price
+            quantity = self.get_token_balance(address=address, token=token)
+
+            if quantity > 0:
+                try:
+                    token_price = self.get_token_price(
+                        token=token, decimals=token_decimals
+                    )
+
+                    # Quantity in correct format as seen in wallet
+                    quantity = self.get_decimal_representation(
+                        quantity=quantity, decimals=coin["decimals"]
+                    )
+                    price = quantity * token_price
+                    usd_amount = price.quantize(Decimal("0.01"))
+                    account_holdings.append(
+                        {"Symbol": k, "Balance": quantity, "USD": usd_amount}
+                    )
+
+                except (ContractLogicError, BadFunctionCallOutput) as e:
+                    logger.exception(e)
+        return DataFrame(account_holdings)
 
     def get_token_balance(
         self,
@@ -334,6 +362,9 @@ class EthereumChain(ERC20Like):
         abi = self.get_contract_abi(abi_type="sell")
         contract = self.web3.eth.contract(address=token, abi=abi)
         return contract.functions.balanceOf(address).call()
+
+    def get_token_price(self, token, decimals):
+        raise NotImplementedError
 
 
 class UniSwap(EthereumChain):
