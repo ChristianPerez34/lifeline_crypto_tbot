@@ -81,7 +81,7 @@ class ERC20Like:
         return abi
 
     def _swap_exact_eth_for_tokens(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact ETH|BNB|MATIC for tokens.
@@ -107,7 +107,7 @@ class ERC20Like:
         )
 
     def _swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact ETH|BNB|MATIC for tokens supporting fee on transfer tokens
@@ -133,7 +133,7 @@ class ERC20Like:
         )
 
     def _swap_exact_tokens_for_eth(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact tokens for ETH|BNB|MATIC
@@ -162,7 +162,7 @@ class ERC20Like:
         )
 
     def _swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact tokens for ETH|BNB|MATIC supporting fee on transfer tokens
@@ -221,7 +221,7 @@ class ERC20Like:
         logger.info("Approved token for swap")
 
     def _check_approval(
-            self, contract: Contract, token: Union[Address, ChecksumAddress, str], balance: Wei = 0  # type: ignore
+        self, contract: Contract, token: Union[Address, ChecksumAddress, str], balance: Wei = 0  # type: ignore
     ) -> None:
         """
         Validates token is approved for swapping. If not, approves token for swapping.
@@ -280,7 +280,7 @@ class EthereumChain(ERC20Like):
         )
 
     async def get_account_token_holdings(
-            self, address: Union[Address, ChecksumAddress, str] = None
+        self, address: Union[Address, ChecksumAddress, str] = None
     ) -> DataFrame:
         """
         Retrieves account holding for wallet address
@@ -323,7 +323,9 @@ class EthereumChain(ERC20Like):
 
             if quantity > 0:
                 try:
-                    token_price = self.get_token_price(token=token, decimals=token_decimals)
+                    token_price = self.get_token_price(
+                        token=token, decimals=token_decimals
+                    )
 
                     # Quantity in correct format as seen in wallet
                     quantity = self.get_decimal_representation(
@@ -331,16 +333,18 @@ class EthereumChain(ERC20Like):
                     )
                     price = quantity * token_price
                     usd_amount = price.quantize(Decimal("0.01"))
-                    account_holdings.append({"Symbol": k, "Balance": quantity, "USD": usd_amount})
+                    account_holdings.append(
+                        {"Symbol": k, "Balance": quantity, "USD": usd_amount}
+                    )
 
                 except (ContractLogicError, BadFunctionCallOutput) as e:
                     logger.exception(e)
         return DataFrame(account_holdings)
 
     def get_token_balance(
-            self,
-            address: Union[Address, ChecksumAddress, str],
-            token: Union[Address, ChecksumAddress, str],
+        self,
+        address: Union[Address, ChecksumAddress, str],
+        token: Union[Address, ChecksumAddress, str],
     ) -> Wei:
         """
         Retrieves amount of tokens in address
@@ -374,7 +378,7 @@ class UniSwap(EthereumChain):
         )
 
     def get_token_price(
-            self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
     ) -> Decimal:
         """
         Gets token price in USDC
@@ -402,11 +406,11 @@ class UniSwap(EthereumChain):
         return token_price
 
     async def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap

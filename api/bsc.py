@@ -35,7 +35,7 @@ class BinanceSmartChain(ERC20Like):
         )
 
     async def get_account_token_holdings(
-            self, address: Union[Address, ChecksumAddress, str] = None
+        self, address: Union[Address, ChecksumAddress, str] = None
     ) -> DataFrame:
         """
         Retrieves account holding for wallet address
@@ -61,7 +61,7 @@ class BinanceSmartChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         bep20_transfers = data["result"]
@@ -87,7 +87,9 @@ class BinanceSmartChain(ERC20Like):
 
             if quantity > 0:
                 try:
-                    token_price = self.get_token_price(token=token, decimals=token_decimals)
+                    token_price = self.get_token_price(
+                        token=token, decimals=token_decimals
+                    )
 
                     # Quantity in correct format as seen in wallet
                     quantity = self.get_decimal_representation(
@@ -95,16 +97,18 @@ class BinanceSmartChain(ERC20Like):
                     )
                     price = quantity * token_price
                     usd_amount = price.quantize(Decimal("0.01"))
-                    account_holdings.append({"Symbol": k, "Balance": quantity, "USD": usd_amount})
+                    account_holdings.append(
+                        {"Symbol": k, "Balance": quantity, "USD": usd_amount}
+                    )
 
                 except (ContractLogicError, BadFunctionCallOutput) as e:
                     logger.exception(e)
         return DataFrame(account_holdings)
 
     def get_token_balance(
-            self,
-            address: Union[Address, ChecksumAddress, str],
-            token: Union[Address, ChecksumAddress, str],
+        self,
+        address: Union[Address, ChecksumAddress, str],
+        token: Union[Address, ChecksumAddress, str],
     ) -> Wei:
         """
         Retrieves amount of tokens in address
@@ -141,11 +145,11 @@ class PancakeSwap(BinanceSmartChain):
         )
 
     def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -241,7 +245,7 @@ class PancakeSwap(BinanceSmartChain):
         return reply
 
     def get_token_price(
-            self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
     ) -> Decimal:
         """
         Gets token price in BUSD
@@ -270,9 +274,9 @@ class PancakeSwap(BinanceSmartChain):
         return token_price
 
     def get_token_pair_address(
-            self,
-            token_0: Union[Address, ChecksumAddress, str],
-            token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"],
+        self,
+        token_0: Union[Address, ChecksumAddress, str],
+        token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"],
     ) -> str:
         """
         Retrieves token pair address

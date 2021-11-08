@@ -47,7 +47,7 @@ class PolygonChain(ERC20Like):
         )
 
     async def get_account_token_holdings(
-            self, address: Union[Address, ChecksumAddress, str] = None
+        self, address: Union[Address, ChecksumAddress, str] = None
     ) -> DataFrame:
         """
         Retrieves account holding for wallet address
@@ -100,7 +100,9 @@ class PolygonChain(ERC20Like):
 
             if quantity > 0:
                 try:
-                    token_price = self.get_token_price(token=token, decimals=token_decimals)
+                    token_price = self.get_token_price(
+                        token=token, decimals=token_decimals
+                    )
 
                     # Quantity in correct format as seen in wallet
                     quantity = self.get_decimal_representation(
@@ -108,7 +110,9 @@ class PolygonChain(ERC20Like):
                     )
                     price = quantity * token_price
                     usd_amount = price.quantize(Decimal("0.01"))
-                    account_holdings.append({"Symbol": k, "Balance": quantity, "USD": usd_amount})
+                    account_holdings.append(
+                        {"Symbol": k, "Balance": quantity, "USD": usd_amount}
+                    )
 
                 except (ContractLogicError, BadFunctionCallOutput) as e:
                     logger.exception(e)

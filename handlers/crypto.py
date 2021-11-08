@@ -508,7 +508,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -527,7 +527,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-                "https://coinmarketcap.com/new/", headers=HEADERS
+            "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -556,9 +556,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-                user.kucoin_api_key
-                and user.kucoin_api_secret
-                and user.kucoin_api_passphrase
+            user.kucoin_api_key
+            and user.kucoin_api_secret
+            and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -582,8 +582,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                                position_order["stopPriceType"] == "TP"
-                                and position_order["stop"] == "up"
+                            position_order["stopPriceType"] == "TP"
+                            and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -596,7 +596,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                           or (entry > mark_price and unrealized_pnl < 0)
+                        or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -712,7 +712,7 @@ async def send_sell(message: Message) -> None:
 
 
 async def generate_line_chart(
-        coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
+    coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
 ) -> go.Figure:
     logger.info("Creating line chart layout")
     market = await coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
@@ -1030,7 +1030,7 @@ async def send_candle_chart(message: Message):
 
 
 async def chart_inline_query_handler(
-        query: CallbackQuery, callback_data: Dict[str, str]
+    query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Generating chart")
@@ -1061,7 +1061,7 @@ async def chart_inline_query_handler(
 
 
 async def alert_inline_query_handler(
-        query: CallbackQuery, callback_data: Dict[str, str]
+    query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Creating alert!")
@@ -1079,7 +1079,7 @@ async def alert_inline_query_handler(
 
 
 async def price_inline_query_handler(
-        query: CallbackQuery, callback_data: Dict[str, str]
+    query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Retrieving price data")
@@ -1184,8 +1184,11 @@ async def send_balance(message: Message):
         exchange = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
     else:
         coinbase = user.coinbase
-        exchange = CoinBaseApi(api_key=coinbase.api_key, api_secret=coinbase.api_secret,
-                               api_passphrase=coinbase.api_passphrase)
+        exchange = CoinBaseApi(
+            api_key=coinbase.api_key,
+            api_secret=coinbase.api_secret,
+            api_passphrase=coinbase.api_passphrase,
+        )
 
     logger.info("Creating Account balance dataframe for user %d", user_id)
     account_holdings = await exchange.get_account_token_holdings()
