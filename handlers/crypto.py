@@ -249,15 +249,15 @@ async def send_price(message: Message) -> None:
         message (Message): Message to reply to
     """
     logger.info("Crypto command executed")
-    reply = ""
     args = message.get_args().split()
 
     try:
         coin = Coin(symbol=args[0].upper())
         symbol = coin.symbol
         coin_ids = await get_coin_ids(symbol=symbol)
+        coin_ids_len = len(coin_ids)
 
-        if len(coin_ids) == 1:
+        if coin_ids_len == 1:
             coin_stats = await get_coin_stats(coin_id=coin_ids[0])
             percent_change_24h = coin_stats["percent_change_24h"]
             percent_change_7d = coin_stats["percent_change_7d"]
@@ -293,7 +293,7 @@ async def send_price(message: Message) -> None:
                     f"{'📈' if percent_change_30d > 0 else '📉'} 30D Change: {percent_change_30d}%\n"
                 )
             await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
-        else:
+        elif coin_ids_len > 1:
             keyboard_markup = InlineKeyboardMarkup()
             for coin_id in coin_ids:
                 if isinstance(coin_id, tuple):
@@ -311,6 +311,11 @@ async def send_price(message: Message) -> None:
                 text="Choose token to create alert",
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=keyboard_markup,
+            )
+        else:
+            await message.reply(
+                text="❌ Token data not found in CoinMarketCap/CoinGecko",
+                parse_mode=ParseMode.MARKDOWN,
             )
     except IndexError as e:
         logger.exception(e)
