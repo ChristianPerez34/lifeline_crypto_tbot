@@ -58,7 +58,7 @@ WEBAPP_HOST = os.getenv("WEBAPP_HOST", "localhost")
 WEBAPP_PORT = os.getenv("WEBAPP_PORT", 8000)
 WEBHOOK_PATH = f"/webhook/{TELEGRAM_BOT_API_KEY}"
 
-https_tunnel = ngrok.connect(addr=WEBAPP_PORT, bind_tls=True)
+https_tunnel = ngrok.connect(addr=f"{WEBAPP_HOST}:{WEBAPP_PORT}", bind_tls=True)
 WEBHOOK_URL = f"{https_tunnel.public_url}{WEBHOOK_PATH}"
 
 # DB settings
