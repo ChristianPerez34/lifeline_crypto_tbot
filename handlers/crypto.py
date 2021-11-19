@@ -22,6 +22,7 @@ from aiogram.types import (
 from aiogram.utils.emoji import emojize
 from aiogram.utils.markdown import bold, italic, text
 from coinmarketcapapi import CoinMarketCapAPIError
+from copra.rest.client import APIRequestError
 from cryptography.fernet import Fernet
 from inflection import titleize, humanize
 from pandas import DataFrame, read_html, to_datetime
@@ -55,7 +56,7 @@ from schemas import (
     TradeCoin,
     User,
     LimitOrder,
-    Platform,
+    Platform, CoinbaseOrder,
 )
 from utils import all_same
 from . import gas_tracker
@@ -308,7 +309,7 @@ async def send_price(message: Message) -> None:
                 )
 
             await message.reply(
-                text="Choose token to create alert",
+                text="Choose token to display statistics",
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=keyboard_markup,
             )
@@ -513,7 +514,7 @@ async def send_latest_listings(message: Message) -> None:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
+                "https://www.coingecko.com/en/coins/recently_added", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
 
@@ -532,7 +533,7 @@ async def send_latest_listings(message: Message) -> None:
         logger.info("Retrieving latest crypto listings from CoinMarketCap")
         reply += "\n\nCoinMarketCap Latest Listings 🤑\n\n"
         async with session.get(
-            "https://coinmarketcap.com/new/", headers=HEADERS
+                "https://coinmarketcap.com/new/", headers=HEADERS
         ) as response:
             df = read_html(await response.text(), flavor="bs4")[0]
             for index, row in df.iterrows():
@@ -561,9 +562,9 @@ async def send_restart_kucoin_bot(message: Message) -> None:
         user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user.id))
 
         if (
-            user.kucoin_api_key
-            and user.kucoin_api_secret
-            and user.kucoin_api_passphrase
+                user.kucoin_api_key
+                and user.kucoin_api_secret
+                and user.kucoin_api_passphrase
         ):
             fernet = Fernet(FERNET_KEY)
             api_key = fernet.decrypt(user.kucoin_api_key.encode()).decode()
@@ -587,8 +588,8 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                         stop_price = position_order["stopPrice"]
 
                         if (
-                            position_order["stopPriceType"] == "TP"
-                            and position_order["stop"] == "up"
+                                position_order["stopPriceType"] == "TP"
+                                and position_order["stop"] == "up"
                         ):
                             take_profit = stop_price
                         else:
@@ -601,7 +602,7 @@ async def send_restart_kucoin_bot(message: Message) -> None:
                     side = (
                         "LONG"
                         if (entry < mark_price and unrealized_pnl > 0)
-                        or (entry > mark_price and unrealized_pnl < 0)
+                           or (entry > mark_price and unrealized_pnl < 0)
                         else "SHORT"
                     )
                     active_orders.update(
@@ -717,7 +718,7 @@ async def send_sell(message: Message) -> None:
 
 
 async def generate_line_chart(
-    coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
+        coin_gecko: CoinGecko, coin_id: str, symbol: str, time_frame: int, base_coin: str
 ) -> go.Figure:
     logger.info("Creating line chart layout")
     market = await coin_gecko.coin_market_lookup(coin_id, time_frame, base_coin)
@@ -1035,7 +1036,7 @@ async def send_candle_chart(message: Message):
 
 
 async def chart_inline_query_handler(
-    query: CallbackQuery, callback_data: Dict[str, str]
+        query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Generating chart")
@@ -1066,7 +1067,7 @@ async def chart_inline_query_handler(
 
 
 async def alert_inline_query_handler(
-    query: CallbackQuery, callback_data: Dict[str, str]
+        query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Creating alert!")
@@ -1084,7 +1085,7 @@ async def alert_inline_query_handler(
 
 
 async def price_inline_query_handler(
-    query: CallbackQuery, callback_data: Dict[str, str]
+        query: CallbackQuery, callback_data: Dict[str, str]
 ):
     await query.message.delete_reply_markup()
     await query.answer("Retrieving price data")
@@ -1381,5 +1382,36 @@ async def send_cancel_order(message: Message):
     if order.telegram_group_member.id == user_id:
         reply = f"Cancelled order {order_id}"
         order.remove()
+
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+
+
+async def send_coinbase(message: Message):
+    """
+    Replies with coinbase order results
+    Args:
+        message: Message to reply to
+
+    """
+    logger.info("Executing coinbase command")
+    user_id = message.from_user.id
+    args = message.get_args().split()
+    order_type, trade_direction, symbol, amount, limit_price = args + [''] * (5 - len(args))
+    user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
+    amount = float(amount) if amount else 0.0
+    limit_price = float(limit_price) if limit_price else 0.0
+    order = CoinbaseOrder(order_type=order_type, trade_direction=trade_direction, symbol=symbol, amount=amount,
+                          limit_price=limit_price)
+    coinbase = CoinBaseApi(api_key=user.coinbase.api_key, api_secret=user.coinbase.api_secret,
+                           api_passphrase=user.coinbase.api_passphrase)
+    try:
+        await coinbase.trade(order_type=order.order_type, trade_direction=order.trade_direction.lower(),
+                             symbol=order.symbol, amount=order.amount, limit_price=order.limit_price)
+
+        reply = f"🙌 {humanize(order.order_type)} order executed successfully"
+    except IndexError:
+        reply = f"😞 Provided symbol ({bold(order.symbol)}) is not available for trading on CoinBase"
+    except APIRequestError as e:
+        reply = f"😔 {humanize(str(e).split('[')[0])}"
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
