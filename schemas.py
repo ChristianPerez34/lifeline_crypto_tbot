@@ -196,7 +196,9 @@ class LimitOrder(Token):
     bnb_amount: Decimal
     telegram_group_member: Optional[User]
 
-    _validate_trade_direction = validator("trade_direction", allow_reuse=True)(validate_trade_direction)
+    _validate_trade_direction = validator("trade_direction", allow_reuse=True)(
+        validate_trade_direction
+    )
 
     class Config:
         orm_mode = True
@@ -210,9 +212,13 @@ class CoinbaseOrder(BaseModel):
     amount: float
     limit_price: float
 
-    _validate_trade_direction = validator("trade_direction", allow_reuse=True)(validate_trade_direction)
+    _validate_trade_direction = validator("trade_direction", allow_reuse=True)(
+        validate_trade_direction
+    )
     _validate_amount = validator("amount", allow_reuse=True)(is_positive_number)
-    _validate_limit_price = validator("limit_price", allow_reuse=True)(is_positive_number)
+    _validate_limit_price = validator("limit_price", allow_reuse=True)(
+        is_positive_number
+    )
 
     @validator("symbol")
     def uppercase_symbol(cls, value: str):

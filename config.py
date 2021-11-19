@@ -24,7 +24,7 @@ FERNET_KEY = os.getenv("FERNET_KEY").encode()  # type: ignore
 REGISTER_TYPES = ("BSC", "KUCOIN")
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 "
-                  "Safari/537.36 "
+    "Safari/537.36 "
 }
 GREETINGS = [
     "Welcome fellow degen 😈 %s",

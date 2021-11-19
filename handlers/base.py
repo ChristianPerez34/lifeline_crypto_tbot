@@ -56,7 +56,8 @@ async def send_welcome(message: Message) -> None:
         rf"{italic('BNB')}\_{italic('AMOUNT')} to create a limit order. "
         "Actions: buy|sell|stop\n\n",
         rf"{bold('/active')}\_{bold('orders')} to display active limit orders" "\n\n",
-        rf"{bold('/cancel')}\_{bold('order')} {italic('ORDER')}\_{italic('ID')} to cancel order" "\n\n",
+        rf"{bold('/cancel')}\_{bold('order')} {italic('ORDER')}\_{italic('ID')} to cancel order"
+        "\n\n",
         f"{bold('/coinbase')} {bold('limit')} {italic('BUY')}|{italic('SELL')}|{italic('STOP')} {italic('SYMBOL')} "
         f"{italic('$AMOUNT')} {italic('$LIMIT')}\n\n",
         f"{bold('/coinbase')} {bold('market')} {italic('BUY')}|{italic('SELL')} {italic('SYMBOL')}\n\n",
@@ -83,7 +84,7 @@ async def send_greeting(message: Message) -> None:
 
 
 async def send_message(
-        channel_id: int, message: str, inline: bool = False, data: str = ""
+    channel_id: int, message: str, inline: bool = False, data: str = ""
 ) -> None:
     logger.info("Sending message to chat id: %s", channel_id)
     keyboard_markup = InlineKeyboardMarkup()
