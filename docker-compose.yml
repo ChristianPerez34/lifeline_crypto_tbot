@@ -25,7 +25,7 @@ services:
 
   telegram_bot:
     build: .
-    command: bash -c "python app.lifeline_crypto_tbot"
+    command: bash -c "python app.lifeline_crypto_tbot.py"
     volumes:
       - .:/lifeline_crypto_tbot
     ports:
