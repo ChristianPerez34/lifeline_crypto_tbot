@@ -18,10 +18,17 @@ def is_positive_number(value: Real):
     return value
 
 
-def check_telegram_group_member(cls, value: Union[int, TelegramGroupMember]):
+def check_telegram_group_member(value: Union[int, TelegramGroupMember]):
     if isinstance(value, int):
         return value
     return value.id
+
+
+def validate_trade_direction(value: str):
+    value = value.upper()
+    if value not in (BUY, SELL, STOP):
+        raise ValueError("Valid options are either 'buy'|'sell'|'stop'")
+    return value
 
 
 class Token(BaseModel):
@@ -189,13 +196,38 @@ class LimitOrder(Token):
     bnb_amount: Decimal
     telegram_group_member: Optional[User]
 
-    @validator("trade_direction")
-    def validate_trade_direction(cls, value: str):
-        value = value.upper()
-        if value not in (BUY, SELL, STOP):
-            raise ValueError("Valid options are either 'buy'|'sell'|'stop'")
-        return value
+    _validate_trade_direction = validator("trade_direction", allow_reuse=True)(
+        validate_trade_direction
+    )
 
     class Config:
         orm_mode = True
         arbitrary_types_allowed = True
+
+
+class CoinbaseOrder(BaseModel):
+    order_type: str
+    trade_direction: str
+    symbol: str
+    amount: float
+    limit_price: float
+
+    _validate_trade_direction = validator("trade_direction", allow_reuse=True)(
+        validate_trade_direction
+    )
+    _validate_amount = validator("amount", allow_reuse=True)(is_positive_number)
+    _validate_limit_price = validator("limit_price", allow_reuse=True)(
+        is_positive_number
+    )
+
+    @validator("symbol")
+    def uppercase_symbol(cls, value: str):
+        return value.upper()
+
+    @validator("order_type")
+    def validate_order_type(cls, value: str):
+        value = value.lower()
+
+        if value not in ("market", "limit"):
+            raise ValueError("Expected either 'market' or 'limit'")
+        return value

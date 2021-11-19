@@ -56,7 +56,11 @@ async def send_welcome(message: Message) -> None:
         rf"{italic('BNB')}\_{italic('AMOUNT')} to create a limit order. "
         "Actions: buy|sell|stop\n\n",
         rf"{bold('/active')}\_{bold('orders')} to display active limit orders" "\n\n",
-        rf"{bold('/cancel')}\_{bold('order')} {italic('ORDER')}\_{italic('ID')} to cancel order",
+        rf"{bold('/cancel')}\_{bold('order')} {italic('ORDER')}\_{italic('ID')} to cancel order"
+        "\n\n",
+        f"{bold('/coinbase')} {bold('limit')} {italic('BUY')}|{italic('SELL')}|{italic('STOP')} {italic('SYMBOL')} "
+        f"{italic('$AMOUNT')} {italic('$LIMIT')}\n\n",
+        f"{bold('/coinbase')} {bold('market')} {italic('BUY')}|{italic('SELL')} {italic('SYMBOL')}\n\n",
     )
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 

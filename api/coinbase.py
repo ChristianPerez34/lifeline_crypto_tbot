@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 from pandas import DataFrame
 
 from app import logger
-from config import FERNET_KEY
+from config import FERNET_KEY, BUY, SELL
 
 
 class CoinBaseApi:
@@ -47,3 +47,81 @@ class CoinBaseApi:
                     }
                     account_holdings.append(holdings)
         return DataFrame(account_holdings)
+
+    async def trade(
+        self,
+        order_type: str,
+        trade_direction: str,
+        symbol: str,
+        amount: float,
+        limit_price: float = None,
+    ):
+        async with self.coinbase_client as client:
+            accounts = [
+                account
+                for account in await client.accounts()
+                if account["currency"] == symbol
+            ]
+            available_balance = float(accounts[0]["available"])
+
+            product_id = f"{symbol}-USD"
+
+            if order_type == "market":
+                amount = amount if trade_direction == BUY.lower() else available_balance
+                funds = amount
+                size = None
+
+                if trade_direction == SELL.lower():
+                    funds = None
+                    size = amount
+                response = await client.market_order(
+                    side=trade_direction, product_id=product_id, size=size, funds=funds
+                )
+            else:
+                if not limit_price:
+                    raise ValueError(
+                        "Limit orders must have 'limit_price' parameter set"
+                    )
+                num_decimals = len(
+                    [
+                        product
+                        for product in await client.products()
+                        if product["id"] == product_id
+                    ][0]["base_increment"].split(".")[1]
+                )
+
+                exchange_rate = await client.ticker(product_id=product_id)
+                size = round(
+                    float(amount / float(exchange_rate["price"])), num_decimals
+                )
+                price = limit_price
+
+                if trade_direction == BUY.lower():
+                    response = await client.limit_order(
+                        side=trade_direction,
+                        product_id=product_id,
+                        size=size,
+                        price=price,
+                    )
+                elif trade_direction == SELL.lower():
+                    # Sell all available funds if calculated size is greater than available balance
+                    size = size if size < available_balance else available_balance
+                    response = await client.limit_order(
+                        side=trade_direction,
+                        product_id=product_id,
+                        size=size,
+                        price=price,
+                    )
+                else:
+                    # Limit stop loss
+                    stop_price = limit_price
+                    response = await client.limit_order(
+                        side=SELL.lower(),
+                        product_id=product_id,
+                        size=size,
+                        stop="loss",
+                        price=price,
+                        stop_price=stop_price,
+                    )
+
+            return response

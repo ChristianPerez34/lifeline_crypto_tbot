@@ -2,6 +2,7 @@ import os
 from enum import Enum
 
 from dotenv import load_dotenv
+from pyngrok import ngrok
 
 
 class RegisterTypes(Enum):
@@ -48,10 +49,17 @@ POLYGONSCAN_API_KEY = os.getenv("POLYGONSCAN_API_KEY")
 # Telegram env settings
 TELEGRAM_BOT_API_KEY = os.getenv("TELEGRAM_BOT_API_KEY")
 
+# NGROK Settings
+NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")
+ngrok.set_auth_token(NGROK_AUTH_TOKEN)
+
 # Webhooks settings
-WEBHOOK_HOST = os.getenv("APP_URL")
+WEBAPP_HOST = os.getenv("WEBAPP_HOST", "localhost")
+WEBAPP_PORT = os.getenv("WEBAPP_PORT", 8000)
 WEBHOOK_PATH = f"/webhook/{TELEGRAM_BOT_API_KEY}"
-WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
+
+https_tunnel = ngrok.connect(addr=8000, bind_tls=True)
+WEBHOOK_URL = f"{https_tunnel.public_url}{WEBHOOK_PATH}"
 
 # DB settings
 DB_NAME = os.getenv("DB_NAME")
@@ -90,6 +98,3 @@ KUCOIN_TASK_NAME = "KUCOIN_BOT"
 
 # CoinMarketCap settings
 COIN_MARKET_CAP_API_KEY = os.getenv("COIN_MARKET_CAP_API_KEY")
-
-# NGROK Settings
-NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")

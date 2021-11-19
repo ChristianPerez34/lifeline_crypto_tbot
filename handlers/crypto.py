@@ -22,6 +22,7 @@ from aiogram.types import (
 from aiogram.utils.emoji import emojize
 from aiogram.utils.markdown import bold, italic, text
 from coinmarketcapapi import CoinMarketCapAPIError
+from copra.rest.client import APIRequestError
 from cryptography.fernet import Fernet
 from inflection import titleize, humanize
 from pandas import DataFrame, read_html, to_datetime
@@ -56,6 +57,7 @@ from schemas import (
     User,
     LimitOrder,
     Platform,
+    CoinbaseOrder,
 )
 from utils import all_same
 from . import gas_tracker
@@ -308,7 +310,7 @@ async def send_price(message: Message) -> None:
                 )
 
             await message.reply(
-                text="Choose token to create alert",
+                text="Choose token to display statistics",
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=keyboard_markup,
             )
@@ -1381,5 +1383,51 @@ async def send_cancel_order(message: Message):
     if order.telegram_group_member.id == user_id:
         reply = f"Cancelled order {order_id}"
         order.remove()
+
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+
+
+async def send_coinbase(message: Message):
+    """
+    Replies with coinbase order results
+    Args:
+        message: Message to reply to
+
+    """
+    logger.info("Executing coinbase command")
+    user_id = message.from_user.id
+    args = message.get_args().split()
+    order_type, trade_direction, symbol, amount, limit_price = args + [""] * (
+        5 - len(args)
+    )
+    user = User.from_orm(TelegramGroupMember.get_or_none(primary_key=user_id))
+    amount = float(amount) if amount else 0.0
+    limit_price = float(limit_price) if limit_price else 0.0
+    order = CoinbaseOrder(
+        order_type=order_type,
+        trade_direction=trade_direction,
+        symbol=symbol,
+        amount=amount,
+        limit_price=limit_price,
+    )
+    coinbase = CoinBaseApi(
+        api_key=user.coinbase.api_key,
+        api_secret=user.coinbase.api_secret,
+        api_passphrase=user.coinbase.api_passphrase,
+    )
+    try:
+        await coinbase.trade(
+            order_type=order.order_type,
+            trade_direction=order.trade_direction.lower(),
+            symbol=order.symbol,
+            amount=order.amount,
+            limit_price=order.limit_price,
+        )
+
+        reply = f"🙌 {humanize(order.order_type)} order executed successfully"
+    except IndexError:
+        reply = f"😞 Provided symbol ({bold(order.symbol)}) is not available for trading on CoinBase"
+    except APIRequestError as e:
+        reply = f"😔 {humanize(str(e).split('[')[0])}"
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
