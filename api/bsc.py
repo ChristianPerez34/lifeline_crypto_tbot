@@ -127,7 +127,7 @@ class BinanceSmartChain(ERC20Like):
         contract = self.web3.eth.contract(address=token, abi=abi)
         return contract.functions.balanceOf(address).call()
 
-    def get_token_price(self, token, decimals):
+    async def get_token_price(self, token, decimals):
         raise NotImplementedError
 
 
