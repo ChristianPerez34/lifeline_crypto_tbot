@@ -90,17 +90,17 @@ class PolygonChain(ERC20Like):
                     }
                 }
             )
-        for k in holdings.keys():
-            coin = holdings[k]
+        for key, value in holdings.items():
+            coin = value
             token = coin["address"]
             token_decimals = coin["decimals"]
 
             # Quantity in wei used to calculate price
-            quantity = self.get_token_balance(address=address, token=token)
+            quantity = await self.get_token_balance(address=address, token=token)
 
             if quantity > 0:
                 try:
-                    token_price = self.get_token_price(
+                    token_price = await self.get_token_price(
                         token=token, decimals=token_decimals
                     )
 
@@ -111,14 +111,14 @@ class PolygonChain(ERC20Like):
                     price = quantity * token_price
                     usd_amount = price.quantize(Decimal("0.01"))
                     account_holdings.append(
-                        {"Symbol": k, "Balance": quantity, "USD": usd_amount}
+                        {"Symbol": key, "Balance": quantity, "USD": usd_amount}
                     )
 
                 except (ContractLogicError, BadFunctionCallOutput) as e:
                     logger.exception(e)
         return DataFrame(account_holdings)
 
-    def get_token_balance(
+    async def get_token_balance(
         self,
         address: Union[Address, ChecksumAddress, str],
         token: Union[Address, ChecksumAddress, str],
@@ -136,11 +136,11 @@ class PolygonChain(ERC20Like):
         if token == CONTRACT_ADDRESSES["MATIC"]:
             return self.web3.eth.get_balance(address)
 
-        abi = self.get_contract_abi(abi_type="sell")
+        abi = await self.get_contract_abi(abi_type="sell")
         contract = self.web3.eth.contract(address=token, abi=abi)
         return contract.functions.balanceOf(address).call()
 
-    def get_token_price(self, token, decimals):
+    async def get_token_price(self, token, decimals):
         raise NotImplementedError
 
 
@@ -150,14 +150,8 @@ class QuickSwap(PolygonChain):
         self.address = self.web3.toChecksumAddress(address)
         self.key = key
         self.fernet = Fernet(FERNET_KEY)
-        self.router_contract = self.web3.eth.contract(
-            address=self.router_address, abi=self.get_contract_abi(abi_type="router")
-        )
-        self.factory_contract = self.web3.eth.contract(
-            address=self.factory_address, abi=self.get_contract_abi(abi_type="factory")
-        )
 
-    def get_token_price(
+    async def get_token_price(
         self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
     ) -> Decimal:
         """
@@ -170,6 +164,8 @@ class QuickSwap(PolygonChain):
 
         """
         logger.info("Retrieving token price in USDC for %s", token)
+
+        await self.set_router_contract()
         usdc = CONTRACT_ADDRESSES["USDC"]
         matic = CONTRACT_ADDRESSES["MATIC"]
         wmatic = CONTRACT_ADDRESSES["WMATIC"]
@@ -194,7 +190,7 @@ class QuickSwap(PolygonChain):
         ).json()
         return gas_prices[TRANSACTION_SPEEDS[speed]]
 
-    def swap_tokens(
+    async def swap_tokens(
         self,
         token: str,
         amount_to_spend: Union[int, float, Decimal] = 0,
@@ -214,6 +210,7 @@ class QuickSwap(PolygonChain):
 
         """
         logger.info("Swapping tokens")
+        await self.set_router_contract()
         if self.web3.isConnected():
             token = self.web3.toChecksumAddress(token)
             wmatic = CONTRACT_ADDRESSES["WMATIC"]
@@ -228,15 +225,13 @@ class QuickSwap(PolygonChain):
             )
             try:
                 txn = None
-                abi = self.get_contract_abi(abi_type="router")
-                token_abi = self.get_contract_abi(abi_type="sell")
-                contract = self.web3.eth.contract(address=self.router_address, abi=abi)
+                token_abi = await self.get_contract_abi(abi_type="sell")
                 token_contract = self.web3.eth.contract(address=token, abi=token_abi)
 
                 if side == BUY:
                     amount_to_spend = self.web3.toWei(amount_to_spend, "ether")
                     route = [wmatic, token]
-                    args = (contract, route, amount_to_spend, gas_price)
+                    args = (self.router_contract, route, amount_to_spend, gas_price)
                     swap_methods = [
                         self._swap_exact_eth_for_tokens,
                         self._swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens,
@@ -250,13 +245,13 @@ class QuickSwap(PolygonChain):
                         address=self.address, token=token  # type: ignore
                     )
                     route = [token, CONTRACT_ADDRESSES["WMATIC"]]
-                    args = (contract, route, amount_to_spend, gas_price)
+                    args = (self.router_contract, route, amount_to_spend, gas_price)
                     swap_methods = [
                         self._swap_exact_tokens_for_eth,
                         self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
                     ]
-                    balance = self.get_token_balance(address=self.address, token=token)  # type: ignore
-                    self._check_approval(
+                    balance = await self.get_token_balance(address=self.address, token=token)  # type: ignore
+                    await self._check_approval(
                         contract=token_contract,
                         token=token,
                         balance=balance,
@@ -285,7 +280,7 @@ class QuickSwap(PolygonChain):
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
 
                 # Pre-approve token for future swaps
-                self._check_approval(
+                await self._check_approval(
                     contract=token_contract,
                     token=token,
                     balance=self.get_token_balance(address=self.address, token=token),  # type: ignore

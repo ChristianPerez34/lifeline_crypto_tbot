@@ -49,17 +49,21 @@ POLYGONSCAN_API_KEY = os.getenv("POLYGONSCAN_API_KEY")
 # Telegram env settings
 TELEGRAM_BOT_API_KEY = os.getenv("TELEGRAM_BOT_API_KEY")
 
-# NGROK Settings
-NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")
-ngrok.set_auth_token(NGROK_AUTH_TOKEN)
-
 # Webhooks settings
 WEBAPP_HOST = os.getenv("WEBAPP_HOST", "localhost")
-WEBAPP_PORT = os.getenv("WEBAPP_PORT", 8000)
+WEBAPP_PORT = os.getenv("WEBAPP_PORT", "8000")
 WEBHOOK_PATH = f"/webhook/{TELEGRAM_BOT_API_KEY}"
 
-https_tunnel = ngrok.connect(addr=f"{WEBAPP_HOST}:{WEBAPP_PORT}", bind_tls=True)
-WEBHOOK_URL = f"{https_tunnel.public_url}{WEBHOOK_PATH}"
+# NGROK Settings
+USE_NGROK = bool(int(os.getenv("USE_NGROK", "1")))
+if USE_NGROK:
+    NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")
+    ngrok.set_auth_token(NGROK_AUTH_TOKEN)
+    https_tunnel = ngrok.connect(addr=f"{WEBAPP_HOST}:{WEBAPP_PORT}", bind_tls=True)
+    WEBHOOK_URL = f"{https_tunnel.public_url}{WEBHOOK_PATH}"
+else:
+    LOCAL_TUNNEL_URL = os.getenv("LOCAL_TUNNEL_URL")
+    WEBHOOK_URL = f"{LOCAL_TUNNEL_URL}{WEBHOOK_PATH}"
 
 # DB settings
 DB_NAME = os.getenv("DB_NAME")

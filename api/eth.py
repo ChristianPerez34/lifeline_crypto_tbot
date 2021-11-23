@@ -3,6 +3,8 @@ import time
 from decimal import Decimal
 from typing import Union
 
+import aiofiles
+import aiohttp
 from aiogram.utils.markdown import link
 from cryptography.fernet import Fernet
 from pandas import DataFrame
@@ -14,8 +16,8 @@ from web3.types import Address, ChecksumAddress
 from web3.types import Wei, TxParams
 
 from app import logger
-from config import FERNET_KEY, ETHEREUM_MAIN_NET_URL, BUY
-from handlers import gas_tracker, ether_scan
+from config import FERNET_KEY, ETHEREUM_MAIN_NET_URL, BUY, ETHERSCAN_API_KEY
+from handlers import gas_tracker
 
 CONTRACT_ADDRESSES = {
     "ETH": Web3.toChecksumAddress("0x0000000000000000000000000000000000000000"),
@@ -42,6 +44,23 @@ class ERC20Like:
         self.web3 = None
         self.address = None
         self.router_address = None
+        self.factory_address = None
+        self.router_contract = None
+        self.factory_contract = None
+
+    async def set_router_contract(self):
+        if not self.router_contract:
+            self.router_contract = self.web3.eth.contract(
+                address=self.router_address,
+                abi=await self.get_contract_abi(abi_type="router"),
+            )
+
+    async def set_factory_contract(self):
+        if not self.factory_contract:
+            self.factory_contract = self.web3.eth.contract(
+                address=self.factory_address,
+                abi=await self.get_contract_abi(abi_type="factory"),
+            )
 
     @staticmethod
     def get_decimal_representation(quantity: Wei, decimals: int) -> Decimal:
@@ -58,7 +77,7 @@ class ERC20Like:
         return quantity / Decimal(10 ** (18 - (decimals % 18)))
 
     @staticmethod
-    def get_contract_abi(abi_type: str = "liquidity") -> str:
+    async def get_contract_abi(abi_type: str = "liquidity") -> str:
         """
         Retrieves contract abi
         Args:
@@ -76,8 +95,9 @@ class ERC20Like:
             filename = "abi/pancakeswap_v2.abi"
         elif abi_type == "factory":
             filename = "abi/factory_erc20.abi"
-        with open(filename) as file:
-            abi = json.dumps(json.load(file))
+        async with aiofiles.open(filename, mode="r") as file:
+            data = await file.read()
+            abi = json.loads(data)
         return abi
 
     def _swap_exact_eth_for_tokens(
@@ -220,7 +240,7 @@ class ERC20Like:
         time.sleep(1)
         logger.info("Approved token for swap")
 
-    def _check_approval(
+    async def _check_approval(
         self, contract: Contract, token: Union[Address, ChecksumAddress, str], balance: Wei = 0  # type: ignore
     ) -> None:
         """
@@ -233,7 +253,7 @@ class ERC20Like:
         """
         logger.info("Verifying token (%s) has approval", token)
         balance = (
-            self.get_token_balance(address=self.address, token=token)
+            await self.get_token_balance(address=self.address, token=token)
             if balance == 0
             else balance
         )
@@ -244,20 +264,22 @@ class ERC20Like:
         if balance > allowance:
             self._approve(contract=contract)
 
-    def get_token_balance(self, address, token):
+    async def get_token_balance(self, address, token):
         raise NotImplementedError
 
-    def get_token(self, address: Union[Address, ChecksumAddress, str]) -> ERC20Token:
+    async def get_token(
+        self, address: Union[Address, ChecksumAddress, str]
+    ) -> ERC20Token:
         """
         Retrieves metadata like its name, symbol, and decimals.
         Args:
             address (AddressLike): Contract address of a given token
 
-        Returns:
+        Returns: Token
 
         """
         logger.info("Retrieving metadata for token: %s", address)
-        abi = self.get_contract_abi(abi_type="sell")
+        abi = await self.get_contract_abi(abi_type="sell")
         token_contract = self.web3.eth.contract(address=address, abi=abi)
 
         name = token_contract.functions.name().call()
@@ -298,9 +320,20 @@ class EthereumChain(ERC20Like):
                 "decimals": 18,
             }
         }
-        erc20_transfers = await ether_scan.account.token_transfers(
-            address=address, start_block=0, end_block=99999999, sort="desc"
-        )
+        async with aiohttp.ClientSession() as session:
+            url = "https://api.etherscan.io/api"
+            params = {
+                "module": "account",
+                "action": "tokentx",
+                "address": self.address,
+                "startblock": 0,
+                "endblock": 99999999,
+                "sort": "desc",
+                "apikey": ETHERSCAN_API_KEY,
+            }
+            async with session.get(url, params=params) as response:
+                data = await response.json()
+                erc20_transfers = data["result"]
 
         for transfer in erc20_transfers:
             holdings.update(
@@ -313,17 +346,17 @@ class EthereumChain(ERC20Like):
                     }
                 }
             )
-        for k in holdings.keys():
-            coin = holdings[k]
+        for key, value in holdings.items():
+            coin = value
             token = coin["address"]
             token_decimals = coin["decimals"]
 
             # Quantity in wei used to calculate price
-            quantity = self.get_token_balance(address=address, token=token)
+            quantity = await self.get_token_balance(address=address, token=token)
 
             if quantity > 0:
                 try:
-                    token_price = self.get_token_price(
+                    token_price = await self.get_token_price(
                         token=token, decimals=token_decimals
                     )
 
@@ -334,14 +367,14 @@ class EthereumChain(ERC20Like):
                     price = quantity * token_price
                     usd_amount = price.quantize(Decimal("0.01"))
                     account_holdings.append(
-                        {"Symbol": k, "Balance": quantity, "USD": usd_amount}
+                        {"Symbol": key, "Balance": quantity, "USD": usd_amount}
                     )
 
                 except (ContractLogicError, BadFunctionCallOutput) as e:
                     logger.exception(e)
         return DataFrame(account_holdings)
 
-    def get_token_balance(
+    async def get_token_balance(
         self,
         address: Union[Address, ChecksumAddress, str],
         token: Union[Address, ChecksumAddress, str],
@@ -359,11 +392,11 @@ class EthereumChain(ERC20Like):
         if token == CONTRACT_ADDRESSES["ETH"]:
             return self.web3.eth.get_balance(address)
 
-        abi = self.get_contract_abi(abi_type="sell")
+        abi = await self.get_contract_abi(abi_type="sell")
         contract = self.web3.eth.contract(address=token, abi=abi)
         return contract.functions.balanceOf(address).call()
 
-    def get_token_price(self, token, decimals):
+    async def get_token_price(self, token, decimals):
         raise NotImplementedError
 
 
@@ -373,11 +406,8 @@ class UniSwap(EthereumChain):
         self.address = self.web3.toChecksumAddress(address)
         self.key = key
         self.fernet = Fernet(FERNET_KEY)
-        self.router_contract = self.web3.eth.contract(
-            address=self.router_address, abi=self.get_contract_abi(abi_type="router")
-        )
 
-    def get_token_price(
+    async def get_token_price(
         self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
     ) -> Decimal:
         """
@@ -395,6 +425,8 @@ class UniSwap(EthereumChain):
         weth = CONTRACT_ADDRESSES["WETH"]
         route = [usdc, weth, token] if token not in (eth, weth) else [usdc, weth]
         qty = 10 ** decimals
+
+        await self.set_router_contract()
 
         try:
             token_price = self.web3.fromWei(
@@ -425,6 +457,8 @@ class UniSwap(EthereumChain):
 
         """
         logger.info("Swapping tokens")
+        await self.set_router_contract()
+
         if self.web3.isConnected():
             token = self.web3.toChecksumAddress(token)
             weth = CONTRACT_ADDRESSES["WETH"]
@@ -448,7 +482,7 @@ class UniSwap(EthereumChain):
                         self._swap_exact_eth_for_tokens,
                         self._swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens,
                     ]
-                    balance = self.get_token_balance(
+                    balance = await self.get_token_balance(
                         address=self.address, token=CONTRACT_ADDRESSES["ETH"]
                     )
                 else:
@@ -461,8 +495,8 @@ class UniSwap(EthereumChain):
                         self._swap_exact_tokens_for_eth,
                         self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
                     ]
-                    balance = self.get_token_balance(address=self.address, token=token)  # type: ignore
-                    self._check_approval(
+                    balance = await self.get_token_balance(address=self.address, token=token)  # type: ignore
+                    await self._check_approval(
                         contract=token_contract,
                         token=token,  # type: ignore
                         balance=balance,
@@ -489,7 +523,7 @@ class UniSwap(EthereumChain):
                 reply = f"Transactions completed successfully. {link(title='View Transaction', url=txn_hash_url)}"
 
                 # Pre-approve token for future swaps
-                self._check_approval(
+                await self._check_approval(
                     contract=token_contract,
                     token=token,  # type: ignore
                     balance=self.get_token_balance(address=self.address, token=token),  # type: ignore
