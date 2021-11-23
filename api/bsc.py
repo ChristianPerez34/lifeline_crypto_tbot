@@ -106,9 +106,9 @@ class BinanceSmartChain(ERC20Like):
         return DataFrame(account_holdings)
 
     async def get_token_balance(
-            self,
-            address: Union[Address, ChecksumAddress, str],
-            token: Union[Address, ChecksumAddress, str],
+        self,
+        address: Union[Address, ChecksumAddress, str],
+        token: Union[Address, ChecksumAddress, str],
     ) -> Wei:
         """
         Retrieves amount of tokens in address
@@ -139,11 +139,11 @@ class PancakeSwap(BinanceSmartChain):
         self.fernet = Fernet(FERNET_KEY)
 
     async def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -239,7 +239,7 @@ class PancakeSwap(BinanceSmartChain):
         return reply
 
     async def get_token_price(
-            self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
     ) -> Decimal:
         """
         Gets token price in BUSD
@@ -270,9 +270,9 @@ class PancakeSwap(BinanceSmartChain):
         return token_price
 
     async def get_token_pair_address(
-            self,
-            token_0: Union[Address, ChecksumAddress, str],
-            token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"],
+        self,
+        token_0: Union[Address, ChecksumAddress, str],
+        token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"],
     ) -> str:
         """
         Retrieves token pair address
