@@ -337,8 +337,8 @@ class EthereumChain(ERC20Like):
                     }
                 }
             )
-        for k in holdings:
-            coin = holdings[k]
+        for key, value in holdings.items():
+            coin = value
             token = coin["address"]
             token_decimals = coin["decimals"]
 
@@ -358,7 +358,7 @@ class EthereumChain(ERC20Like):
                     price = quantity * token_price
                     usd_amount = price.quantize(Decimal("0.01"))
                     account_holdings.append(
-                        {"Symbol": k, "Balance": quantity, "USD": usd_amount}
+                        {"Symbol": key, "Balance": quantity, "USD": usd_amount}
                     )
 
                 except (ContractLogicError, BadFunctionCallOutput) as e:
