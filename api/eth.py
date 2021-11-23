@@ -51,13 +51,15 @@ class ERC20Like:
     async def set_router_contract(self):
         if not self.router_contract:
             self.router_contract = self.web3.eth.contract(
-                address=self.router_address, abi=await self.get_contract_abi(abi_type="router")
+                address=self.router_address,
+                abi=await self.get_contract_abi(abi_type="router"),
             )
 
     async def set_factory_contract(self):
         if not self.factory_contract:
             self.factory_contract = self.web3.eth.contract(
-                address=self.factory_address, abi=await self.get_contract_abi(abi_type="factory")
+                address=self.factory_address,
+                abi=await self.get_contract_abi(abi_type="factory"),
             )
 
     @staticmethod
@@ -93,13 +95,13 @@ class ERC20Like:
             filename = "abi/pancakeswap_v2.abi"
         elif abi_type == "factory":
             filename = "abi/factory_erc20.abi"
-        async with aiofiles.open(filename, mode='r') as file:
+        async with aiofiles.open(filename, mode="r") as file:
             data = await file.read()
             abi = json.loads(data)
         return abi
 
     def _swap_exact_eth_for_tokens(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact ETH|BNB|MATIC for tokens.
@@ -125,7 +127,7 @@ class ERC20Like:
         )
 
     def _swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact ETH|BNB|MATIC for tokens supporting fee on transfer tokens
@@ -151,7 +153,7 @@ class ERC20Like:
         )
 
     def _swap_exact_tokens_for_eth(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact tokens for ETH|BNB|MATIC
@@ -180,7 +182,7 @@ class ERC20Like:
         )
 
     def _swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens(
-            self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
+        self, contract: Contract, route: list, amount_to_spend: Wei, gas_price: Wei
     ) -> TxParams:
         """
         Swaps exact tokens for ETH|BNB|MATIC supporting fee on transfer tokens
@@ -239,7 +241,7 @@ class ERC20Like:
         logger.info("Approved token for swap")
 
     async def _check_approval(
-            self, contract: Contract, token: Union[Address, ChecksumAddress, str], balance: Wei = 0  # type: ignore
+        self, contract: Contract, token: Union[Address, ChecksumAddress, str], balance: Wei = 0  # type: ignore
     ) -> None:
         """
         Validates token is approved for swapping. If not, approves token for swapping.
@@ -265,7 +267,9 @@ class ERC20Like:
     async def get_token_balance(self, address, token):
         raise NotImplementedError
 
-    async def get_token(self, address: Union[Address, ChecksumAddress, str]) -> ERC20Token:
+    async def get_token(
+        self, address: Union[Address, ChecksumAddress, str]
+    ) -> ERC20Token:
         """
         Retrieves metadata like its name, symbol, and decimals.
         Args:
@@ -298,7 +302,7 @@ class EthereumChain(ERC20Like):
         )
 
     async def get_account_token_holdings(
-            self, address: Union[Address, ChecksumAddress, str] = None
+        self, address: Union[Address, ChecksumAddress, str] = None
     ) -> DataFrame:
         """
         Retrieves account holding for wallet address
@@ -318,13 +322,18 @@ class EthereumChain(ERC20Like):
         }
         async with aiohttp.ClientSession() as session:
             url = "https://api.etherscan.io/api"
-            params = {'module': 'account', 'action': 'tokentx',
-                      'address': self.address,
-                      'startblock': 0, 'endblock': 99999999, 'sort': 'desc',
-                      'apikey': ETHERSCAN_API_KEY}
+            params = {
+                "module": "account",
+                "action": "tokentx",
+                "address": self.address,
+                "startblock": 0,
+                "endblock": 99999999,
+                "sort": "desc",
+                "apikey": ETHERSCAN_API_KEY,
+            }
             async with session.get(url, params=params) as response:
                 data = await response.json()
-                erc20_transfers = data['result']
+                erc20_transfers = data["result"]
         # erc20_transfers = await ether_scan.account.token_transfers(
         #     address=address, start_block=0, end_block=99999999, sort="desc"
         # )
@@ -369,9 +378,9 @@ class EthereumChain(ERC20Like):
         return DataFrame(account_holdings)
 
     async def get_token_balance(
-            self,
-            address: Union[Address, ChecksumAddress, str],
-            token: Union[Address, ChecksumAddress, str],
+        self,
+        address: Union[Address, ChecksumAddress, str],
+        token: Union[Address, ChecksumAddress, str],
     ) -> Wei:
         """
         Retrieves amount of tokens in address
@@ -402,7 +411,7 @@ class UniSwap(EthereumChain):
         self.fernet = Fernet(FERNET_KEY)
 
     async def get_token_price(
-            self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
     ) -> Decimal:
         """
         Gets token price in USDC
@@ -432,11 +441,11 @@ class UniSwap(EthereumChain):
         return token_price
 
     async def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap

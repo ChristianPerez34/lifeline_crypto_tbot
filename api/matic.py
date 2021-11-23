@@ -47,7 +47,7 @@ class PolygonChain(ERC20Like):
         )
 
     async def get_account_token_holdings(
-            self, address: Union[Address, ChecksumAddress, str] = None
+        self, address: Union[Address, ChecksumAddress, str] = None
     ) -> DataFrame:
         """
         Retrieves account holding for wallet address
@@ -74,7 +74,7 @@ class PolygonChain(ERC20Like):
         )
 
         async with aiohttp.ClientSession() as session, session.get(
-                url, headers=HEADERS
+            url, headers=HEADERS
         ) as response:
             data = await response.json()
         erc20_transfers = data["result"]
@@ -119,9 +119,9 @@ class PolygonChain(ERC20Like):
         return DataFrame(account_holdings)
 
     async def get_token_balance(
-            self,
-            address: Union[Address, ChecksumAddress, str],
-            token: Union[Address, ChecksumAddress, str],
+        self,
+        address: Union[Address, ChecksumAddress, str],
+        token: Union[Address, ChecksumAddress, str],
     ) -> Wei:
         """
         Retrieves amount of tokens in address
@@ -152,7 +152,7 @@ class QuickSwap(PolygonChain):
         self.fernet = Fernet(FERNET_KEY)
 
     async def get_token_price(
-            self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
     ) -> Decimal:
         """
         Gets token price in USDC
@@ -191,11 +191,11 @@ class QuickSwap(PolygonChain):
         return gas_prices[TRANSACTION_SPEEDS[speed]]
 
     async def swap_tokens(
-            self,
-            token: str,
-            amount_to_spend: Union[int, float, Decimal] = 0,
-            side: str = BUY,
-            is_snipe: bool = False,
+        self,
+        token: str,
+        amount_to_spend: Union[int, float, Decimal] = 0,
+        side: str = BUY,
+        is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
