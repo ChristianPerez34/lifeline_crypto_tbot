@@ -51,7 +51,7 @@ TELEGRAM_BOT_API_KEY = os.getenv("TELEGRAM_BOT_API_KEY")
 
 # Webhooks settings
 WEBAPP_HOST = os.getenv("WEBAPP_HOST", "localhost")
-WEBAPP_PORT = os.getenv("WEBAPP_PORT", 8000)
+WEBAPP_PORT = os.getenv("WEBAPP_PORT", "8000")
 WEBHOOK_PATH = f"/webhook/{TELEGRAM_BOT_API_KEY}"
 
 # NGROK Settings
