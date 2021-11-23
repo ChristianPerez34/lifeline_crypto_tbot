@@ -325,9 +325,6 @@ class EthereumChain(ERC20Like):
             async with session.get(url, params=params) as response:
                 data = await response.json()
                 erc20_transfers = data['result']
-        # erc20_transfers = await ether_scan.account.token_transfers(
-        #     address=address, start_block=0, end_block=99999999, sort="desc"
-        # )
 
         for transfer in erc20_transfers:
             holdings.update(
@@ -340,7 +337,7 @@ class EthereumChain(ERC20Like):
                     }
                 }
             )
-        for k in holdings.keys():
+        for k in holdings:
             coin = holdings[k]
             token = coin["address"]
             token_decimals = coin["decimals"]

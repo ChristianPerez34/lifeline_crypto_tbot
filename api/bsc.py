@@ -77,7 +77,7 @@ class BinanceSmartChain(ERC20Like):
                     }
                 }
             )
-        for k in holdings.keys():
+        for k in holdings:
             coin = holdings[k]
             token = coin["address"]
             token_decimals = coin["decimals"]
