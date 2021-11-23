@@ -55,7 +55,7 @@ WEBAPP_PORT = os.getenv("WEBAPP_PORT", "8000")
 WEBHOOK_PATH = f"/webhook/{TELEGRAM_BOT_API_KEY}"
 
 # NGROK Settings
-USE_NGROK = bool(int(os.getenv("USE_NGROK", 1)))
+USE_NGROK = bool(int(os.getenv("USE_NGROK", "1")))
 if USE_NGROK:
     NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")
     ngrok.set_auth_token(NGROK_AUTH_TOKEN)
