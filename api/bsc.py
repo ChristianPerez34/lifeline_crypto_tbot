@@ -83,11 +83,11 @@ class BinanceSmartChain(ERC20Like):
             token_decimals = coin["decimals"]
 
             # Quantity in wei used to calculate price
-            quantity = self.get_token_balance(address=self.address, token=token)
+            quantity = await self.get_token_balance(address=self.address, token=token)
 
             if quantity > 0:
                 try:
-                    token_price = self.get_token_price(
+                    token_price = await self.get_token_price(
                         token=token, decimals=token_decimals
                     )
 
@@ -105,10 +105,10 @@ class BinanceSmartChain(ERC20Like):
                     logger.exception(e)
         return DataFrame(account_holdings)
 
-    def get_token_balance(
-        self,
-        address: Union[Address, ChecksumAddress, str],
-        token: Union[Address, ChecksumAddress, str],
+    async def get_token_balance(
+            self,
+            address: Union[Address, ChecksumAddress, str],
+            token: Union[Address, ChecksumAddress, str],
     ) -> Wei:
         """
         Retrieves amount of tokens in address
@@ -123,7 +123,7 @@ class BinanceSmartChain(ERC20Like):
         if token == CONTRACT_ADDRESSES["BNB"]:
             return self.web3.eth.get_balance(address)
 
-        abi = self.get_contract_abi(abi_type="sell")
+        abi = await self.get_contract_abi(abi_type="sell")
         contract = self.web3.eth.contract(address=token, abi=abi)
         return contract.functions.balanceOf(address).call()
 
@@ -137,19 +137,13 @@ class PancakeSwap(BinanceSmartChain):
         self.address = self.web3.toChecksumAddress(address)
         self.key = key
         self.fernet = Fernet(FERNET_KEY)
-        self.router_contract = self.web3.eth.contract(
-            address=self.router_address, abi=self.get_contract_abi(abi_type="router")
-        )
-        self.factory_contract = self.web3.eth.contract(
-            address=self.factory_address, abi=self.get_contract_abi(abi_type="factory")
-        )
 
-    def swap_tokens(
-        self,
-        token: str,
-        amount_to_spend: Union[int, float, Decimal] = 0,
-        side: str = BUY,
-        is_snipe: bool = False,
+    async def swap_tokens(
+            self,
+            token: str,
+            amount_to_spend: Union[int, float, Decimal] = 0,
+            side: str = BUY,
+            is_snipe: bool = False,
     ) -> str:
         """
         Swaps crypto coins on PancakeSwap
@@ -187,7 +181,7 @@ class PancakeSwap(BinanceSmartChain):
                         self._swap_exact_eth_for_tokens,
                         self._swap_exact_eth_for_tokens_supporting_fee_on_transfer_tokens,
                     ]
-                    balance = self.get_token_balance(
+                    balance = await self.get_token_balance(
                         address=self.address, token=CONTRACT_ADDRESSES["BNB"]
                     )
                 else:
@@ -200,8 +194,8 @@ class PancakeSwap(BinanceSmartChain):
                         self._swap_exact_tokens_for_eth,
                         self._swap_exact_tokens_for_eth_supporting_fee_on_transfer_tokens,
                     ]
-                    balance = self.get_token_balance(address=self.address, token=token)  # type: ignore
-                    self._check_approval(
+                    balance = await self.get_token_balance(address=self.address, token=token)  # type: ignore
+                    await self._check_approval(
                         contract=token_contract,
                         token=token,
                         balance=balance,
@@ -231,7 +225,7 @@ class PancakeSwap(BinanceSmartChain):
 
                 # Pre-approve token for future swaps
                 self.web3.eth.waitForTransactionReceipt(txn_hash, timeout=6000)
-                self._check_approval(
+                await self._check_approval(
                     contract=token_contract,
                     token=token,
                     balance=self.get_token_balance(address=self.address, token=token),  # type: ignore
@@ -244,8 +238,8 @@ class PancakeSwap(BinanceSmartChain):
             reply = "⚠ Sorry, I was unable to connect to the Binance Smart Chain. Try again later."
         return reply
 
-    def get_token_price(
-        self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
+    async def get_token_price(
+            self, token: Union[Address, ChecksumAddress, str], decimals: int = 18
     ) -> Decimal:
         """
         Gets token price in BUSD
@@ -257,6 +251,8 @@ class PancakeSwap(BinanceSmartChain):
 
         """
         logger.info("Retrieving token price in BUSD for %s", token)
+
+        await self.set_router_contract()
         busd = CONTRACT_ADDRESSES["BUSD"]
         bnb = CONTRACT_ADDRESSES["BNB"]
         wbnb = CONTRACT_ADDRESSES["WBNB"]
@@ -273,10 +269,10 @@ class PancakeSwap(BinanceSmartChain):
             token_price = 0
         return token_price
 
-    def get_token_pair_address(
-        self,
-        token_0: Union[Address, ChecksumAddress, str],
-        token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"],
+    async def get_token_pair_address(
+            self,
+            token_0: Union[Address, ChecksumAddress, str],
+            token_1: Union[Address, ChecksumAddress, str] = CONTRACT_ADDRESSES["WBNB"],
     ) -> str:
         """
         Retrieves token pair address
@@ -287,4 +283,5 @@ class PancakeSwap(BinanceSmartChain):
         Returns: Pair address
 
         """
+        await self.set_factory_contract()
         return self.factory_contract.functions.getPair(token_0, token_1).call()
