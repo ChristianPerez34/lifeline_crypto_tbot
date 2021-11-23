@@ -333,7 +333,7 @@ class EthereumChain(ERC20Like):
             }
             async with session.get(url, params=params) as response:
                 data = await response.json()
-                erc20_transfers = data['result']
+                erc20_transfers = data["result"]
 
         for transfer in erc20_transfers:
             holdings.update(
