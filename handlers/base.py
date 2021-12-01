@@ -1,7 +1,13 @@
 import random
 from io import BufferedReader
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, ParseMode, InputFile
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+    ParseMode,
+    InputFile,
+)
 
 from app import bot
 from app import logger
@@ -17,8 +23,11 @@ async def send_welcome(message: Message) -> None:
     logger.info("Chat ID: %s", message.chat.id)
     logger.info("Start/Help command executed")
     pdf = InputFile("BotCommands.pdf")
-    await message.reply_document(document=pdf, caption="PDF detailing available bot commands",
-                                 parse_mode=ParseMode.MARKDOWN)
+    await message.reply_document(
+        document=pdf,
+        caption="PDF detailing available bot commands",
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 async def send_greeting(message: Message) -> None:
@@ -40,7 +49,7 @@ async def send_greeting(message: Message) -> None:
 
 
 async def send_message(
-        channel_id: int, message: str, inline: bool = False, data: str = ""
+    channel_id: int, message: str, inline: bool = False, data: str = ""
 ) -> None:
     logger.info("Sending message to chat id: %s", channel_id)
     keyboard_markup = InlineKeyboardMarkup()
