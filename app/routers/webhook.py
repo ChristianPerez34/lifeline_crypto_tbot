@@ -1,7 +1,5 @@
 from aiogram import types, Dispatcher
 
-from aiogram import types, Dispatcher
-
 from app import chart_cb, alert_cb, price_cb
 from handlers.base import send_welcome, send_greeting
 from handlers.crypto import (
@@ -26,7 +24,7 @@ from handlers.crypto import (
     alert_inline_query_handler,
     send_limit_swap,
     price_inline_query_handler,
-    send_coinbase,
+    send_coinbase, send_submit,
 )
 from handlers.error import send_error
 from handlers.user import send_register
@@ -78,6 +76,7 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_message_handler(send_active_orders, commands=["active_orders"])
     dispatcher.register_message_handler(send_cancel_order, commands=["cancel_order"])
     dispatcher.register_message_handler(send_coinbase, commands=["coinbase"])
+    dispatcher.register_message_handler(send_submit, commands=["submit"])
 
     dispatcher.register_message_handler(
         send_greeting, content_types=types.ContentTypes.NEW_CHAT_MEMBERS

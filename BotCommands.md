@@ -203,6 +203,14 @@ Actions
 /coinbase market buy eth 100
 ```
 
+## /submit _TOKEN_NAME_ _SYMBOL_
+
+Submits given token name and symbol to monthly crypto drawing (AKA Token of the month)
+
+```shell
+/submit Shiba Inu SHIB
+```
+
 # Admin Commands
 
 ## /restart_kucoin
