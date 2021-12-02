@@ -24,7 +24,8 @@ from handlers.crypto import (
     alert_inline_query_handler,
     send_limit_swap,
     price_inline_query_handler,
-    send_coinbase, send_submit,
+    send_coinbase,
+    send_submit,
 )
 from handlers.error import send_error
 from handlers.user import send_register
