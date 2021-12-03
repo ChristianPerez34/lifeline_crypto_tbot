@@ -80,19 +80,19 @@ def get_coin_explorers(platforms: dict, links: dict) -> list:
         if link
     ]
 
-    for chain, address in platforms.items():
+    for network, address in platforms.items():
         explorer = ""
 
-        if "ethereum" in chain:
+        if "ethereum" in network:
             address = Web3.toChecksumAddress(address)
             explorer = f"[etherscan](https://etherscan.io/token/{address})"
-        elif "binance" in chain:
+        elif "binance" in network:
             address = Web3.toChecksumAddress(address)
             explorer = f"[bscscan](https://bscscan.com/token/{address})"
-        elif "polygon" in chain:
+        elif "polygon" in network:
             address = Web3.toChecksumAddress(address)
             explorer = f"[polygonscan](https://polygonscan.com/token/{address})"
-        elif "solana" in chain:
+        elif "solana" in network:
             explorer = (
                 f"[explorer.solana](https://explorer.solana.com/address/{address})"
             )
