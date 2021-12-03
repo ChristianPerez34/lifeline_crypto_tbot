@@ -1,3 +1,4 @@
+import datetime
 from decimal import Decimal
 
 from pony import orm
@@ -262,3 +263,15 @@ class CoinBase(db.Entity):  # type: ignore
                 ).first()
             except orm.ObjectNotFound:
                 return None
+
+
+class MonthlySubmission(db.Entity):  # type: ignore
+    id = orm.PrimaryKey(int, auto=True)
+    symbol = orm.Required(str)
+    token_name = orm.Required(str)
+    submission_date = orm.Required(datetime.date, default=datetime.date.today())
+
+    @staticmethod
+    def create(data: dict) -> db.Entity:  # type: ignore
+        with orm.db_session:
+            return MonthlySubmission(**data)

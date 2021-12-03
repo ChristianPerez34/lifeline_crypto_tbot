@@ -47,7 +47,7 @@ from bot.bsc_sniper import pancake_swap_sniper
 from bot.kucoin_bot import kucoin_bot
 from config import BUY, FERNET_KEY, HEADERS, KUCOIN_TASK_NAME, SELL, TELEGRAM_CHAT_ID
 from handlers.base import send_message, send_photo
-from models import CryptoAlert, TelegramGroupMember, Order
+from models import CryptoAlert, TelegramGroupMember, Order, MonthlySubmission
 from schemas import (
     CandleChart,
     Chart,
@@ -58,6 +58,7 @@ from schemas import (
     LimitOrder,
     Platform,
     CoinbaseOrder,
+    TokenSubmission,
 )
 from utils import all_same
 from . import gas_tracker
@@ -79,19 +80,19 @@ def get_coin_explorers(platforms: dict, links: dict) -> list:
         if link
     ]
 
-    for chain, address in platforms.items():
+    for network, address in platforms.items():
         explorer = ""
 
-        if "ethereum" in chain:
+        if "ethereum" in network:
             address = Web3.toChecksumAddress(address)
             explorer = f"[etherscan](https://etherscan.io/token/{address})"
-        elif "binance" in chain:
+        elif "binance" in network:
             address = Web3.toChecksumAddress(address)
             explorer = f"[bscscan](https://bscscan.com/token/{address})"
-        elif "polygon" in chain:
+        elif "polygon" in network:
             address = Web3.toChecksumAddress(address)
             explorer = f"[polygonscan](https://polygonscan.com/token/{address})"
-        elif "solana" in chain:
+        elif "solana" in network:
             explorer = (
                 f"[explorer.solana](https://explorer.solana.com/address/{address})"
             )
@@ -1429,5 +1430,28 @@ async def send_coinbase(message: Message):
         reply = f"😞 Provided symbol ({bold(order.symbol)}) is not available for trading on CoinBase"
     except APIRequestError as e:
         reply = f"😔 {humanize(str(e).split('[')[0])}"
+
+    await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+
+
+async def send_submit(message: Message):
+    """
+    Replies whether crypto token submission was successful
+    Args:
+        message: Message to reply to
+
+    """
+    logger.info("Executing submit command")
+    args = message.get_args().split()
+    symbol = args.pop(-1)
+    token_name = " ".join(args)
+
+    try:
+        token_submission = TokenSubmission(token_name=token_name, symbol=symbol)
+        MonthlySubmission.create(data=token_submission.dict())
+        reply = "Submission received"
+    except ValueError as e:
+        logger.exception(e)
+        reply = "Unable to submit provided token. Try again or contact group admin."
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)

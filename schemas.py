@@ -1,10 +1,13 @@
+import datetime
 import re
 from decimal import Decimal
 from numbers import Real
 from typing import Optional, Union
 
+from inflection import humanize
 from pydantic import BaseModel
 from pydantic.class_validators import root_validator, validator
+from pydantic.fields import Field
 from web3 import Web3
 from web3.types import Address, ChecksumAddress
 
@@ -231,3 +234,23 @@ class CoinbaseOrder(BaseModel):
         if value not in ("market", "limit"):
             raise ValueError("Expected either 'market' or 'limit'")
         return value
+
+
+class TokenSubmission(BaseModel):
+    id: Optional[int]
+    symbol: str
+    token_name: str
+    submission_date: datetime.date = Field(default=datetime.date.today())
+
+    @validator("token_name")
+    def check_token_name(cls, value: str):
+        if not value:
+            raise ValueError("Token name must be filled")
+        return humanize(value)
+
+    @validator("symbol")
+    def check_symbol(cls, value: str):
+        return value.upper()
+
+    class Config:
+        orm_mode = True
