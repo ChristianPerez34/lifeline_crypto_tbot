@@ -25,7 +25,7 @@ from handlers.crypto import (
     send_limit_swap,
     price_inline_query_handler,
     send_coinbase,
-    send_submit,
+    send_submit, send_monthly_drawing,
 )
 from handlers.error import send_error
 from handlers.user import send_register
@@ -78,6 +78,7 @@ def setup_handlers(dispatcher: Dispatcher) -> None:
     dispatcher.register_message_handler(send_cancel_order, commands=["cancel_order"])
     dispatcher.register_message_handler(send_coinbase, commands=["coinbase"])
     dispatcher.register_message_handler(send_submit, commands=["submit"])
+    dispatcher.register_message_handler(send_monthly_drawing, commands=["monthly_drawing"])
 
     dispatcher.register_message_handler(
         send_greeting, content_types=types.ContentTypes.NEW_CHAT_MEMBERS

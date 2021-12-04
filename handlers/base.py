@@ -7,11 +7,20 @@ from aiogram.types import (
     Message,
     ParseMode,
     InputFile,
+    User
 )
 
 from app import bot
 from app import logger
-from config import GREETINGS
+from config import GREETINGS, TELEGRAM_CHAT_ID
+
+
+async def is_admin_user(user: User):
+    administrators = [
+        admin.user
+        for admin in await bot.get_chat_administrators(chat_id=TELEGRAM_CHAT_ID)
+    ]
+    return user in administrators
 
 
 async def send_welcome(message: Message) -> None:
@@ -49,7 +58,7 @@ async def send_greeting(message: Message) -> None:
 
 
 async def send_message(
-    channel_id: int, message: str, inline: bool = False, data: str = ""
+        channel_id: int, message: str, inline: bool = False, data: str = ""
 ) -> None:
     logger.info("Sending message to chat id: %s", channel_id)
     keyboard_markup = InlineKeyboardMarkup()
