@@ -1451,8 +1451,8 @@ async def send_submit(message: Message):
         token_submission = TokenSubmission(token_name=token_name, symbol=symbol)
         MonthlySubmission.create(data=token_submission.dict())
         reply = "Submission received"
-    except ValueError as e:
-        logger.exception(e)
+    except ValueError as error:
+        logger.exception(error)
         reply = "Unable to submit provided token. Try again or contact group admin."
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
