@@ -1472,7 +1472,10 @@ async def send_monthly_drawing(message: Message):
 
         if not await is_admin_user(user=user):
             raise AssertionError("Current user is not an admin of the group")
-        submissions = [f"{submission.token_name} ({submission.symbol})" for submission in MonthlySubmission.select()]
+        submissions = [
+            f"{submission.token_name} ({submission.symbol})"
+            for submission in MonthlySubmission.select()
+        ]
         random.shuffle(submissions)
         options = submissions[:10]
         await message.reply_poll(
