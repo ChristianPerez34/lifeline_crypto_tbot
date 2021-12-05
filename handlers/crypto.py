@@ -1,4 +1,5 @@
 import asyncio
+import random
 import time
 from decimal import Decimal
 from io import BufferedReader, BytesIO
@@ -46,7 +47,7 @@ from bot.bsc_order import limit_order_executor
 from bot.bsc_sniper import pancake_swap_sniper
 from bot.kucoin_bot import kucoin_bot
 from config import BUY, FERNET_KEY, HEADERS, KUCOIN_TASK_NAME, SELL, TELEGRAM_CHAT_ID
-from handlers.base import send_message, send_photo
+from handlers.base import send_message, send_photo, is_admin_user
 from models import CryptoAlert, TelegramGroupMember, Order, MonthlySubmission
 from schemas import (
     CandleChart,
@@ -320,13 +321,13 @@ async def send_price(message: Message) -> None:
                 text="❌ Token data not found in CoinMarketCap/CoinGecko",
                 parse_mode=ParseMode.MARKDOWN,
             )
-    except IndexError as e:
-        logger.exception(e)
+    except IndexError as error:
+        logger.exception(error)
         reply = f"⚠️ Please provide a crypto code: \n{bold('/price')} {italic('COIN')}"
         await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
-    except ValidationError as e:
-        logger.exception(e)
-        error_message = e.args[0][0].exc
+    except ValidationError as error:
+        logger.exception(error)
+        error_message = error.args[0][0].exc
         reply = f"⚠️ {error_message}"
         await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
@@ -398,15 +399,15 @@ async def send_price_address(message: Message) -> None:
             ),
         )
 
-    except IndexError as e:
-        logger.exception(e)
+    except IndexError as error:
+        logger.exception(error)
         reply = (
             "⚠️ Please provide a crypto address: \n"
             f"{bold('/price')}_{bold('address')} {italic('ADDRESS')} {italic('NETWORK')}"
         )
         await message.reply(text=reply)
-    except ValueError as e:
-        logger.exception(e)
+    except ValueError as error:
+        logger.exception(error)
         reply = "⚠️ Could not find coin"
         await message.reply(text=reply)
 
@@ -493,13 +494,13 @@ async def send_price_alert(message: Message) -> None:
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=keyboard_markup,
             )
-    except IndexError as e:
-        logger.exception(e)
+    except IndexError as error:
+        logger.exception(error)
         reply = "⚠️ Please provide a crypto code and a price value: /alert [COIN] [<,>] [PRICE]"
         await message.reply(text=reply)
-    except ValidationError as e:
-        logger.exception(e)
-        error_message = e.args[0][0].exc
+    except ValidationError as error:
+        logger.exception(error)
+        error_message = error.args[0][0].exc
         reply = f"⚠️ {error_message}"
         await message.reply(text=reply)
 
@@ -660,15 +661,15 @@ async def send_buy(message: Message) -> None:
             )
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
-    except IndexError as e:
-        logger.exception(e)
+    except IndexError as error:
+        logger.exception(error)
         reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /buy_coin [ADDRESS] [AMOUNT]"
-    except ValidationError as e:
-        logger.exception(e)
-        error_message = e.args[0][0].exc
+    except ValidationError as error:
+        logger.exception(error)
+        error_message = error.args[0][0].exc
         reply = f"⚠️ {error_message}"
-    except ValueError as e:
-        logger.exception(e)
+    except ValueError as error:
+        logger.exception(error)
         reply = "⚠ Please provide network, address & amount to spend. Ex: /buy bsc 0x000000000000000000 0.01"
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
@@ -705,15 +706,15 @@ async def send_sell(message: Message) -> None:
             )
         else:
             reply = "⚠ Sorry, you must register prior to using this command."
-    except IndexError as e:
-        logger.exception(e)
+    except IndexError as error:
+        logger.exception(error)
         reply = "⚠️ Please provide a crypto token address and amount of BNB to spend: /sell_coin [ADDRESS]"
-    except ValidationError as e:
-        logger.exception(e)
-        error_message = e.args[0][0].exc
+    except ValidationError as error:
+        logger.exception(error)
+        error_message = error.args[0][0].exc
         reply = f"⚠️ {error_message}"
-    except ValueError as e:
-        logger.exception(e)
+    except ValueError as error:
+        logger.exception(error)
         reply = "⚠ Please provide network, address & amount to spend. Ex: /sell bsc 0x000000000000000000"
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
@@ -848,18 +849,18 @@ async def send_chart(message: Message):
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=keyboard_markup,
             )
-    except IndexError as e:
-        logger.exception(e)
+    except IndexError as error:
+        logger.exception(error)
         reply = text(
             f"⚠️ Please provide a valid crypto symbol and amount of days: "
             f"\n{bold('/chart')} {italic('SYMBOL')} {italic('DAYS')}"
         )
-    except ValidationError as e:
-        logger.exception(e)
-        error_message = e.args[0][0].exc
+    except ValidationError as error:
+        logger.exception(error)
+        error_message = error.args[0][0].exc
         reply = f"⚠️ {error_message}"
-    except CoinMarketCapAPIError as e:
-        logger.exception(e)
+    except CoinMarketCapAPIError as error:
+        logger.exception(error)
         reply = "Coin data not found in CoinGecko/CoinMarketCap"
 
     if reply:
@@ -1013,16 +1014,16 @@ async def send_candle_chart(message: Message):
                 height=600,
                 margin=go.layout.Margin(l=margin_l, r=50, b=85, t=100, pad=4),
             )
-    except IndexError as e:
-        logger.exception(e)
+    except IndexError as error:
+        logger.exception(error)
         reply = text(
             f"⚠️ Please provide a valid crypto symbol and time followed by desired timeframe letter:\n"
             f" m - Minute\n h - Hour\n d - Day\n \n{bold('/candle')} {italic('SYMBOL')} "
             f"{italic('NUMBER')} {italic('LETTER')}"
         )
-    except ValidationError as e:
-        logger.exception(e)
-        error_message = e.args[0][0].exc
+    except ValidationError as error:
+        logger.exception(error)
+        error_message = error.args[0][0].exc
         reply = f"⚠️ {error_message}"
 
     if reply:
@@ -1168,8 +1169,8 @@ async def kucoin_inline_query_handler(query: CallbackQuery) -> None:
                 symbol=symbol, side=side, size=int(size), lever=str(leverage)
             )
             reply = f"@{username} successfully followed signal"
-        except RequestException as e:
-            logger.exception(e)
+        except RequestException as error:
+            logger.exception(error)
             reply = "⚠️ Unable to follow signal"
 
     else:
@@ -1262,11 +1263,11 @@ async def send_spy(message: Message):
                         data_frame, ignore_index=True
                     )
                     counter += 1
-                except ContractLogicError as e:
-                    logger.exception(e)
+                except ContractLogicError as error:
+                    logger.exception(error)
 
-    except (IndexError, ValidationError) as e:
-        logger.exception(e)
+    except (IndexError, ValidationError) as error:
+        logger.exception(error)
     account_data_frame.sort_values(by=["USD"], inplace=True, ascending=False)
     account_data_frame["USD"] = account_data_frame["USD"].apply("${:,}".format)
     fig = fif.create_table(account_data_frame)
@@ -1327,8 +1328,8 @@ async def send_limit_swap(message: Message):
         limit_order = LimitOrder.from_orm(order)
         asyncio.create_task(limit_order_executor(order=order))
         reply = f"Created limit order for {address}"
-    except ValueError as e:
-        logger.exception(e)
+    except ValueError as error:
+        logger.exception(error)
         reply = "Unable to create order"
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
@@ -1428,8 +1429,8 @@ async def send_coinbase(message: Message):
         reply = f"🙌 {humanize(order.order_type)} order executed successfully"
     except IndexError:
         reply = f"😞 Provided symbol ({bold(order.symbol)}) is not available for trading on CoinBase"
-    except APIRequestError as e:
-        reply = f"😔 {humanize(str(e).split('[')[0])}"
+    except APIRequestError as error:
+        reply = f"😔 {humanize(str(error).split('[', maxsplit=1)[0])}"
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
@@ -1450,8 +1451,40 @@ async def send_submit(message: Message):
         token_submission = TokenSubmission(token_name=token_name, symbol=symbol)
         MonthlySubmission.create(data=token_submission.dict())
         reply = "Submission received"
-    except ValueError as e:
-        logger.exception(e)
+    except ValueError as error:
+        logger.exception(error)
         reply = "Unable to submit provided token. Try again or contact group admin."
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
+
+
+async def send_monthly_drawing(message: Message):
+    """
+    Replies with poll for members to vote for token of the month
+    Args:
+        message: Message to reply to
+
+    """
+    logger.info("Executing monthly drawing command")
+
+    try:
+        user = message.from_user
+
+        if not await is_admin_user(user=user):
+            raise AssertionError("Current user is not an admin of the group")
+        submissions = [
+            f"{submission.token_name} ({submission.symbol})"
+            for submission in MonthlySubmission.select()
+        ]
+        random.shuffle(submissions)
+        options = submissions[:10]
+        await message.reply_poll(
+            question="Which token will be the token of the month? (Multiple votes allowed)",
+            is_anonymous=True,
+            allows_multiple_answers=True,
+            options=options,
+        )
+    except (ValueError, AssertionError) as error:
+        logger.exception(error)
+        reply = "Unable to complete monthly drawing."
+        await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)

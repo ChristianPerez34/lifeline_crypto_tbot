@@ -74,7 +74,8 @@ module = [
     "aioetherscan",
     "ethereum_gasprice.*",
     "aiocoingecko.*",
-    "services.alerts"
+    "services.alerts",
+    "copra.*"
 ]
 ignore_missing_imports = true
 

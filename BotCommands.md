@@ -217,3 +217,6 @@ Submits given token name and symbol to monthly crypto drawing (AKA Token of the 
 
 Restarts kucoin bot. This bot displays futures trades in real time (Currently disabled)
 
+## /monthly_drawing
+
+Replies with a poll containing a maximum of 10 token names and symbols to vote for. 
