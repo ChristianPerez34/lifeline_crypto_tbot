@@ -21,7 +21,6 @@ from aiogram.types import (
     InlineKeyboardMarkup,
 )
 from aiogram.utils.emoji import emojize
-from aiogram.utils.exceptions import PollMustHaveMoreOptions
 from aiogram.utils.markdown import bold, italic, text
 from coinmarketcapapi import CoinMarketCapAPIError
 from copra.rest.client import APIRequestError
@@ -1472,13 +1471,13 @@ async def send_monthly_drawing(message: Message):
         user = message.from_user
 
         if not await is_admin_user(user=user):
-            raise ValidationError("Current user is not an admin of the group")
+            raise AssertionError("Current user is not an admin of the group")
         submissions = [f"{submission.token_name} ({submission.symbol})" for submission in MonthlySubmission.select()]
         random.shuffle(submissions)
         options = submissions[:10]
         await message.reply_poll(question="Which token will be the token of the month? (Multiple votes allowed)",
                                  is_anonymous=True, allows_multiple_answers=True, options=options)
-    except (ValueError, PollMustHaveMoreOptions) as e:
+    except (ValueError, AssertionError) as e:
         logger.exception(e)
         reply = "Unable to complete monthly drawing."
         await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
