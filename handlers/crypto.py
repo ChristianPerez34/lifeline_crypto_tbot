@@ -1430,7 +1430,7 @@ async def send_coinbase(message: Message):
     except IndexError:
         reply = f"😞 Provided symbol ({bold(order.symbol)}) is not available for trading on CoinBase"
     except APIRequestError as error:
-        reply = f"😔 {humanize(str(error).split('[')[0])}"
+        reply = f"😔 {humanize(str(error).split('[', maxsplit=1)[0])}"
 
     await message.reply(text=reply, parse_mode=ParseMode.MARKDOWN)
 
