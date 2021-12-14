@@ -15,7 +15,7 @@ class CoinPaprika:
 
     def _request(self, url):
         try:
-            self.response = requests.get(url)
+            self.response = requests.get(url, timeout=15)
             self.response.raise_for_status()
             return json.loads(self.response.content.decode("utf-8"))
         except Exception as e:
