@@ -40,7 +40,7 @@ class CoinBaseApi:
                         "Retrieving coinbase account ticker data for %s", symbol
                     )
 
-                    if symbol != 'USD':
+                    if symbol != "USD":
                         exchange_rate = await client.ticker(product_id=f"{symbol}-USD")
                         price = Decimal(exchange_rate["price"])
                         usd_amount = (balance * price).quantize(Decimal("0.01"))
