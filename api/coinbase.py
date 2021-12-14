@@ -35,15 +35,20 @@ class CoinBaseApi:
 
                 if balance > 0:
                     symbol = account["currency"]
+                    usd_amount = balance.quantize(Decimal("0.01"))
                     logger.info(
                         "Retrieving coinbase account ticker data for %s", symbol
                     )
-                    exchange_rate = await client.ticker(product_id=f"{symbol}-USD")
-                    price = Decimal(exchange_rate["price"])
+
+                    if symbol != 'USD':
+                        exchange_rate = await client.ticker(product_id=f"{symbol}-USD")
+                        price = Decimal(exchange_rate["price"])
+                        usd_amount = (balance * price).quantize(Decimal("0.01"))
+
                     holdings = {
-                        "Symbol": account["currency"],
+                        "Symbol": symbol,
                         "Balance": balance,
-                        "USD": (balance * price).quantize(Decimal("0.01")),
+                        "USD": usd_amount,
                     }
                     account_holdings.append(holdings)
         return DataFrame(account_holdings)
