@@ -1474,7 +1474,7 @@ async def send_monthly_drawing(message: Message):
             raise AssertionError("Current user is not an admin of the group")
         submissions = [
             f"{submission.token_name} ({submission.symbol})"
-            for submission in MonthlySubmission.select()
+            for submission in MonthlySubmission.all()
         ]
         random.shuffle(submissions)
         options = submissions[:10]
