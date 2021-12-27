@@ -701,7 +701,7 @@ async def send_sell(message: Message) -> None:
             else:
                 dex = QuickSwap(address=user.matic.address, key=user.matic.private_key)  # type: ignore
 
-            reply = dex.swap_tokens(
+            reply = await dex.swap_tokens(
                 token=trade.address, amount_to_spend=trade.amount, side=trade.side
             )
         else:
