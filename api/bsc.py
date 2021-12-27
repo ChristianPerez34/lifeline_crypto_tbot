@@ -168,8 +168,8 @@ class PancakeSwap(BinanceSmartChain):
             )
             try:
                 txn = None
-                abi = self.get_contract_abi(abi_type="router")
-                token_abi = self.get_contract_abi(abi_type="sell")
+                abi = await self.get_contract_abi(abi_type="router")
+                token_abi = await self.get_contract_abi(abi_type="sell")
                 contract = self.web3.eth.contract(address=self.router_address, abi=abi)
                 token_contract = self.web3.eth.contract(address=token, abi=token_abi)
 
@@ -185,7 +185,7 @@ class PancakeSwap(BinanceSmartChain):
                         address=self.address, token=CONTRACT_ADDRESSES["BNB"]
                     )
                 else:
-                    amount_to_spend = self.get_token_balance(
+                    amount_to_spend = await self.get_token_balance(
                         address=self.address, token=token  # type: ignore
                     )
                     route = [token, CONTRACT_ADDRESSES["WBNB"]]
