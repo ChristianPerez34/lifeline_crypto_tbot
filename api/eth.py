@@ -424,7 +424,7 @@ class UniSwap(EthereumChain):
         eth = CONTRACT_ADDRESSES["ETH"]
         weth = CONTRACT_ADDRESSES["WETH"]
         route = [usdc, weth, token] if token not in (eth, weth) else [usdc, weth]
-        qty = 10 ** decimals
+        qty = 10**decimals
 
         await self.set_router_contract()
 
