@@ -258,7 +258,7 @@ class PancakeSwap(BinanceSmartChain):
         wbnb = CONTRACT_ADDRESSES["WBNB"]
 
         route = [busd, wbnb, token] if token not in (bnb, wbnb) else [busd, bnb]
-        qty = 10 ** decimals
+        qty = 10**decimals
 
         try:
             token_price = self.web3.fromWei(
