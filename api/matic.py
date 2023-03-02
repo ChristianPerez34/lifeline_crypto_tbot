@@ -172,7 +172,7 @@ class QuickSwap(PolygonChain):
         route = (
             [usdc, wmatic, token] if token not in (matic, wmatic) else [usdc, wmatic]
         )
-        qty = 10 ** decimals
+        qty = 10**decimals
 
         try:
             token_price = self.web3.fromWei(
@@ -240,7 +240,6 @@ class QuickSwap(PolygonChain):
                         address=self.address, token=CONTRACT_ADDRESSES["MATIC"]
                     )
                 else:
-
                     amount_to_spend = self.get_token_balance(
                         address=self.address, token=token  # type: ignore
                     )

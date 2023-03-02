@@ -4,7 +4,6 @@ import requests
 
 
 class CryptoCompare:
-
     _base_url = "https://min-api.cryptocompare.com/data/"
     _token = None
 
