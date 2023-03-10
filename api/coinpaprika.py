@@ -4,7 +4,6 @@ import requests
 
 
 class CoinPaprika:
-
     _base_url = "https://api.coinpaprika.com/v1/"
 
     response = None
