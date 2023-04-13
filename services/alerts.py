@@ -36,7 +36,6 @@ async def price_alert_callback(delay: int) -> None:
                 send = True
 
             if send:
-
                 price = "${:,}".format(price)
                 spot_price = "${:,}".format(spot_price)  # type: ignore
 
