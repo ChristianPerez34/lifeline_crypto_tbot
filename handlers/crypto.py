@@ -374,7 +374,6 @@ async def send_price_address(message: Message) -> None:
             price = "${:,}".format(1 / pancake_swap.get_token_price(token=address))
             coin_stats = {"token_name": token.name, "price": price}
         else:
-
             coin_stats = get_coin_stats_by_address(address=address)
             explorers = "\n".join(coin_stats["explorers"])
             reply += (
@@ -909,7 +908,6 @@ async def send_candle_chart(message: Message):
             else:
                 reply = text(f"Error: {ohlcv['Message']}")
         else:
-
             ohlcv = ohlcv["Data"]
 
             if ohlcv:
@@ -920,7 +918,6 @@ async def send_candle_chart(message: Message):
                 time_ = [value["time"] for value in ohlcv]
 
             if not ohlcv or all_same(open_, high, low, close):
-
                 reply = text(
                     f"{symbol} not found on CryptoCompare. Initiated lookup on CoinPaprika."
                     f" Data may not be as complete as CoinGecko or CMC"
@@ -932,7 +929,6 @@ async def send_candle_chart(message: Message):
 
                 for close in cp_ohlc:
                     if close["symbol"] == symbol:  # type: ignore
-
                         # Current datetime in seconds
                         t_now = time.time()
                         # Convert chart time span to seconds
